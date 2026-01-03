@@ -5,6 +5,7 @@ import { getProducts } from '../services/productService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { CATEGORIES } from '../config/constants';
+import logo from '../assets/logo.png';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -42,7 +43,10 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="mb-6">
         <div className="gradient-forest rounded-2xl p-6 text-white">
-          <h2 className="text-xl font-semibold">Welcome to Rosary 🌿</h2>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            Welcome to Rosary 
+            <img src={logo} alt="Logo" className="w-6 h-6 object-contain inline-block" />
+          </h2>
           <p className="text-white/80 mt-1 text-sm">
             Discover beautiful succulents & indoor plants
           </p>
@@ -91,7 +95,7 @@ export default function HomePage() {
             <p className="text-[var(--text-secondary)] mt-3">No plants found in this category</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 stagger-children">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 stagger-children">
             {products.map((product) => (
               <ProductCard
                 key={product.id}

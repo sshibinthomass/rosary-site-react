@@ -3,8 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { syncUser } from '../services/userService';
-
-// Icons as simple SVG components
+import logo from '../assets/logo.png';
 const HomeIcon = ({ active }) => (
   <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -53,30 +52,67 @@ export default function Layout({ children }) {
     <div className="min-h-screen pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🌿</span>
+            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
             <h1 className="font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
           </NavLink>
           
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-8">
+            {navItems.map(({ path, label, Icon }) => {
+              const isActive = location.pathname === path;
+              const isCart = path === '/cart';
+              return (
+                <NavLink 
+                  key={path}
+                  to={path}
+                  className={`flex items-center gap-2 transition-colors ${isActive ? 'text-[var(--color-forest)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                >
+                  <div className="relative">
+                    <Icon active={isActive} />
+                    {isCart && cartCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <span>{label}</span>
+                </NavLink>
+              );
+            })}
+            
+            {isAdmin && (
+              <NavLink 
+                to="/admin" 
+                className="text-xs font-medium px-4 py-2 rounded-full bg-[var(--color-terracotta)] text-white hover:bg-[var(--color-terracotta)]/90 transition-colors"
+              >
+                Admin Panel
+              </NavLink>
+            )}
+          </div>
+
+          {/* Mobile Admin Link (Only if not in desktop nav) */}
           {isAdmin && (
-            <NavLink 
-              to="/admin" 
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--color-terracotta)] text-white"
-            >
-              Admin
-            </NavLink>
+            <div className="md:hidden">
+              <NavLink 
+                to="/admin" 
+                className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--color-terracotta)] text-white"
+              >
+                Admin
+              </NavLink>
+            </div>
           )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-lg mx-auto px-4 py-4">
+      <main className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
+      {/* Bottom Navigation (Mobile Only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
         <div className="max-w-lg mx-auto px-4">
           <div className="flex items-center justify-around h-16">
             {navItems.map(({ path, label, Icon }) => {
@@ -114,7 +150,7 @@ export default function Layout({ children }) {
       {location.pathname !== '/cart' && (
         <NavLink
           to="/cart"
-          className="fixed bottom-24 right-5 z-40 md:bottom-10 md:right-10 animate-scale-in"
+          className="fixed bottom-24 right-5 z-40 md:hidden animate-scale-in"
         >
           <div className="w-14 h-14 bg-[var(--color-terracotta)] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 relative">
             <svg className="w-7 h-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">

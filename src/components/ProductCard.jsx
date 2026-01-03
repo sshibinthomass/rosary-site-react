@@ -97,7 +97,6 @@ export default function ProductCard({ product, onQuickView }) {
 
       {/* Content */}
       <div className="p-3">
-        <p className="text-[10px] text-[var(--text-secondary)] font-medium">#{product.id}</p>
         <h3 className="font-medium text-[var(--text-primary)] truncate text-sm">{name}</h3>
         
         {/* Tags row */}
@@ -119,7 +118,7 @@ export default function ProductCard({ product, onQuickView }) {
           )}
         </div>
         
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span className="text-base font-semibold text-[var(--text-primary)]">
               {CURRENCY}{price?.toLocaleString('en-IN')}

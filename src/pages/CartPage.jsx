@@ -27,6 +27,9 @@ export default function CartPage() {
   });
 
   const [sameAsPhone, setSameAsPhone] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
 
   // Load saved profile when checkout opens
   useEffect(() => {
@@ -101,9 +104,6 @@ export default function CartPage() {
       </div>
     );
   }
-
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   // ... (existing helper functions)
 

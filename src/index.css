@@ -19,6 +19,31 @@
   --shadow-lifted: 0 12px 40px rgba(6, 78, 59, 0.16);
 }
 
+:root {
+  --bg-primary: var(--color-cream);
+  --bg-secondary: #ffffff;
+  --bg-tertiary: var(--color-cream-dark);
+  --text-primary: var(--color-forest);
+  --text-secondary: rgba(6, 78, 59, 0.6);
+  --text-inverse: #ffffff;
+  --border-color: rgba(6, 78, 59, 0.1);
+  --input-bg: #ffffff;
+}
+
+.dark {
+  --bg-primary: #111827; /* gray-900 */
+  --bg-secondary: #1f2937; /* gray-800 */
+  --bg-tertiary: #374151; /* gray-700 */
+  --text-primary: #f9fafb; /* gray-50 */
+  --text-secondary: #9ca3af; /* gray-400 */
+  --text-inverse: var(--color-forest);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --input-bg: #1f2937;
+  --color-forest: #34d399; /* Light green purely for text highlighting in dark mode? No, risky. */
+  
+  /* Retain brand colors but adjust potentially if needed */
+}
+
 /* Base Styles */
 * {
   box-sizing: border-box;
@@ -30,11 +55,12 @@ html {
 
 body {
   font-family: var(--font-family-sans);
-  background-color: var(--color-cream);
-  color: var(--color-forest);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Scrollbar */
@@ -44,16 +70,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-cream-dark);
+  background: var(--bg-tertiary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-forest);
+  background: var(--text-secondary);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-forest-light);
+  background: var(--text-primary);
 }
 
 /* Mobile-First Utilities */
@@ -70,6 +96,9 @@ body {
   background: rgba(255, 251, 240, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+.dark .glass {
+  background: rgba(31, 41, 55, 0.85);
 }
 
 /* Gradient Backgrounds */
@@ -163,13 +192,13 @@ body {
 }
 
 .btn-secondary {
-  background: var(--color-cream-dark);
-  color: var(--color-forest);
-  border: 1px solid rgba(6, 78, 59, 0.1);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: white;
+  background: var(--bg-secondary);
   box-shadow: var(--shadow-soft);
 }
 
@@ -185,7 +214,7 @@ body {
 
 /* Card Base */
 .card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 16px;
   box-shadow: var(--shadow-soft);
   overflow: hidden;
@@ -201,9 +230,10 @@ body {
 .input {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 1px solid rgba(6, 78, 59, 0.15);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: white;
+  background: var(--input-bg);
+  color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.2s ease;
   outline: none;
@@ -215,7 +245,7 @@ body {
 }
 
 .input::placeholder {
-  color: rgba(6, 78, 59, 0.4);
+  color: var(--text-secondary);
 }
 
 /* Badge Base */
@@ -232,6 +262,10 @@ body {
 .badge-forest {
   background: rgba(6, 78, 59, 0.1);
   color: var(--color-forest);
+}
+.dark .badge-forest {
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
 }
 
 .badge-terracotta {

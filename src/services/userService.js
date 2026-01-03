@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 // Get user profile
@@ -51,8 +51,40 @@ export async function lookupPincode(pincode) {
       };
     }
     return null;
+    return null;
   } catch (error) {
     console.error('Error looking up pincode:', error);
     return null;
+  }
+}
+
+// Sync user basic info to Firestore (root 'users' collection)
+export async function syncUser(user) {
+  if (!user) return;
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      lastLogin: new Date()
+    }, { merge: true });
+  } catch (error) {
+    console.error('Error syncing user:', error);
+  }
+}
+
+// Get all users (for Admin)
+export async function getAllUsers() {
+  try {
+    const usersRef = collection(db, 'users');
+    const snapshot = await getDocs(usersRef);
+    return snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
   }
 }

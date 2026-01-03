@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { syncUser } from '../services/userService';
 
 // Icons as simple SVG components
 const HomeIcon = ({ active }) => (
@@ -38,15 +40,23 @@ export default function Layout({ children }) {
   const { isAdmin } = useAuth();
   const { cartCount } = useCart();
   const location = useLocation();
+  const { user } = useAuth();
+
+  // Sync user to Firestore on login
+  useEffect(() => {
+    if (user) {
+      syncUser(user);
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-[var(--color-forest)]/10">
+      <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2">
             <span className="text-2xl">🌿</span>
-            <h1 className="font-semibold text-lg text-[var(--color-forest)]">Rosary Plant House</h1>
+            <h1 className="font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
           </NavLink>
           
           {isAdmin && (
@@ -66,7 +76,7 @@ export default function Layout({ children }) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--color-forest)]/10 safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
         <div className="max-w-lg mx-auto px-4">
           <div className="flex items-center justify-around h-16">
             {navItems.map(({ path, label, Icon }) => {
@@ -80,8 +90,8 @@ export default function Layout({ children }) {
                   className={`
                     flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative
                     ${isActive 
-                      ? 'text-[var(--color-forest)]' 
-                      : 'text-[var(--color-forest)]/50 hover:text-[var(--color-forest)]/80'
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }
                   `}
                 >
@@ -100,6 +110,24 @@ export default function Layout({ children }) {
           </div>
         </div>
       </nav>
+      {/* Floating Cart Button */}
+      {location.pathname !== '/cart' && (
+        <NavLink
+          to="/cart"
+          className="fixed bottom-24 right-5 z-40 md:bottom-10 md:right-10 animate-scale-in"
+        >
+          <div className="w-14 h-14 bg-[var(--color-terracotta)] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 relative">
+            <svg className="w-7 h-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-6 h-6 bg-[var(--color-forest)] text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)]">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </div>
+        </NavLink>
+      )}
     </div>
   );
 }

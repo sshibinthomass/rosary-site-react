@@ -49,3 +49,16 @@ export async function removeFromWishlist(userId, productId) {
     throw error;
   }
 }
+
+// Clear entire wishlist
+export async function clearWishlist(userId) {
+  try {
+    const wishlistRef = collection(db, 'users', userId, 'wishlist');
+    const snapshot = await getDocs(wishlistRef);
+    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error('Error clearing wishlist:', error);
+    throw error;
+  }
+}

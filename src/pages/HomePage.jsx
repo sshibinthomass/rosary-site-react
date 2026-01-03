@@ -60,7 +60,7 @@ export default function HomePage() {
                 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
                 ${selectedCategory === category
                   ? 'bg-[var(--color-forest)] text-white'
-                  : 'bg-white text-[var(--color-forest)] border border-[var(--color-forest)]/20 hover:border-[var(--color-forest)]'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] hover:border-[var(--color-forest)]'
                 }
               `}
             >
@@ -88,7 +88,7 @@ export default function HomePage() {
         ) : products.length === 0 ? (
           <div className="text-center py-12">
             <span className="text-4xl">🌱</span>
-            <p className="text-[var(--color-forest)]/60 mt-3">No plants found in this category</p>
+            <p className="text-[var(--text-secondary)] mt-3">No plants found in this category</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 stagger-children">

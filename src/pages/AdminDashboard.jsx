@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../services/productService';
 import { seedProducts, getProductCount, clearAllProducts } from '../services/seedService';
 import { compressImage } from '../utils/imageCompressor';
@@ -223,12 +224,17 @@ export default function AdminDashboard() {
     <div className="animate-fade-in pb-20">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-forest)]">Admin Dashboard</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn btn-primary text-sm"
-        >
-          {showForm ? 'Cancel' : '+ Add Product'}
-        </button>
+        <div className="flex gap-2">
+          <NavLink to="/admin/users" className="btn btn-secondary text-sm flex items-center gap-2">
+            <span>👥</span> Users
+          </NavLink>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn btn-primary text-sm"
+          >
+            {showForm ? 'Cancel' : '+ Add Product'}
+          </button>
+        </div>
       </div>
 
       {/* Seed Products Panel */}

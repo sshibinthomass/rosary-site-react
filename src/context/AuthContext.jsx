@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
   signInWithPopup, 
   signOut, 
@@ -23,12 +23,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const loggingInRef = useRef(false);
 
   useEffect(() => {
     // Check for redirect result on mount
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
+          sessionStorage.setItem('isFreshLogin', 'true');
           setUser(result.user);
           setIsAdmin(result.user.email === ADMIN_EMAIL);
         }
@@ -39,6 +41,10 @@ export function AuthProvider({ children }) {
 
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser && loggingInRef.current) {
+        sessionStorage.setItem('isFreshLogin', 'true');
+        loggingInRef.current = false;
+      }
       setUser(currentUser);
       setIsAdmin(currentUser?.email === ADMIN_EMAIL);
       setLoading(false);
@@ -49,6 +55,7 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = async () => {
     try {
+      loggingInRef.current = true;
       // Try popup first (works on desktop)
       const result = await signInWithPopup(auth, googleProvider);
       return result.user;
@@ -56,8 +63,10 @@ export function AuthProvider({ children }) {
       // If popup blocked, try redirect (better for mobile)
       if (error.code === 'auth/popup-blocked' || 
           error.code === 'auth/popup-closed-by-user') {
+        sessionStorage.setItem('isFreshLogin', 'true'); // Keep this for redirect path
         await signInWithRedirect(auth, googleProvider);
       } else {
+        loggingInRef.current = false;
         console.error('Google sign-in error:', error);
         throw error;
       }

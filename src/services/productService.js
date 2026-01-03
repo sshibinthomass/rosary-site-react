@@ -27,10 +27,12 @@ export async function getProducts(category = null) {
     }
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const products = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    // Sort by ID (numeric)
+    return products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
   } catch (error) {
     console.error('Error getting products:', error);
     throw error;
@@ -41,10 +43,12 @@ export async function getProducts(category = null) {
 export async function getAllProducts() {
   try {
     const snapshot = await getDocs(collection(db, COLLECTION_NAME));
-    return snapshot.docs.map(doc => ({
+    const products = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    // Sort by ID (numeric)
+    return products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
   } catch (error) {
     console.error('Error getting all products:', error);
     throw error;

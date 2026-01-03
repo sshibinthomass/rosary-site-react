@@ -9,7 +9,7 @@ export default function ProductCard({ product, onQuickView }) {
   const { error } = useToast();
 
   // Normalize product fields (handle both old and new schema)
-  const name = product.commonName || product.name;
+  const name = product.title || product.name || product.commonName;
   const price = product.salesPrice || product.price;
   const originalPrice = product.originalPrice;
   const inStock = product.available !== false && (product.qtyAvailable > 0 || product.inStock);

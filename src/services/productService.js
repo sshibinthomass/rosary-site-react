@@ -14,13 +14,16 @@ import { db } from '../config/firebase';
 
 const COLLECTION_NAME = 'products';
 
-// Get all products
+// Get all products (for customers - only available products)
 export async function getProducts(category = null) {
   try {
     let q = collection(db, COLLECTION_NAME);
     
+    // Build query with available filter
     if (category && category !== 'All') {
-      q = query(q, where('category', '==', category));
+      q = query(q, where('category', '==', category), where('available', '==', true));
+    } else {
+      q = query(q, where('available', '==', true));
     }
     
     const snapshot = await getDocs(q);
@@ -30,6 +33,20 @@ export async function getProducts(category = null) {
     }));
   } catch (error) {
     console.error('Error getting products:', error);
+    throw error;
+  }
+}
+
+// Get ALL products (for admin - includes unavailable)
+export async function getAllProducts() {
+  try {
+    const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting all products:', error);
     throw error;
   }
 }

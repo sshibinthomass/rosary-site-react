@@ -1,12 +1,90 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { NavLink } from 'react-router-dom';
 
 export default function AccountPage() {
   const { user, loading, isAdmin, signInWithGoogle, logout } = useAuth();
   const { cart, wishlist } = useCart();
   const { success, error } = useToast();
+  
+  const [profile, setProfile] = useState({
+    name: '',
+    address: '',
+    pincode: '',
+    district: '',
+    state: ''
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+
+  // Load profile on mount
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      const data = await getUserProfile(user.uid);
+      if (data) {
+        setProfile({
+          name: data.name || user.displayName || '',
+          address: data.address || '',
+          pincode: data.pincode || '',
+          district: data.district || '',
+          state: data.state || ''
+        });
+      } else {
+        setProfile(prev => ({ ...prev, name: user.displayName || '' }));
+      }
+    } catch (err) {
+      console.error('Error loading profile:', err);
+    }
+  };
+
+  const handlePincodeChange = async (value) => {
+    setProfile(prev => ({ ...prev, pincode: value }));
+    
+    // Auto-lookup when 6 digits entered
+    if (value.length === 6 && /^\d{6}$/.test(value)) {
+      setLookingUp(true);
+      try {
+        const result = await lookupPincode(value);
+        if (result) {
+          setProfile(prev => ({
+            ...prev,
+            state: result.state,
+            district: result.district
+          }));
+          success('Location found!');
+        } else {
+          error('Invalid pincode');
+        }
+      } catch (err) {
+        error('Could not lookup pincode');
+      } finally {
+        setLookingUp(false);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await saveUserProfile(user.uid, profile);
+      success('Profile saved!');
+      setEditMode(false);
+    } catch (err) {
+      error('Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSignIn = async () => {
     try {
@@ -64,33 +142,140 @@ export default function AccountPage() {
   return (
     <div className="animate-fade-in">
       {/* Profile Card */}
-      <div className="card p-5 text-center">
+      <div className="card p-5">
         {/* Avatar */}
-        <div className="relative w-20 h-20 mx-auto">
-          {user.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user.displayName}
-              className="w-full h-full rounded-full object-cover border-4 border-[var(--color-forest)]"
-            />
-          ) : (
-            <div className="w-full h-full rounded-full bg-[var(--color-forest)] flex items-center justify-center text-white text-2xl font-semibold">
-              {user.displayName?.[0] || user.email?.[0] || '?'}
-            </div>
-          )}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="relative w-16 h-16 flex-shrink-0">
+            {user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName}
+                className="w-full h-full rounded-full object-cover border-4 border-[var(--color-forest)]"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-[var(--color-forest)] flex items-center justify-center text-white text-xl font-semibold">
+                {user.displayName?.[0] || user.email?.[0] || '?'}
+              </div>
+            )}
+            
+            {isAdmin && (
+              <div className="absolute -bottom-1 -right-1 bg-[var(--color-terracotta)] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                ADMIN
+              </div>
+            )}
+          </div>
           
-          {isAdmin && (
-            <div className="absolute -bottom-1 -right-1 bg-[var(--color-terracotta)] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              ADMIN
-            </div>
-          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-[var(--color-forest)] truncate">
+              {profile.name || user.displayName || 'Plant Lover'}
+            </h2>
+            <p className="text-sm text-[var(--color-forest)]/60 truncate">{user.email}</p>
+          </div>
+          
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className="p-2 text-[var(--color-forest)] hover:bg-[var(--color-cream-dark)] rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
         </div>
 
-        {/* Info */}
-        <h2 className="text-xl font-semibold text-[var(--color-forest)] mt-4">
-          {user.displayName || 'Plant Lover'}
-        </h2>
-        <p className="text-sm text-[var(--color-forest)]/60">{user.email}</p>
+        {/* Profile Form */}
+        {editMode && (
+          <div className="space-y-3 pt-4 border-t border-[var(--color-forest)]/10 animate-fade-in">
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-forest)]/70 mb-1">Name</label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
+                className="input"
+                placeholder="Your name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-forest)]/70 mb-1">Address</label>
+              <textarea
+                value={profile.address}
+                onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                className="input min-h-[70px] resize-none"
+                placeholder="House/Flat, Street, Area"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-forest)]/70 mb-1">
+                  Pincode {lookingUp && <span className="text-[var(--color-terracotta)]">🔍</span>}
+                </label>
+                <input
+                  type="text"
+                  value={profile.pincode}
+                  onChange={(e) => handlePincodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="input"
+                  placeholder="6 digits"
+                  maxLength={6}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-forest)]/70 mb-1">District</label>
+                <input
+                  type="text"
+                  value={profile.district}
+                  onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
+                  className="input bg-[var(--color-cream-dark)]"
+                  placeholder="Auto-filled"
+                  readOnly={lookingUp}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-forest)]/70 mb-1">State</label>
+              <input
+                type="text"
+                value={profile.state}
+                onChange={(e) => setProfile(prev => ({ ...prev, state: e.target.value }))}
+                className="input bg-[var(--color-cream-dark)]"
+                placeholder="Auto-filled from pincode"
+                readOnly={lookingUp}
+              />
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setEditMode(false)}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="btn btn-primary flex-1"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Display saved address when not editing */}
+        {!editMode && profile.address && (
+          <div className="pt-4 border-t border-[var(--color-forest)]/10">
+            <p className="text-xs font-medium text-[var(--color-forest)]/70 mb-1">Delivery Address</p>
+            <p className="text-sm text-[var(--color-forest)]">
+              {profile.address}
+              {profile.district && `, ${profile.district}`}
+              {profile.state && `, ${profile.state}`}
+              {profile.pincode && ` - ${profile.pincode}`}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Stats */}

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
+import { getUserProfile } from '../services/userService';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
 
@@ -10,6 +11,36 @@ export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
   const [checkoutInfo, setCheckoutInfo] = useState({ name: '', address: '' });
   const [showCheckout, setShowCheckout] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Load saved profile when checkout opens
+  useEffect(() => {
+    if (showCheckout && user && !profileLoaded) {
+      loadSavedProfile();
+    }
+  }, [showCheckout, user]);
+
+  const loadSavedProfile = async () => {
+    try {
+      const profile = await getUserProfile(user.uid);
+      if (profile) {
+        const fullAddress = [
+          profile.address,
+          profile.district,
+          profile.state,
+          profile.pincode
+        ].filter(Boolean).join(', ');
+        
+        setCheckoutInfo({
+          name: profile.name || user.displayName || '',
+          address: fullAddress
+        });
+        setProfileLoaded(true);
+      }
+    } catch (err) {
+      console.error('Error loading profile:', err);
+    }
+  };
 
   if (!user) {
     return (
@@ -123,6 +154,9 @@ export default function CartPage() {
           </button>
         ) : (
           <div className="space-y-3 animate-fade-in">
+            <div className="text-xs text-[var(--color-forest)]/60 mb-2">
+              ✨ Pre-filled from your saved profile
+            </div>
             <input
               type="text"
               placeholder="Your Name"
@@ -131,7 +165,7 @@ export default function CartPage() {
               className="input"
             />
             <textarea
-              placeholder="Delivery Address (optional)"
+              placeholder="Delivery Address"
               value={checkoutInfo.address}
               onChange={(e) => setCheckoutInfo(prev => ({ ...prev, address: e.target.value }))}
               className="input min-h-[80px] resize-none"

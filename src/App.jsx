@@ -18,6 +18,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersPage from './pages/AdminUsersPage';
 import FAQPage from './pages/FAQPage';
 import ContactPage from './pages/ContactPage';
+import OrderPage from './pages/OrderPage';
+import AdminOrdersPage from './pages/AdminOrdersPage';
 
 function App() {
   return (
@@ -29,11 +31,14 @@ function App() {
               <Layout>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/category/:categoryName" element={<HomePage />} />
+                  <Route path="/plant/:productId" element={<HomePage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/order/:orderId" element={<OrderPage />} />
                   <Route 
                     path="/admin" 
                     element={
@@ -47,6 +52,14 @@ function App() {
                     element={
                       <ProtectedRoute requireAdmin>
                         <AdminUsersPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/orders" 
+                    element={
+                      <ProtectedRoute requireAdmin>
+                        <AdminOrdersPage />
                       </ProtectedRoute>
                     } 
                   />

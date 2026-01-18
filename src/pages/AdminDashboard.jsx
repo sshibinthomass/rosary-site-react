@@ -225,6 +225,9 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-forest)]">Admin Dashboard</h1>
         <div className="flex gap-2">
+          <NavLink to="/admin/orders" className="btn btn-secondary text-sm flex items-center gap-2">
+            <span>📋</span> Orders
+          </NavLink>
           <NavLink to="/admin/users" className="btn btn-secondary text-sm flex items-center gap-2">
             <span>👥</span> Users
           </NavLink>

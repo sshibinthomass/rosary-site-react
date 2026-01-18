@@ -107,12 +107,17 @@ export default function CartPage() {
 
   // ... (existing helper functions)
 
-  const handleCheckoutClick = () => {
+  const handleCheckoutClick = async () => {
     // If not logged in, proceed directly
     if (!user) {
-      initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo);
-      clearCart();
-      setShowCheckout(false);
+      try {
+        await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, null);
+        clearCart();
+        setShowCheckout(false);
+        success('Order created successfully!');
+      } catch (err) {
+        error('Failed to create order. Please try again.');
+      }
       return;
     }
     // If logged in, ask to save
@@ -136,21 +141,32 @@ export default function CartPage() {
     } catch (err) {
       console.error('Error saving profile:', err);
       error('Failed to save profile, but proceeding with order');
-    } finally {
-      setIsSaving(false);
-      // Proceed with order
-      initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo);
+    }
+    
+    // Proceed with order
+    try {
+      await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, user.uid);
       clearCart();
       setShowCheckout(false);
       setShowSaveConfirm(false);
+      success('Order created successfully!');
+    } catch (err) {
+      error('Failed to create order. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleSkipSave = () => {
-    initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo);
-    clearCart();
-    setShowCheckout(false);
-    setShowSaveConfirm(false);
+  const handleSkipSave = async () => {
+    try {
+      await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, user?.uid || null);
+      clearCart();
+      setShowCheckout(false);
+      setShowSaveConfirm(false);
+      success('Order created successfully!');
+    } catch (err) {
+      error('Failed to create order. Please try again.');
+    }
   };
 
   return (
@@ -387,13 +403,13 @@ export default function CartPage() {
         {showSaveConfirm && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
-            <div className="relative w-full max-w-sm bg-white rounded-xl p-6 animate-scale-up space-y-4 shadow-xl">
+            <div className="relative w-full max-w-sm bg-[var(--bg-secondary)] rounded-xl p-6 animate-scale-up space-y-4 shadow-xl">
               <div className="text-center">
-                <div className="w-12 h-12 bg-[var(--color-forest)]/10 text-[var(--text-primary)] rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                <div className="w-12 h-12 bg-[var(--color-forest)]/10 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
                   💾
                 </div>
                 <h3 className="text-lg font-semibold text-[var(--text-primary)]">Save for next time?</h3>
-                <p className="text-sm text-[var(--text-primary)]/70 mt-1">
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
                   Do you want to update your profile with these details for faster checkout next time?
                 </p>
               </div>
@@ -401,7 +417,7 @@ export default function CartPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleSkipSave}
-                  className="flex-1 py-2 text-[var(--text-primary)]/70 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors text-sm font-medium"
+                  className="flex-1 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors text-sm font-medium"
                 >
                   No, just order
                 </button>

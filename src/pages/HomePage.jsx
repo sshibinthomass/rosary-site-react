@@ -1,23 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import ProductModal from '../components/ProductModal';
-import { getProducts } from '../services/productService';
+import { getProducts, getProductById } from '../services/productService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { CATEGORIES } from '../config/constants';
 import logo from '../assets/logo.png';
 
 export default function HomePage() {
+  const { categoryName, productId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { addToCart, isInCart } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [previousCategory, setPreviousCategory] = useState(null);
 
+  // Determine selected category from URL or default to 'All'
+  const selectedCategory = categoryName || 'All';
+
+  // Load products when category changes
   useEffect(() => {
     loadProducts();
   }, [selectedCategory]);
+
+  // Load specific product if productId is in URL
+  useEffect(() => {
+    if (productId) {
+      loadProductFromUrl(productId);
+    }
+  }, [productId]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -31,9 +45,48 @@ export default function HomePage() {
     }
   };
 
+  const loadProductFromUrl = async (id) => {
+    try {
+      const product = await getProductById(id);
+      if (product) {
+        setSelectedProduct(product);
+      }
+    } catch (error) {
+      console.error('Error loading product:', error);
+    }
+  };
+
   const handleAddToCart = async (product) => {
     if (!user) return;
     await addToCart(product);
+  };
+
+  const handleCategoryClick = (category) => {
+    if (category === 'All') {
+      navigate('/');
+    } else {
+      navigate(`/category/${encodeURIComponent(category)}`);
+    }
+  };
+
+  const handleQuickView = (product) => {
+    // Remember current category before opening plant modal
+    setPreviousCategory(selectedCategory);
+    setSelectedProduct(product);
+    // Update URL without full navigation
+    navigate(`/plant/${product.id}`, { replace: true });
+  };
+
+  const handleCloseModal = () => {
+    setSelectedProduct(null);
+    // Navigate back to previous category or home
+    const returnCategory = previousCategory || categoryName;
+    if (returnCategory && returnCategory !== 'All') {
+      navigate(`/category/${encodeURIComponent(returnCategory)}`, { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+    setPreviousCategory(null);
   };
 
   const categories = ['All', ...CATEGORIES];
@@ -59,7 +112,7 @@ export default function HomePage() {
           {categories.map((category) => (
             <button
               key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => handleCategoryClick(category)}
               className={`
                 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
                 ${selectedCategory === category
@@ -95,12 +148,12 @@ export default function HomePage() {
             <p className="text-[var(--text-secondary)] mt-3">No plants found in this category</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 stagger-children">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 stagger-children">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                onQuickView={setSelectedProduct}
+                onQuickView={handleQuickView}
               />
             ))}
           </div>
@@ -111,10 +164,11 @@ export default function HomePage() {
       <ProductModal
         product={selectedProduct}
         isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        onClose={handleCloseModal}
         onAddToCart={handleAddToCart}
         inCart={selectedProduct ? isInCart(selectedProduct.id) : false}
       />
     </div>
   );
 }
+

@@ -2,7 +2,7 @@
 export const ADMIN_EMAIL = 'sshibinthomass@gmail.com';
 
 // WhatsApp business number (with country code, no + sign)
-export const WHATSAPP_NUMBER = '91XXXXXXXXXX';
+export const WHATSAPP_NUMBER = '+4915566440790';
 
 // App constants
 export const APP_NAME = 'Rosary Plant House';

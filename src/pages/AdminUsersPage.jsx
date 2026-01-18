@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { NavLink } from 'react-router-dom';
 import { getAllUsers, getUserProfile } from '../services/userService';
 import { getCart } from '../services/cartService';
 import { getWishlist } from '../services/wishlistService';
@@ -45,9 +46,14 @@ export default function AdminUsersPage() {
 
   return (
     <div className="animate-fade-in pb-20">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">User Management</h1>
-        <span className="badge badge-forest">{users.length} Users</span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">User Management</h1>
+          <span className="badge badge-forest">{users.length} Users</span>
+        </div>
+        <NavLink to="/admin" className="btn btn-secondary text-sm">
+          ← Back to Dashboard
+        </NavLink>
       </div>
 
       <div className="card overflow-hidden">

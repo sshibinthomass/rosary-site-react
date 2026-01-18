@@ -5,11 +5,11 @@ export const ADMIN_EMAIL = 'sshibinthomass@gmail.com';
 export const WHATSAPP_NUMBER = '+4915566440790';
 
 // App constants
-export const APP_NAME = 'Rosary Plant House1';
+export const APP_NAME = 'Rosary Plant House';
 
 // Product categories (from Excel)
 export const CATEGORIES = [
-  'Succulent1',
+  'Succulent',
   'Cactus',
   'Echeveria',
   'Jade',

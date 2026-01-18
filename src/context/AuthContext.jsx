@@ -29,7 +29,9 @@ export function AuthProvider({ children }) {
     // Check for redirect result on mount
     getRedirectResult(auth)
       .then((result) => {
+        console.log('Redirect result:', result);
         if (result?.user) {
+          console.log('Redirect user found:', result.user.email);
           sessionStorage.setItem('isFreshLogin', 'true');
           setUser(result.user);
           setIsAdmin(result.user.email === ADMIN_EMAIL);
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
 
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log('Auth state changed:', currentUser ? `User: ${currentUser.email}` : 'No user');
       if (currentUser && loggingInRef.current) {
         sessionStorage.setItem('isFreshLogin', 'true');
         loggingInRef.current = false;
@@ -56,18 +59,30 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = async () => {
     try {
       loggingInRef.current = true;
-      // Try popup first (works on desktop)
+      // Try popup first (works better on desktop & bypasses tracking prevention)
       const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
+      // Popup success - manually set user state if listener lags
+      console.log('Popup success:', result.user.email);
+      setUser(result.user);
     } catch (error) {
-      // If popup blocked, try redirect (better for mobile)
+      console.error('Google sign-in error:', error);
+      
+      // If popup blocked or closed, try redirect (better for mobile)
       if (error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/popup-closed-by-user') {
-        sessionStorage.setItem('isFreshLogin', 'true'); // Keep this for redirect path
-        await signInWithRedirect(auth, googleProvider);
+          error.code === 'auth/popup-closed-by-user' ||
+          error.code === 'auth/cancelled-popup-request') {
+        try {
+          console.log('Falling back to redirect...');
+          sessionStorage.setItem('isFreshLogin', 'true');
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError) {
+          console.error('Redirect also failed:', redirectError);
+          loggingInRef.current = false;
+          throw redirectError;
+        }
       } else {
         loggingInRef.current = false;
-        console.error('Google sign-in error:', error);
+        alert(`Sign-in failed: ${error.message}`);
         throw error;
       }
     }

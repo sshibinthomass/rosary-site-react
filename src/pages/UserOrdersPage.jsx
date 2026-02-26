@@ -25,7 +25,10 @@ export default function UserOrdersPage() {
     try {
       setLoading(true);
       const userOrders = await getOrdersByUserId(user.uid);
-      setOrders(userOrders || []);
+      const filteredOrders = (userOrders || []).filter(
+        order => order.status !== 'pending' && order.status !== 'cancelled'
+      );
+      setOrders(filteredOrders);
     } catch (error) {
       console.error('Failed to load orders:', error);
     } finally {

@@ -67,28 +67,28 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   // Use createPortal to render modal at document.body level
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] flex md:items-center md:justify-center md:p-4"
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in hidden md:block" />
       
       {/* Modal Container */}
       <div 
         ref={modalRef}
-        className="relative w-full max-w-lg md:max-w-5xl bg-[var(--bg-primary)] rounded-2xl max-h-[85vh] flex flex-col md:flex-row overflow-hidden animate-slide-up shadow-2xl"
+        className="relative w-full h-full md:h-auto max-w-none md:max-w-5xl bg-[var(--bg-primary)] rounded-none md:rounded-2xl md:max-h-[85vh] flex flex-col lg:flex-row overflow-hidden animate-slide-up shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button (Absolute to Container) */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-colors backdrop-blur-sm md:bg-white/10 md:text-white md:hover:bg-white/20"
+          className="absolute top-3 right-3 z-30 w-9 h-9 md:w-8 md:h-8 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/40 transition-colors backdrop-blur-sm md:bg-white/10 md:text-white md:hover:bg-white/20"
         >
           ✕
         </button>
 
         {/* LEFT: Image Section */}
-        <div className="relative w-full h-[35vh] md:w-5/12 md:h-auto bg-[var(--bg-tertiary)] shrink-0 group">
+        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 group">
           <img
             src={product.imageUrl || '/placeholder-plant.jpg'}
             alt={title}

@@ -1,13 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
-import { getOrderById } from '../services/orderService';
+import { getOrderById, updateOrderStatus, updateOrderCustomer } from '../services/orderService';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
+
+const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
 export default function OrderPage() {
   const { orderId } = useParams();
+  const { user, isAdmin } = useAuth();
+  const { success, error: showError } = useToast();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Customer edit state
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [editCustomer, setEditCustomer] = useState({});
+  const [savingCustomer, setSavingCustomer] = useState(false);
 
   useEffect(() => {
     if (orderId) {
@@ -20,6 +32,7 @@ export default function OrderPage() {
       const orderData = await getOrderById(orderId);
       if (orderData) {
         setOrder(orderData);
+        setEditCustomer(orderData.customer || {});
       } else {
         setError('Order not found');
       }
@@ -29,6 +42,42 @@ export default function OrderPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if current user is the order owner
+  const isOrderOwner = user && order?.customer?.userId && user.uid === order.customer.userId;
+  const canEditCustomer = isAdmin || isOrderOwner;
+
+  const handleStatusUpdate = async (newStatus) => {
+    setUpdatingStatus(true);
+    try {
+      await updateOrderStatus(order.id, newStatus);
+      setOrder(prev => ({ ...prev, status: newStatus }));
+      success(`Status updated to ${newStatus}`);
+    } catch (err) {
+      showError('Failed to update status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleSaveCustomer = async () => {
+    setSavingCustomer(true);
+    try {
+      await updateOrderCustomer(order.id, editCustomer);
+      setOrder(prev => ({ ...prev, customer: editCustomer }));
+      setIsEditingCustomer(false);
+      success('Customer details updated!');
+    } catch (err) {
+      showError('Failed to update details');
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditCustomer(order.customer || {});
+    setIsEditingCustomer(false);
   };
 
   if (loading) {
@@ -64,12 +113,12 @@ export default function OrderPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700';
-      case 'confirmed': return 'bg-blue-100 text-blue-700';
-      case 'shipped': return 'bg-purple-100 text-purple-700';
-      case 'delivered': return 'bg-green-100 text-green-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'confirmed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'shipped': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'delivered': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
@@ -90,6 +139,32 @@ export default function OrderPage() {
           Placed on: {formatDate(order.createdAt)}
         </p>
       </div>
+
+      {/* Admin: Update Status */}
+      {isAdmin && (
+        <div className="card p-4 mb-4">
+          <h2 className="font-semibold text-[var(--text-primary)] mb-3">Update Status</h2>
+          <div className="flex flex-wrap gap-2">
+            {ORDER_STATUSES.map((status) => (
+              <button
+                key={status}
+                onClick={() => handleStatusUpdate(status)}
+                disabled={updatingStatus || order.status === status}
+                className={`
+                  px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all
+                  ${order.status === status
+                    ? getStatusColor(status) + ' ring-2 ring-offset-2 ring-[var(--color-forest)] dark:ring-offset-[var(--bg-primary)]'
+                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }
+                  ${updatingStatus ? 'opacity-50 cursor-wait' : ''}
+                `}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Items */}
       <div className="card p-4 mb-4">
@@ -129,29 +204,138 @@ export default function OrderPage() {
 
       {/* Customer Details */}
       <div className="card p-4 mb-4">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-3">Delivery Details</h2>
-        <div className="space-y-2 text-sm">
-          <p className="text-[var(--text-primary)]">
-            <span className="text-[var(--text-secondary)]">Name:</span> {order.customer.name || 'N/A'}
-          </p>
-          <p className="text-[var(--text-primary)]">
-            <span className="text-[var(--text-secondary)]">Phone:</span> {order.customer.phone || 'N/A'}
-          </p>
-          {order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone && (
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">WhatsApp:</span> {order.customer.whatsapp}
-            </p>
-          )}
-          <p className="text-[var(--text-primary)]">
-            <span className="text-[var(--text-secondary)]">Address:</span> {order.customer.address || 'N/A'}
-          </p>
-          {(order.customer.district || order.customer.state || order.customer.pincode) && (
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Location:</span>{' '}
-              {[order.customer.district, order.customer.state, order.customer.pincode].filter(Boolean).join(', ')}
-            </p>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-[var(--text-primary)]">Delivery Details</h2>
+          {canEditCustomer && !isEditingCustomer && (
+            <button
+              onClick={() => setIsEditingCustomer(true)}
+              className="text-sm text-[var(--color-forest)] hover:underline font-medium"
+            >
+              ✏️ Edit
+            </button>
           )}
         </div>
+
+        {isEditingCustomer ? (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Name</label>
+              <input
+                type="text"
+                value={editCustomer.name || ''}
+                onChange={(e) => setEditCustomer(prev => ({ ...prev, name: e.target.value }))}
+                className="input"
+                placeholder="Customer name"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Phone</label>
+                <input
+                  type="tel"
+                  value={editCustomer.phone || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                  className="input"
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={editCustomer.whatsapp || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, whatsapp: e.target.value }))}
+                  className="input"
+                  placeholder="WhatsApp number"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Address</label>
+              <textarea
+                value={editCustomer.address || ''}
+                onChange={(e) => setEditCustomer(prev => ({ ...prev, address: e.target.value }))}
+                className="input min-h-[70px] resize-none"
+                placeholder="Full address"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Pincode</label>
+                <input
+                  type="text"
+                  value={editCustomer.pincode || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, pincode: e.target.value }))}
+                  className="input"
+                  placeholder="Pincode"
+                  maxLength={6}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">District</label>
+                <input
+                  type="text"
+                  value={editCustomer.district || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, district: e.target.value }))}
+                  className="input"
+                  placeholder="District"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">State</label>
+                <input
+                  type="text"
+                  value={editCustomer.state || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, state: e.target.value }))}
+                  className="input"
+                  placeholder="State"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleCancelEdit}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCustomer}
+                disabled={savingCustomer}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                {savingCustomer ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Name:</span> {order.customer.name || 'N/A'}
+            </p>
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Phone:</span> {order.customer.phone || 'N/A'}
+            </p>
+            {order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone && (
+              <p className="text-[var(--text-primary)]">
+                <span className="text-[var(--text-secondary)]">WhatsApp:</span> {order.customer.whatsapp}
+              </p>
+            )}
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Address:</span> {order.customer.address || 'N/A'}
+            </p>
+            {(order.customer.district || order.customer.state || order.customer.pincode) && (
+              <p className="text-[var(--text-primary)]">
+                <span className="text-[var(--text-secondary)]">Location:</span>{' '}
+                {[order.customer.district, order.customer.state, order.customer.pincode].filter(Boolean).join(', ')}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

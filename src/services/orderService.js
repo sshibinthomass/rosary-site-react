@@ -157,6 +157,23 @@ export async function updateOrderStatus(orderId, newStatus) {
 }
 
 /**
+ * Update order customer details
+ */
+export async function updateOrderCustomer(orderId, customerData) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, orderId);
+    await updateDoc(docRef, {
+      customer: customerData,
+      updatedAt: serverTimestamp()
+    });
+    return { id: orderId, customer: customerData };
+  } catch (error) {
+    console.error('Error updating customer details:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate order page URL
  */
 export function getOrderUrl(docId) {

@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 
 export default function ProductCard({ product, onQuickView }) {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart, addToWishlist, isInCart, isInWishlist } = useCart();
+  const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
   const { error } = useToast();
 
   // Normalize product fields (handle both old and new schema)
@@ -25,12 +25,16 @@ export default function ProductCard({ product, onQuickView }) {
     }
   };
 
-  const handleAddToWishlist = async (e) => {
+  const handleToggleWishlist = async (e) => {
     e.stopPropagation();
     try {
-      await addToWishlist({ ...product, id: product.id, name, price });
+      if (isInWishlist(product.id)) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist({ ...product, id: product.id, name, price });
+      }
     } catch (err) {
-      error('Failed to add to wishlist');
+      error('Failed to update wishlist');
     }
   };
 
@@ -54,21 +58,21 @@ export default function ProductCard({ product, onQuickView }) {
         
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg">
+          <div className="absolute top-2 left-2 px-2 py-1 bg-[var(--color-terracotta)] text-white text-[10px] md:text-xs font-bold rounded-lg">
             -{discountPercent}%
           </div>
         )}
         
         {/* Stock Badge */}
         {!inStock && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-lg">
+          <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
             Out of Stock
           </div>
         )}
         
         {/* Restocked Badge */}
         {product.isRestocked && inStock && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded-lg">
+          <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
             Back in Stock!
           </div>
         )}
@@ -80,9 +84,9 @@ export default function ProductCard({ product, onQuickView }) {
 
         {/* Wishlist Button */}
         <button
-          onClick={handleAddToWishlist}
+          onClick={handleToggleWishlist}
           className={`
-            absolute bottom-5 right-5 w-24 h-24 md:bottom-2 md:right-2 md:w-8 md:h-8 rounded-full flex items-center justify-center
+            absolute bottom-2 right-2 w-9 h-9 md:w-8 md:h-8 rounded-full flex items-center justify-center
             transition-all duration-200 shadow-md
             ${inWishlist 
               ? 'bg-[var(--color-terracotta)] text-white' 
@@ -90,31 +94,31 @@ export default function ProductCard({ product, onQuickView }) {
             }
           `}
         >
-          <svg className="w-10 h-10 md:w-4 md:h-4" viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col gap-2 bg-[var(--bg-primary)]">
+      <div className="p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 bg-[var(--bg-primary)]">
         {/* Line 1: Plant id. Name (size) on left, Price on right */}
-        <div className="text-xl md:text-base font-semibold text-[var(--text-primary)] flex items-baseline justify-between gap-2">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-[var(--text-secondary)]">{plantId}.</span>
-            <span>{name}</span>
+        <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-baseline justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-1 md:gap-2 min-w-0">
+            <span className="text-[var(--text-secondary)] text-xs md:text-sm">{plantId}.</span>
+            <span className="truncate">{name}</span>
             {product.size && (
-              <span className="text-[var(--text-secondary)] text-lg md:text-sm">
+              <span className="text-[var(--text-secondary)] text-xs md:text-sm">
                 ({product.size})
               </span>
             )}
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl md:text-lg font-bold">
+          <div className="flex items-baseline gap-1 md:gap-2 flex-shrink-0">
+            <span className="text-base md:text-lg font-bold">
               {CURRENCY}{price?.toLocaleString('en-IN')}
             </span>
             {hasDiscount && (
-              <span className="text-lg md:text-base text-[var(--text-secondary)] line-through">
+              <span className="text-xs md:text-sm text-[var(--text-secondary)] line-through">
                 {CURRENCY}{originalPrice?.toLocaleString('en-IN')}
               </span>
             )}
@@ -122,48 +126,48 @@ export default function ProductCard({ product, onQuickView }) {
         </div>
 
         {/* Line 2: Transit, Category, Water, Sun */}
-        <div className="flex flex-wrap gap-1.5 text-base md:text-[11px] text-[var(--text-secondary)]">
+        <div className="flex flex-wrap gap-1 text-[10px] md:text-[11px] text-[var(--text-secondary)]">
           {product.transit && (
-            <span className="px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
+            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
               Transit: {product.transit}
             </span>
           )}
           {product.category && (
-            <span className="px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              Category: {product.category}
+            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
+              {product.category}
             </span>
           )}
           {product.watering && (
-            <span className="px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              Water: {product.watering}
+            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
+              💧 {product.watering}
             </span>
           )}
           {product.sunlight && (
-            <span className="px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              Sun: {product.sunlight}
+            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
+              ☀️ {product.sunlight}
             </span>
           )}
         </div>
         
         {/* Line 3: Qty on left, Add to cart on right */}
-        <div className="mt-2 flex items-center gap-4">
+        <div className="mt-1 md:mt-2 flex items-center gap-2 md:gap-4">
           {inStock ? (
             <>
               {/* Left: quantity selector */}
               {!inCart && (
-                <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-10 md:h-9 min-w-[110px] justify-between">
+                <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-9 min-w-[90px] md:min-w-[110px] justify-between">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
-                    className="px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-l-lg transition-colors"
+                    className="px-2.5 md:px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-l-lg transition-colors"
                   >
                     -
                   </button>
-                  <span className="text-xl md:text-base font-medium w-10 text-center text-[var(--text-primary)]">
+                  <span className="text-sm md:text-base font-medium w-8 md:w-10 text-center text-[var(--text-primary)]">
                     {quantity}
                   </span>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
-                    className="px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-r-lg transition-colors"
+                    className="px-2.5 md:px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-r-lg transition-colors"
                   >
                     +
                   </button>
@@ -175,7 +179,7 @@ export default function ProductCard({ product, onQuickView }) {
                 onClick={handleAddToCart}
                 disabled={inCart}
                 className={`
-                  h-12 md:h-10 px-6 rounded-lg text-2xl md:text-base font-semibold flex-1
+                  h-9 md:h-10 px-4 md:px-6 rounded-lg text-sm md:text-base font-semibold flex-1
                   flex items-center justify-center
                   ${inCart 
                     ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] cursor-default'

@@ -175,6 +175,8 @@ body {
   cursor: pointer;
   border: none;
   outline: none;
+  min-height: 44px; /* Touch-friendly minimum */
+  font-size: 0.9375rem;
 }
 
 .btn:active {
@@ -237,6 +239,7 @@ body {
   font-size: 1rem;
   transition: all 0.2s ease;
   outline: none;
+  min-height: 44px; /* Touch-friendly minimum */
 }
 
 .input:focus {

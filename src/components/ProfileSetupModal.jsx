@@ -116,9 +116,9 @@ export default function ProfileSetupModal() {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
       
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
+      <div className="relative w-full max-w-lg bg-[var(--bg-secondary)] rounded-2xl max-h-[90vh] overflow-y-auto animate-slide-up shadow-xl">
         {/* Header */}
-        <div className="p-6 border-b border-[var(--color-forest)]/10 bg-[var(--color-cream-dark)]/30">
+        <div className="p-6 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/30">
           <div className="w-12 h-12 bg-[var(--color-forest)] rounded-full flex items-center justify-center mb-4 text-white text-2xl mx-auto shadow-lg shadow-[var(--color-forest)]/20">
             📝
           </div>
@@ -141,7 +141,7 @@ export default function ProfileSetupModal() {
               type="text"
               value={profile.name}
               onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-              className="input bg-gray-50/50 focus:bg-white transition-colors"
+              className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
               placeholder="Your name"
             />
           </div>
@@ -156,7 +156,7 @@ export default function ProfileSetupModal() {
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                className="input bg-gray-50/50 focus:bg-white transition-colors"
+                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
                 placeholder="Mobile number"
               />
             </div>
@@ -182,7 +182,7 @@ export default function ProfileSetupModal() {
                 type="tel"
                 value={profile.whatsapp}
                 onChange={(e) => setProfile(prev => ({ ...prev, whatsapp: e.target.value }))}
-                className="input bg-gray-50/50 focus:bg-white transition-colors disabled:bg-gray-100 disabled:text-gray-400"
+                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors disabled:bg-[var(--bg-tertiary)] disabled:text-[var(--text-secondary)]"
                 placeholder="WhatsApp number"
                 disabled={sameAsPhone}
               />
@@ -197,7 +197,7 @@ export default function ProfileSetupModal() {
             <textarea
               value={profile.address}
               onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
-              className="input min-h-[80px] resize-none bg-gray-50/50 focus:bg-white transition-colors"
+              className="input min-h-[80px] resize-none bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
               placeholder="House/Flat No., Street, Landmark"
             />
           </div>
@@ -212,7 +212,7 @@ export default function ProfileSetupModal() {
                 type="text"
                 value={profile.pincode}
                 onChange={(e) => handlePincodeChange(e.target.value)}
-                className="input bg-gray-50/50 focus:bg-white transition-colors"
+                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
                 placeholder="6 digits"
                 maxLength={6}
               />
@@ -248,7 +248,7 @@ export default function ProfileSetupModal() {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[var(--color-forest)]/10 bg-gray-50/50 flex gap-3">
+        <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-tertiary)]/50 flex gap-3">
           <button
             onClick={handleSkip}
             className="flex-1 py-3 text-[var(--color-forest)]/60 font-medium hover:text-[var(--color-forest)] hover:bg-[var(--color-cream-dark)] rounded-xl transition-colors"

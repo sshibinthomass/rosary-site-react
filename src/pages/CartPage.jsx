@@ -4,13 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
+import { getProductById } from '../services/productService';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
+import ProductModal from '../components/ProductModal';
 
 export default function CartPage() {
   const { user } = useAuth();
-  const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, cartTotal, clearCart, addToCart, isInCart } = useCart();
   const { success, error } = useToast();
+  const [selectedProduct, setSelectedProduct] = useState(null);
   
   const [showCheckout, setShowCheckout] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -169,6 +172,19 @@ export default function CartPage() {
     }
   };
 
+  const handleItemClick = async (item) => {
+    try {
+      const fullProduct = await getProductById(item.productId);
+      if (fullProduct) {
+        setSelectedProduct(fullProduct);
+      } else {
+        setSelectedProduct({ id: item.productId, ...item });
+      }
+    } catch (err) {
+      setSelectedProduct({ id: item.productId, ...item });
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-4">
@@ -186,9 +202,9 @@ export default function CartPage() {
       {/* Cart Items */}
       <div className="space-y-3 mb-6">
         {cart.map((item) => (
-          <div key={item.productId} className="card p-3 flex gap-3">
+          <div key={item.productId} className="card p-3 flex gap-3 cursor-pointer" onClick={() => handleItemClick(item)}>
             {/* Image */}
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+            <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
               <img
                 src={item.imageUrl || '/placeholder-plant.jpg'}
                 alt={item.name}
@@ -208,8 +224,8 @@ export default function CartPage() {
               {/* Quantity Controls */}
               <div className="flex items-center gap-2 mt-2">
                 <button
-                  onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                  className="w-7 h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
+                  onClick={(e) => { e.stopPropagation(); updateQuantity(item.productId, item.quantity - 1); }}
+                  className="w-9 h-9 md:w-7 md:h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
                 >
                   −
                 </button>
@@ -217,8 +233,8 @@ export default function CartPage() {
                   {item.quantity}
                 </span>
                 <button
-                  onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                  className="w-7 h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
+                  onClick={(e) => { e.stopPropagation(); updateQuantity(item.productId, item.quantity + 1); }}
+                  className="w-9 h-9 md:w-7 md:h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
                 >
                   +
                 </button>
@@ -231,7 +247,7 @@ export default function CartPage() {
                 {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
               </p>
               <button
-                onClick={() => removeFromCart(item.productId)}
+                onClick={(e) => { e.stopPropagation(); removeFromCart(item.productId); }}
                 className="text-red-500 hover:text-red-600 text-xs mt-2"
               >
                 Remove
@@ -437,6 +453,15 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      {/* Product Modal */}
+      <ProductModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={async (product) => { await addToCart(product); }}
+        inCart={selectedProduct ? isInCart(selectedProduct.id) : false}
+      />
     </div>
   );
 }

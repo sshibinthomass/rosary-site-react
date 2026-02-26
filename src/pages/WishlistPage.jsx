@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
+import ProductModal from '../components/ProductModal';
+import { getProductById } from '../services/productService';
 
-const WishlistItem = ({ item, onMoveToCart, onRemove, inCart }) => {
+const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick }) => {
   const [quantity, setQuantity] = useState(1);
 
   return (
-    <div className="card p-3 flex gap-3">
+    <div className="card p-3 flex gap-3 cursor-pointer" onClick={() => onClick(item)}>
       {/* Image */}
-      <div className="w-20 h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+      <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
         <img
           src={item.imageUrl || '/placeholder-plant.jpg'}
           alt={item.name}
@@ -33,16 +35,16 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart }) => {
       {/* Actions */}
       <div className="flex flex-col gap-2 items-end">
         {!inCart && (
-          <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-7 w-20">
+          <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-7 w-20" onClick={(e) => e.stopPropagation()}>
             <button 
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
               className="px-2 text-[var(--text-primary)] hover:bg-[var(--color-cream)] rounded-l-lg transition-colors flex-1"
             >
               -
             </button>
             <span className="text-xs font-medium w-6 text-center text-[var(--text-primary)]">{quantity}</span>
             <button 
-              onClick={() => setQuantity(quantity + 1)}
+              onClick={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
               className="px-2 text-[var(--text-primary)] hover:bg-[var(--color-cream)] rounded-r-lg transition-colors flex-1"
             >
               +
@@ -51,7 +53,7 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart }) => {
         )}
 
         <button
-          onClick={() => onMoveToCart(item, quantity)}
+          onClick={(e) => { e.stopPropagation(); onMoveToCart(item, quantity); }}
           disabled={inCart}
           className={`
             px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-24
@@ -64,7 +66,7 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart }) => {
           {inCart ? 'In Cart' : 'Add to Cart'}
         </button>
         <button
-          onClick={() => onRemove(item.productId)}
+          onClick={(e) => { e.stopPropagation(); onRemove(item.productId); }}
           className="text-red-500 hover:text-red-600 text-xs"
         >
           Remove
@@ -76,6 +78,7 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart }) => {
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist, addToCart, isInCart } = useCart();
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   if (wishlist.length === 0) {
     return (
@@ -101,6 +104,25 @@ export default function WishlistPage() {
     await addToCart(product, quantity);
   };
 
+  const handleItemClick = async (item) => {
+    try {
+      const fullProduct = await getProductById(item.productId);
+      if (fullProduct) {
+        setSelectedProduct(fullProduct);
+      } else {
+        // Fallback to item data if full product not found
+        setSelectedProduct({ id: item.productId, ...item });
+      }
+    } catch (err) {
+      // Fallback to item data on error
+      setSelectedProduct({ id: item.productId, ...item });
+    }
+  };
+
+  const handleAddToCart = async (product) => {
+    await addToCart(product);
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-4">
@@ -124,9 +146,19 @@ export default function WishlistPage() {
             onMoveToCart={handleMoveToCart}
             onRemove={removeFromWishlist}
             inCart={isInCart(item.productId)}
+            onClick={handleItemClick}
           />
         ))}
       </div>
+
+      {/* Product Modal */}
+      <ProductModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+        inCart={selectedProduct ? isInCart(selectedProduct.id) : false}
+      />
     </div>
   );
 }

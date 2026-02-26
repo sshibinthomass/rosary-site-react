@@ -88,7 +88,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         </button>
 
         {/* LEFT: Image Section */}
-        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 group">
+        <div className="relative w-full h-[35vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 group">
           <img
             src={product.imageUrl || '/placeholder-plant.jpg'}
             alt={title}
@@ -143,7 +143,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             </div>
 
             {/* Care Info Grid */}
-            <div className="grid grid-cols-4 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-3">
               <div className="flex flex-col md:flex-row md:items-center items-center justify-center md:justify-start p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--bg-tertiary)] gap-3">
                 <span className="text-xl">💧</span>
                 <div className="text-center md:text-left">
@@ -176,10 +176,10 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             
             {/* Tags */}
             <div className="flex flex-wrap gap-2 text-xs">
-               {product.indoor && <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full border border-green-100 font-medium">🏠 Indoor</span>}
-               {product.hanging && <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-100 font-medium">🎋 Hanging</span>}
-               {product.mother && <span className="px-3 py-1 bg-pink-50 text-pink-700 rounded-full border border-pink-100 font-medium">🌱 Mother Plant</span>}
-               {product.combo && <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 font-medium">🎁 Combo</span>}
+               {product.indoor && <span className="px-3 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full border border-green-100 dark:border-green-800 font-medium">🏠 Indoor</span>}
+               {product.hanging && <span className="px-3 py-1 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-full border border-purple-100 dark:border-purple-800 font-medium">🎋 Hanging</span>}
+               {product.mother && <span className="px-3 py-1 bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full border border-pink-100 dark:border-pink-800 font-medium">🌱 Mother Plant</span>}
+               {product.combo && <span className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-800 font-medium">🎁 Combo</span>}
             </div>
 
             {/* Description */}

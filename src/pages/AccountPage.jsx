@@ -44,11 +44,18 @@ export default function AccountPage() {
 
   const loadProfile = async () => {
     try {
-      const [data, orders] = await Promise.all([
-        getUserProfile(user.uid),
-        getOrdersByUserId(user.uid)
-      ]);
-      setUserOrders(orders || []);
+      // Load profile data
+      const data = await getUserProfile(user.uid);
+      
+      // Load orders independently so it doesn't break profile if it fails (e.g. missing index)
+      try {
+        const orders = await getOrdersByUserId(user.uid);
+        setUserOrders(orders || []);
+      } catch (err) {
+        console.error("Failed to load user orders:", err);
+        setUserOrders([]);
+      }
+
       if (data) {
         setProfile({
           name: data.name || user.displayName || '',

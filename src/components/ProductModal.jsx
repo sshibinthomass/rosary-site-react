@@ -1,6 +1,35 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import ReactMarkdown from 'react-markdown';
 import { CURRENCY } from '../config/constants';
+
+function DescriptionBlock({ text }) {
+  const [expanded, setExpanded] = useState(false);
+  const words = text.split(/\s+/);
+  const needsTruncation = words.length > 20;
+  const preview = needsTruncation ? words.slice(0, 20).join(' ') + '...' : text;
+
+  return (
+    <div className="border-t border-[var(--border-color)] pt-4">
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text-primary)] prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-1 prose-p:my-1 prose-li:my-0 prose-strong:text-[var(--text-primary)]">
+        {expanded || !needsTruncation ? (
+          <ReactMarkdown>{text}</ReactMarkdown>
+        ) : (
+          <p>{preview}</p>
+        )}
+      </div>
+      {needsTruncation && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-2 text-xs font-medium text-[var(--color-forest)] hover:underline"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart }) {
   const modalRef = useRef(null);
@@ -152,6 +181,9 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                {product.mother && <span className="px-3 py-1 bg-pink-50 text-pink-700 rounded-full border border-pink-100 font-medium">🌱 Mother Plant</span>}
                {product.combo && <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 font-medium">🎁 Combo</span>}
             </div>
+
+            {/* Description */}
+            {product.description && <DescriptionBlock text={product.description} />}
           </div>
 
           {/* Footer (Price & Action) - Fixed at Bottom of Right Col */}

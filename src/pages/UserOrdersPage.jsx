@@ -1,25 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getOrdersByUserId } from '../services/orderService';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { CURRENCY } from '../config/constants';
 
 export default function UserOrdersPage() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/account');
-      return;
-    }
-    
     if (user) {
       loadOrders();
     }
-  }, [user, authLoading, navigate]);
+  }, [user]);
 
   const loadOrders = async () => {
     try {
@@ -43,14 +37,6 @@ export default function UserOrdersPage() {
     delivered: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   };
-
-  if (authLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-[var(--color-forest)] border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   return (
     <div className="animate-fade-in pb-20">

@@ -37,7 +37,14 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/account" element={<AccountPage />} />
-                  <Route path="/orders" element={<UserOrdersPage />} />
+                  <Route 
+                    path="/orders" 
+                    element={
+                      <ProtectedRoute>
+                        <UserOrdersPage />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route path="/faq" element={<FAQPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                   <Route path="/order/:orderId" element={<OrderPage />} />

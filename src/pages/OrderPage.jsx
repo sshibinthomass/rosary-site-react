@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
-import { getOrderById, updateOrderStatus, updateOrderCustomer } from '../services/orderService';
+import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
@@ -21,6 +21,11 @@ export default function OrderPage() {
   const [editCustomer, setEditCustomer] = useState({});
   const [savingCustomer, setSavingCustomer] = useState(false);
 
+  // Delivery charge state
+  const [editingDelivery, setEditingDelivery] = useState(false);
+  const [deliveryInput, setDeliveryInput] = useState('');
+  const [savingDelivery, setSavingDelivery] = useState(false);
+
   useEffect(() => {
     if (orderId) {
       loadOrder();
@@ -33,6 +38,7 @@ export default function OrderPage() {
       if (orderData) {
         setOrder(orderData);
         setEditCustomer(orderData.customer || {});
+        setDeliveryInput(orderData.deliveryCharge?.toString() || '');
       } else {
         setError('Order not found');
       }
@@ -78,6 +84,21 @@ export default function OrderPage() {
   const handleCancelEdit = () => {
     setEditCustomer(order.customer || {});
     setIsEditingCustomer(false);
+  };
+
+  const handleSaveDelivery = async () => {
+    setSavingDelivery(true);
+    try {
+      const charge = parseFloat(deliveryInput) || 0;
+      await updateDeliveryCharge(order.id, charge);
+      setOrder(prev => ({ ...prev, deliveryCharge: charge }));
+      setEditingDelivery(false);
+      success('Delivery charge updated!');
+    } catch (err) {
+      showError('Failed to update delivery charge');
+    } finally {
+      setSavingDelivery(false);
+    }
   };
 
   if (loading) {
@@ -193,12 +214,64 @@ export default function OrderPage() {
           ))}
         </div>
         
-        <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
-          <div className="flex justify-between text-lg font-semibold text-[var(--text-primary)]">
-            <span>Total</span>
+        <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-2">
+          <div className="flex justify-between text-sm text-[var(--text-secondary)]">
+            <span>Subtotal</span>
             <span>{CURRENCY}{order.totalAmount.toLocaleString('en-IN')}</span>
           </div>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">+ Delivery charges (as applicable)</p>
+
+          {/* Delivery Charge */}
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-[var(--text-secondary)]">Delivery</span>
+            {isAdmin && editingDelivery ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-[var(--text-secondary)]">{CURRENCY}</span>
+                  <input
+                    type="number"
+                    value={deliveryInput}
+                    onChange={(e) => setDeliveryInput(e.target.value)}
+                    className="input w-24 py-1 px-2 text-right text-sm"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveDelivery}
+                  disabled={savingDelivery}
+                  className="text-[var(--color-forest)] text-xs font-medium hover:underline"
+                >
+                  {savingDelivery ? '...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => { setEditingDelivery(false); setDeliveryInput(order.deliveryCharge?.toString() || ''); }}
+                  className="text-[var(--text-secondary)] text-xs hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span className={order.deliveryCharge ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] italic'}>
+                  {order.deliveryCharge ? `${CURRENCY}${order.deliveryCharge.toLocaleString('en-IN')}` : 'Not set'}
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingDelivery(true)}
+                    className="text-xs text-[var(--color-forest)] hover:underline"
+                  >
+                    {order.deliveryCharge ? 'Edit' : 'Add'}
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Grand Total */}
+          <div className="flex justify-between text-lg font-semibold text-[var(--text-primary)] pt-2 border-t border-[var(--border-color)]">
+            <span>Total</span>
+            <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}</span>
+          </div>
         </div>
       </div>
 

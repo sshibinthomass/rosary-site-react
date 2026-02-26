@@ -174,6 +174,23 @@ export async function updateOrderCustomer(orderId, customerData) {
 }
 
 /**
+ * Update delivery charge on an order (admin)
+ */
+export async function updateDeliveryCharge(orderId, deliveryCharge) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, orderId);
+    await updateDoc(docRef, {
+      deliveryCharge: deliveryCharge,
+      updatedAt: serverTimestamp()
+    });
+    return { id: orderId, deliveryCharge };
+  } catch (error) {
+    console.error('Error updating delivery charge:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate order page URL
  */
 export function getOrderUrl(docId) {

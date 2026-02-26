@@ -370,7 +370,7 @@ export default function AccountPage() {
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{wishlist.length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Saved</p>
         </div>
-        <NavLink to={user ? `/admin/users?highlight=${user.uid}` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
+        <NavLink to={user ? `/orders` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
           <span className="text-3xl">📦</span>
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
             {userOrders.filter(o => o.status !== 'pending' && o.status !== 'cancelled').length}

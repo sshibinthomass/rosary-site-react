@@ -4,13 +4,14 @@ import { NavLink } from 'react-router-dom';
 import { getAllUsers, getUserProfile } from '../services/userService';
 import { getCart } from '../services/cartService';
 import { getWishlist } from '../services/wishlistService';
+import { getOrdersByUserId } from '../services/orderService';
 import { CURRENCY } from '../config/constants';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [userData, setUserData] = useState({ cart: [], wishlist: [], profile: null, loading: false });
+  const [userData, setUserData] = useState({ cart: [], wishlist: [], orders: [], profile: null, loading: false });
 
   useEffect(() => {
     loadUsers();
@@ -29,15 +30,16 @@ export default function AdminUsersPage() {
 
   const handleViewUser = async (user) => {
     setSelectedUser(user);
-    setUserData({ cart: [], wishlist: [], profile: null, loading: true });
+    setUserData({ cart: [], wishlist: [], orders: [], profile: null, loading: true });
     
     try {
-      const [cart, wishlist, profile] = await Promise.all([
+      const [cart, wishlist, profile, orders] = await Promise.all([
         getCart(user.uid),
         getWishlist(user.uid),
-        getUserProfile(user.uid)
+        getUserProfile(user.uid),
+        getOrdersByUserId(user.uid)
       ]);
-      setUserData({ cart, wishlist, profile, loading: false });
+      setUserData({ cart, wishlist, profile, orders, loading: false });
     } catch (error) {
       console.error('Failed to load user data', error);
       setUserData(prev => ({ ...prev, loading: false }));
@@ -230,6 +232,61 @@ export default function AdminUsersPage() {
                          </div>
                        )}
                     </div>
+                  </div>
+
+                  {/* USER ORDERS */}
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <span>📦</span> Orders ({userData.orders.length})
+                    </h3>
+                    {userData.orders.length === 0 ? (
+                      <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-xl">
+                        <p className="text-[var(--text-secondary)]">No orders yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {userData.orders.map(order => {
+                          const statusColors = {
+                            pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                            confirmed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                            shipped: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+                            delivered: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                            cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                          };
+                          const created = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+                          const dateStr = created.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                          return (
+                            <NavLink
+                              key={order.id}
+                              to={`/order/${order.id}`}
+                              onClick={() => setSelectedUser(null)}
+                              className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-mono text-sm font-semibold text-[var(--color-forest)] truncate">
+                                  {order.orderId}
+                                </p>
+                                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                                  {dateStr} · {order.totalItems} items
+                                </p>
+                              </div>
+                              <div className="text-right flex-shrink-0 ml-3">
+                                <span className={`badge ${statusColors[order.status] || 'bg-gray-100 text-gray-700'} capitalize text-xs`}>
+                                  {order.status}
+                                </span>
+                                <p className="font-semibold text-[var(--text-primary)] text-sm mt-1">
+                                  {CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}
+                                </p>
+                              </div>
+                            </NavLink>
+                          );
+                        })}
+                        <div className="flex justify-between font-bold pt-2 text-[var(--text-primary)]">
+                          <span>Total Revenue</span>
+                          <span>{CURRENCY}{userData.orders.reduce((s, o) => s + (o.totalAmount || 0) + (o.deliveryCharge || 0), 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

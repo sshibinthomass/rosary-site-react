@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -139,6 +140,7 @@ export async function getAllOrders() {
   }
 }
 
+
 /**
  * Update order status (admin)
  */
@@ -191,6 +193,27 @@ export async function updateDeliveryCharge(orderId, deliveryCharge) {
 }
 
 /**
+ * Update order items and recalculate totals (admin)
+ */
+export async function updateOrderItems(orderId, items) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, orderId);
+    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    await updateDoc(docRef, {
+      items,
+      totalAmount,
+      totalItems,
+      updatedAt: serverTimestamp()
+    });
+    return { id: orderId, items, totalAmount, totalItems };
+  } catch (error) {
+    console.error('Error updating order items:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate order page URL
  */
 export function getOrderUrl(docId) {
@@ -201,3 +224,16 @@ export function getOrderUrl(docId) {
   return `${baseUrl}/rosary-site-react/order/${docId}`;
 }
 
+/**
+ * Delete an order (admin)
+ */
+export async function deleteOrder(orderId) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, orderId);
+    await deleteDoc(docRef);
+    return { id: orderId };
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error;
+  }
+}

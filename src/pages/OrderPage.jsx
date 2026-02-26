@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
-import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge } from '../services/orderService';
+import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateOrderItems } from '../services/orderService';
+import { getProductById } from '../services/productService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
+import OrderItemEditor from '../components/OrderItemEditor';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -26,6 +28,15 @@ export default function OrderPage() {
   const [deliveryInput, setDeliveryInput] = useState('');
   const [savingDelivery, setSavingDelivery] = useState(false);
 
+  // Name toggle state (admin only)
+  const [showTitle, setShowTitle] = useState(false);
+  const [productNames, setProductNames] = useState({}); // { productId: { title, commonName } }
+  const [loadingNames, setLoadingNames] = useState(false);
+
+  // Item editing state
+  const [editingItems, setEditingItems] = useState(false);
+  const [savingItems, setSavingItems] = useState(false);
+
   useEffect(() => {
     if (orderId) {
       loadOrder();
@@ -39,6 +50,9 @@ export default function OrderPage() {
         setOrder(orderData);
         setEditCustomer(orderData.customer || {});
         setDeliveryInput(orderData.deliveryCharge?.toString() || '');
+
+        // Fetch product names for admin toggle
+        fetchProductNames(orderData.items);
       } else {
         setError('Order not found');
       }
@@ -53,6 +67,37 @@ export default function OrderPage() {
   // Check if current user is the order owner
   const isOrderOwner = user && order?.customer?.userId && user.uid === order.customer.userId;
   const canEditCustomer = isAdmin || isOrderOwner;
+
+  // Fetch product names for toggle
+  const fetchProductNames = async (items) => {
+    try {
+      const names = {};
+      for (const item of items) {
+        const product = await getProductById(item.productId);
+        if (product) {
+          names[item.productId] = {
+            title: product.title || item.name,
+            commonName: product.commonName || product.name || item.name
+          };
+        } else {
+          names[item.productId] = { title: item.name, commonName: item.name };
+        }
+      }
+      setProductNames(names);
+    } catch (err) {
+      console.error('Failed to load product names:', err);
+    }
+  };
+
+  const handleToggleNames = () => {
+    setShowTitle(prev => !prev);
+  };
+
+  const getItemName = (item) => {
+    const names = productNames[item.productId];
+    if (!names) return item.name;
+    return showTitle ? names.title : names.commonName;
+  };
 
   const handleStatusUpdate = async (newStatus) => {
     setUpdatingStatus(true);
@@ -98,6 +143,21 @@ export default function OrderPage() {
       showError('Failed to update delivery charge');
     } finally {
       setSavingDelivery(false);
+    }
+  };
+
+  const handleSaveItems = async (newItems) => {
+    setSavingItems(true);
+    try {
+      const result = await updateOrderItems(order.id, newItems);
+      setOrder(prev => ({ ...prev, items: newItems, totalAmount: result.totalAmount, totalItems: result.totalItems }));
+      setEditingItems(false);
+      fetchProductNames(newItems);
+      success('Order items updated!');
+    } catch (err) {
+      showError('Failed to update items');
+    } finally {
+      setSavingItems(false);
     }
   };
 
@@ -189,7 +249,36 @@ export default function OrderPage() {
 
       {/* Items */}
       <div className="card p-4 mb-4">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-3">Items ({order.totalItems})</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-[var(--text-primary)]">Items ({order.totalItems})</h2>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => setEditingItems(!editingItems)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${editingItems ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                {editingItems ? '✕ Cancel' : '✏️ Edit Items'}
+              </button>
+            )}
+            {isAdmin && !editingItems && (
+              <button
+                onClick={handleToggleNames}
+                className={`
+                  text-xs px-3 py-1.5 rounded-lg font-medium transition-all
+                  ${showTitle
+                    ? 'bg-[var(--color-forest)] text-white'
+                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }
+                `}
+              >
+                {showTitle ? '📖 Title' : '🏷️ Common Name'}
+              </button>
+            )}
+          </div>
+        </div>
+        {editingItems && isAdmin ? (
+          <OrderItemEditor items={order.items} onSave={handleSaveItems} saving={savingItems} />
+        ) : (
         <div className="space-y-3">
           {order.items.map((item, index) => (
             <div key={index} className="flex gap-3 pb-3 border-b border-[var(--border-color)] last:border-0 last:pb-0">
@@ -204,7 +293,7 @@ export default function OrderPage() {
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-[var(--text-primary)] truncate">
-                  {index + 1}. {item.name}
+                  {index + 1}. {getItemName(item)}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
@@ -213,6 +302,7 @@ export default function OrderPage() {
             </div>
           ))}
         </div>
+        )}
         
         <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-2">
           <div className="flex justify-between text-sm text-[var(--text-secondary)]">

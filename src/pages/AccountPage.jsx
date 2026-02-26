@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
+import { getOrdersByUserId } from '../services/orderService';
 import { NavLink } from 'react-router-dom';
 
 export default function AccountPage() {
@@ -25,6 +26,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [sameAsPhone, setSameAsPhone] = useState(false);
+  const [userOrders, setUserOrders] = useState([]);
 
   // Sync whatsapp when "same as phone" is checked
   useEffect(() => {
@@ -42,7 +44,11 @@ export default function AccountPage() {
 
   const loadProfile = async () => {
     try {
-      const data = await getUserProfile(user.uid);
+      const [data, orders] = await Promise.all([
+        getUserProfile(user.uid),
+        getOrdersByUserId(user.uid)
+      ]);
+      setUserOrders(orders || []);
       if (data) {
         setProfile({
           name: data.name || user.displayName || '',
@@ -346,17 +352,24 @@ export default function AccountPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 mt-4">
-        <div className="card p-4 text-center">
+      <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className="card p-3 text-center">
           <span className="text-3xl">🛒</span>
-          <p className="text-2xl font-bold text-[var(--text-primary)] mt-2">{cart.length}</p>
-          <p className="text-sm text-[var(--text-secondary)]">Cart Items</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{cart.length}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Cart Items</p>
         </div>
-        <div className="card p-4 text-center">
+        <div className="card p-3 text-center">
           <span className="text-3xl">💚</span>
-          <p className="text-2xl font-bold text-[var(--text-primary)] mt-2">{wishlist.length}</p>
-          <p className="text-sm text-[var(--text-secondary)]">Saved</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{wishlist.length}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Saved</p>
         </div>
+        <NavLink to={user ? `/admin/users?highlight=${user.uid}` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
+          <span className="text-3xl">📦</span>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
+            {userOrders.filter(o => o.status !== 'pending' && o.status !== 'cancelled').length}
+          </p>
+          <p className="text-xs text-[var(--text-secondary)]">My Orders</p>
+        </NavLink>
       </div>
  
       {/* Help & Support (Already added below in previous steps) */}

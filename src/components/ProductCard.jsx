@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
-export default function ProductCard({ product, onQuickView }) {
+const ProductCard = memo(function ProductCard({ product, onQuickView }) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
   const { error } = useToast();
@@ -56,21 +56,21 @@ export default function ProductCard({ product, onQuickView }) {
           loading="lazy"
         />
         
-        {/* Discount Badge */}
+        {/* Discount Badge — top right */}
         {hasDiscount && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-[var(--color-terracotta)] text-white text-[10px] md:text-xs font-bold rounded-lg">
+          <div className="absolute top-2 right-2 px-2 py-1 bg-[var(--color-terracotta)] text-white text-[10px] md:text-xs font-bold rounded-lg">
             -{discountPercent}%
           </div>
         )}
         
-        {/* Stock Badge */}
+        {/* Stock Badge — top left */}
         {!inStock && (
           <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
             Out of Stock
           </div>
         )}
         
-        {/* Restocked Badge */}
+        {/* Restocked Badge — top left */}
         {product.isRestocked && inStock && (
           <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
             Back in Stock!
@@ -78,7 +78,7 @@ export default function ProductCard({ product, onQuickView }) {
         )}
         
         {/* Category Badge */}
-        <div className="absolute bottom-2 left-2 badge badge-forest text-[10px]">
+        <div className="absolute bottom-2 left-2 px-2 py-1 bg-[var(--color-forest)] text-white text-[10px] md:text-xs font-semibold rounded-lg shadow-md">
           {product.category}
         </div>
 
@@ -109,7 +109,7 @@ export default function ProductCard({ product, onQuickView }) {
             <span className="truncate">{name}</span>
             {product.size && (
               <span className="text-[var(--text-secondary)] text-xs md:text-sm">
-                ({product.size})
+                {product.size}
               </span>
             )}
           </div>
@@ -125,27 +125,30 @@ export default function ProductCard({ product, onQuickView }) {
           </div>
         </div>
 
-        {/* Line 2: Transit, Category, Water, Sun */}
-        <div className="flex flex-wrap gap-1 text-[10px] md:text-[11px] text-[var(--text-secondary)]">
+        {/* Line 2: Water, Sun, Transit tiles */}
+        <div className="flex flex-wrap gap-1.5">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
+            <span className="text-sm">💧</span>
+            <div>
+              <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Water</p>
+              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.watering || 'Med'}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
+            <span className="text-sm">☀️</span>
+            <div>
+              <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Sun</p>
+              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.sunlight || 'Med'}</p>
+            </div>
+          </div>
           {product.transit && (
-            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              Transit: {product.transit}
-            </span>
-          )}
-          {product.category && (
-            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              {product.category}
-            </span>
-          )}
-          {product.watering && (
-            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              💧 {product.watering}
-            </span>
-          )}
-          {product.sunlight && (
-            <span className="px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)]">
-              ☀️ {product.sunlight}
-            </span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
+              <span className="text-sm">📦</span>
+              <div>
+                <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Ship</p>
+                <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.transit}</p>
+              </div>
+            </div>
           )}
         </div>
         
@@ -199,4 +202,6 @@ export default function ProductCard({ product, onQuickView }) {
       </div>
     </div>
   );
-}
+});
+
+export default ProductCard;

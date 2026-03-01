@@ -34,17 +34,19 @@ export default function AdminOrdersPage() {
       const allProductIds = new Set();
       data.forEach(o => o.items?.forEach(item => allProductIds.add(item.productId)));
       const names = {};
-      for (const pid of allProductIds) {
-        try {
-          const product = await getProductById(pid);
-          if (product) {
-            names[pid] = {
-              title: product.title || product.name,
-              commonName: product.commonName || product.name
-            };
-          }
-        } catch (e) { /* skip */ }
-      }
+      await Promise.all(
+        Array.from(allProductIds).map(async (pid) => {
+          try {
+            const product = await getProductById(pid);
+            if (product) {
+              names[pid] = {
+                title: product.title || product.name,
+                commonName: product.commonName || product.name
+              };
+            }
+          } catch (e) { /* skip */ }
+        })
+      );
       setProductNames(names);
     } catch (err) {
       console.error('Error loading orders:', err);

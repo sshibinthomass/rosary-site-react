@@ -383,6 +383,13 @@ export default function AccountPage() {
 
       {/* Help & Support */}
       <div className="card p-4 mt-3 space-y-3">
+        <NavLink to="/reviews" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">⭐</span>
+            <span className="font-medium">Reviews</span>
+          </div>
+          <span className="text-[var(--text-secondary)]">›</span>
+        </NavLink>
         <NavLink to="/faq" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
           <div className="flex items-center gap-3">
             <span className="text-xl">🤔</span>

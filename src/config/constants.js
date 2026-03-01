@@ -20,6 +20,10 @@ export const CATEGORIES = [
   'Haworthia',
   'Creeper',
   'Sansevieria',
+  'Indoor',
+  'Hanging',
+  'Mother',
+  'Combo',
   'Others'
 ];
 
@@ -40,8 +44,11 @@ export const DEMAND_LEVELS = [
 // Qty Available options
 export const QTY_AVAILABLE_OPTIONS = ['Available', 'Low', 'NA'];
 
-// Transit, Watering, Sunlight options (same for all three)
+// Transit, Watering, Sunlight options
 export const CARE_LEVELS = ['Low', 'Moderate', 'High', 'Not Specific'];
+export const WATERING_LEVELS = CARE_LEVELS;
+export const SUNLIGHT_LEVELS = CARE_LEVELS;
+export const TRANSIT_LEVELS = CARE_LEVELS;
 
 // Place Available options
 export const PLACE_OPTIONS = ['Top', 'Down', 'Both'];

@@ -8,20 +8,73 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy 
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 const COLLECTION_NAME = 'products';
 
+// In-memory cache keyed by category (null = 'All'). Cleared on page refresh.
+const productCache = new Map();
+
+/** Call this after adding/updating/deleting products to keep the cache fresh. */
+export function clearProductCache() {
+  productCache.clear();
+}
+
+/**
+ * Fast first-page fetch using Firestore limit().
+ * Fetches pageSize+1 docs — the extra one tells us if more exist
+ * without needing a separate count query.
+ * Returns { products: [...], hasMore: boolean }
+ */
+export async function getProductsPage(category = null, pageSize = 20) {
+  try {
+    const constraints = [where('available', '==', true), limit(pageSize + 1)];
+    if (category && category !== 'All') {
+      const lowerCategory = category.toLowerCase();
+      if (['indoor', 'hanging', 'mother', 'combo'].includes(lowerCategory)) {
+        constraints.unshift(where(lowerCategory, '==', true));
+      } else {
+        constraints.unshift(where('category', '==', category));
+      }
+    }
+    const q = query(collection(db, COLLECTION_NAME), ...constraints);
+    const snapshot = await getDocs(q);
+    const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const hasMore = all.length > pageSize;
+    // Slice to pageSize then sort numerically by ID
+    const products = all
+      .slice(0, pageSize)
+      .sort((a, b) => parseInt(a.id) - parseInt(b.id));
+    return { products, hasMore };
+  } catch (error) {
+    console.error('Error getting products page:', error);
+    throw error;
+  }
+}
+
 // Get all products (for customers - only available products)
 export async function getProducts(category = null) {
+  const cacheKey = category || 'All';
+
+  // Return cached result if available
+  if (productCache.has(cacheKey)) {
+    return productCache.get(cacheKey);
+  }
+
   try {
     let q = collection(db, COLLECTION_NAME);
     
     // Build query with available filter
     if (category && category !== 'All') {
-      q = query(q, where('category', '==', category), where('available', '==', true));
+      const lowerCategory = category.toLowerCase();
+      if (['indoor', 'hanging', 'mother', 'combo'].includes(lowerCategory)) {
+        q = query(q, where(lowerCategory, '==', true), where('available', '==', true));
+      } else {
+        q = query(q, where('category', '==', category), where('available', '==', true));
+      }
     } else {
       q = query(q, where('available', '==', true));
     }
@@ -32,7 +85,11 @@ export async function getProducts(category = null) {
       ...doc.data()
     }));
     // Sort by ID (numeric)
-    return products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+    const sorted = products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+    // Store in cache
+    productCache.set(cacheKey, sorted);
+    return sorted;
   } catch (error) {
     console.error('Error getting products:', error);
     throw error;

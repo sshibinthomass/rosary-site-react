@@ -31,8 +31,10 @@ function DescriptionBlock({ text }) {
   );
 }
 
-export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart }) {
+export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart, inWishlist, onToggleWishlist }) {
   const modalRef = useRef(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addedFeedback, setAddedFeedback] = useState(false);
 
   // Normalize product fields
   const title = product?.title || product?.name || product?.commonName;
@@ -42,6 +44,13 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
   const hasDiscount = originalPrice && originalPrice > price;
   const discountPercent = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
+  const plantId = product?.displayId || product?.serialNo || product?.serial || product?.index || product?.id;
+
+  // Reset quantity when product changes
+  useEffect(() => {
+    setQuantity(1);
+    setAddedFeedback(false);
+  }, [product?.id]);
 
   useEffect(() => {
     if (isOpen) {
@@ -63,6 +72,15 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   }, [onClose]);
 
   if (!isOpen || !product) return null;
+
+  const handleAddToCart = () => {
+    if (!inStock) return;
+    onAddToCart({ ...product, id: product.id, name: title, price }, quantity);
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 1500);
+  };
+
+  const totalPrice = (price * quantity).toLocaleString('en-IN');
 
   // Use createPortal to render modal at document.body level
   return createPortal(
@@ -96,10 +114,39 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
           />
           
           {/* ID Badge */}
-          <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2 py-1.5 bg-white/90 text-[var(--text-primary)] text-xs font-bold rounded-lg shadow-sm backdrop-blur-sm z-10">
-            #{product.id}
+          <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1.5 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-md z-10">
+            #{plantId}
           </div>
+
+          {/* Category Badge */}
+          {product.category && (
+            <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-10">
+              {product.category}
+            </div>
+          )}
           
+          {/* Wishlist Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleWishlist && onToggleWishlist(product); }}
+            title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            className={`absolute top-3 right-3 md:top-4 md:right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm
+              ${inWishlist
+                ? 'bg-rose-500 text-white scale-110'
+                : 'bg-white/80 text-[var(--text-secondary)] hover:bg-rose-50 hover:text-rose-500'
+              }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill={inWishlist ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth="2"
+              className="w-5 h-5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+            </svg>
+          </button>
+
           {hasDiscount && (
             <div className="absolute top-3 left-3 md:top-4 md:right-4 md:left-auto px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg shadow-sm z-10 w-auto h-auto min-w-[max-content]">
               -{discountPercent}% OFF
@@ -126,21 +173,17 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
           {/* Scrollable Details */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] leading-tight">{title}</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] leading-tight">
+                <span className="text-sm font-normal text-[var(--text-secondary)] mr-2">#{plantId}</span>{title}
+              </h2>
             </div>
 
-            {/* Category & Size */}
-            <div className="flex flex-wrap gap-2">
-              <span className="badge badge-forest text-xs py-1.5 px-3">{product.category}</span>
-              {product.size && (
+            {/* Size */}
+            {product.size && (
+              <div className="flex flex-wrap gap-2">
                 <span className="badge bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs py-1.5 px-3">{product.size}</span>
-              )}
-              {product.demand && (
-                <span className="badge bg-orange-50 text-orange-700 text-xs py-1.5 px-3 flex items-center gap-1 border border-orange-100">
-                  🔥 {product.demand} Demand
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Care Info Grid */}
             <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-3">
@@ -186,47 +229,84 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             {product.description && <DescriptionBlock text={product.description} />}
           </div>
 
-          {/* Footer (Price & Action) - Fixed at Bottom of Right Col */}
+          {/* Footer (Price, Quantity & Action) - Fixed at Bottom of Right Col */}
           <div className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-primary)] z-20 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
-                    {CURRENCY}{price?.toLocaleString('en-IN')}
+            {/* Price row */}
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
+                {CURRENCY}{totalPrice}
+              </span>
+              {hasDiscount && (
+                <span className="text-sm text-[var(--text-secondary)] line-through">
+                  {CURRENCY}{(originalPrice * quantity).toLocaleString('en-IN')}
+                </span>
+              )}
+              <span className="text-[10px] text-[var(--text-secondary)] font-medium ml-1">
+                (incl. taxes)
+              </span>
+            </div>
+
+            {/* Quantity stepper + Add to Cart row */}
+            <div className="flex items-center gap-3">
+              {/* Quantity Stepper — only show when not already in cart */}
+              {inStock && !inCart && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="w-9 h-9 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] font-bold text-lg flex items-center justify-center hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-40"
+                    disabled={quantity <= 1}
+                  >
+                    −
+                  </button>
+                  <span className="w-9 text-center text-sm font-semibold text-[var(--text-primary)]">
+                    {quantity}
                   </span>
-                  {hasDiscount && (
-                    <span className="text-sm text-[var(--text-secondary)] line-through">
-                      {CURRENCY}{originalPrice?.toLocaleString('en-IN')}
-                    </span>
-                  )}
+                  <button
+                    onClick={() => setQuantity(q => Math.min(99, q + 1))}
+                    className="w-9 h-9 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] font-bold text-lg flex items-center justify-center hover:bg-[var(--bg-tertiary)] transition-colors"
+                  >
+                    +
+                  </button>
                 </div>
-                <span className="text-[10px] md:text-xs text-[var(--text-secondary)] font-medium">Total Price (incl. taxes)</span>
-              </div>
-              
+              )}
+
+              {/* Add to Cart Button — flex-1 fills remaining space */}
               <button
-                onClick={() => {
-                  if (inStock) {
-                    onAddToCart({ ...product, id: product.id, name: title, price });
-                    onClose();
-                  }
-                }}
-                disabled={!inStock}
+                onClick={handleAddToCart}
+                disabled={!inStock || inCart}
                 className={`
-                  flex-1 max-w-[200px] h-12 md:h-14 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2
-                  ${inStock 
-                    ? 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                  flex-1 h-12 md:h-14 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2
+                  ${!inStock
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                    : inCart
+                      ? 'bg-green-600/10 text-green-600 border border-green-500/30 cursor-not-allowed'
+                      : addedFeedback
+                        ? 'bg-green-600 text-white scale-[0.98]'
+                        : 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] hover:shadow-xl hover:-translate-y-0.5'
                   }
                 `}
               >
-                 {inStock ? (
-                   <>
-                     <span>Add to Cart</span>
-                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                     </svg>
-                   </>
-                 ) : 'Out of Stock'}
+                {!inStock ? 'Out of Stock' : inCart ? (
+                  <>
+                    <span>In Cart</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>{addedFeedback ? 'Added!' : 'Add to Cart'}</span>
+                    {addedFeedback ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    )}
+                  </>
+                )}
               </button>
             </div>
           </div>

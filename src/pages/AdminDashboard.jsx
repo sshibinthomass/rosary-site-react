@@ -267,7 +267,7 @@ export default function AdminDashboard() {
       const originalPrice = product.originalPrice
         ? product.originalPrice.toString()
         : '';
-      const plantUrl = `${baseUrl}/rosary-site-react/plant/${product.id}`;
+      const plantUrl = `${baseUrl}/plant/${product.id}`;
 
       return `
         <div class="product-card">

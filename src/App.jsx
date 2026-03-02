@@ -35,15 +35,8 @@ function PageLoader() {
 }
 
 function App() {
-  const currentPath = window.location.pathname;
-  // If the user visits the root HTML file directly, we need to adapt the basename
-  // otherwise React Router fails to match the path and throws an error inside chunk-EPOLDU6W.mjs
-  const basename = currentPath === '/rosary-site-react.html' 
-    ? '/rosary-site-react.html' 
-    : '/rosary-site-react';
-
   return (
-    <BrowserRouter basename={basename}>
+    <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>

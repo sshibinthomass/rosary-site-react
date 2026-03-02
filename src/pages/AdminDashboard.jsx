@@ -257,6 +257,7 @@ export default function AdminDashboard() {
     }
 
     const generatedAt = new Date().toLocaleString('en-IN');
+    const baseUrl = window.location.origin;
 
     const productCards = availableProducts.map((product) => {
       const fullName = product.title || product.commonName || product.name || '';
@@ -266,6 +267,7 @@ export default function AdminDashboard() {
       const originalPrice = product.originalPrice
         ? product.originalPrice.toString()
         : '';
+      const plantUrl = `${baseUrl}/rosary-site-react/plant/${product.id}`;
 
       return `
         <div class="product-card">
@@ -278,7 +280,9 @@ export default function AdminDashboard() {
           </div>
           <div class="product-info">
             <div class="product-id">ID: ${product.id}</div>
-            <div class="product-name">${name}</div>
+            <div class="product-name">
+              <a href="${plantUrl}" target="_blank" rel="noopener noreferrer">${name}</a>
+            </div>
             <div class="product-price">
               ${originalPrice ? `<span class="price-original">${CURRENCY}${originalPrice}</span>` : ''}
               <span class="price-sales">${CURRENCY}${salesPrice}</span>
@@ -319,17 +323,12 @@ export default function AdminDashboard() {
               color: #4b5563;
             }
             .page {
-              min-height: 100vh;
-              display: flex;
-              flex-direction: column;
               page-break-after: always;
             }
             .page:last-of-type {
               page-break-after: auto;
             }
             .cover-page {
-              align-items: center;
-              justify-content: center;
               background: #ffffff;
             }
             .cover-card {
@@ -342,7 +341,6 @@ export default function AdminDashboard() {
               text-align: center;
               display: flex;
               flex-direction: column;
-              min-height: 80vh;
             }
             .brand-row {
               display: flex;
@@ -457,6 +455,10 @@ export default function AdminDashboard() {
               font-weight: 600;
               margin-bottom: 4px;
             }
+            .product-name a {
+              color: #064e3b;
+              text-decoration: underline;
+            }
             .product-price {
               font-size: 12px;
             }
@@ -485,6 +487,7 @@ export default function AdminDashboard() {
               </p>
               <p class="cover-note">
                 If this catalog is older than 3 days, please reach us to get the latest plants.
+                Click on the plant name to view the plant details.
               </p>
               <div class="footer footer--cover">
                 <div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -11,10 +11,42 @@ import ProductModal from '../components/ProductModal';
 
 export default function CartPage() {
   const { user } = useAuth();
-  const { cart, removeFromCart, updateQuantity, cartTotal, clearCart, addToCart, isInCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, addToCart, isInCart } = useCart();
   const { success, error } = useToast();
   const [selectedProduct, setSelectedProduct] = useState(null);
-  
+  const [productStockMap, setProductStockMap] = useState({});
+
+  useEffect(() => {
+    if (cart.length === 0) return;
+    const fetchStockData = async () => {
+      const map = {};
+      await Promise.all(
+        cart.map(async (item) => {
+          try {
+            const product = await getProductById(item.productId);
+            if (product) map[item.productId] = product;
+          } catch {}
+        })
+      );
+      setProductStockMap(map);
+    };
+    fetchStockData();
+  }, [cart]);
+
+  const isItemOutOfStock = useCallback((item) => {
+    const product = productStockMap[item.productId];
+    if (!product) return false;
+    return product.available === false || (product.qtyAvailable === 'NA' && !product.inStock);
+  }, [productStockMap]);
+
+  const outOfStockItems = cart.filter(isItemOutOfStock);
+  const hasOutOfStockItems = outOfStockItems.length > 0;
+  const inStockItems = cart.filter((item) => !isItemOutOfStock(item));
+  const inStockTotal = inStockItems.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+    0
+  );
+
   const [showCheckout, setShowCheckout] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
@@ -114,7 +146,7 @@ export default function CartPage() {
     // If not logged in, proceed directly
     if (!user) {
       try {
-        await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, null);
+        await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, null);
         clearCart();
         setShowCheckout(false);
         success('Order created successfully!');
@@ -148,7 +180,7 @@ export default function CartPage() {
     
     // Proceed with order
     try {
-      await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, user.uid);
+      await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, user.uid);
       clearCart();
       setShowCheckout(false);
       setShowSaveConfirm(false);
@@ -162,7 +194,7 @@ export default function CartPage() {
 
   const handleSkipSave = async () => {
     try {
-      await initiateWhatsAppCheckout(cart, cartTotal, checkoutInfo, user?.uid || null);
+      await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, user?.uid || null);
       clearCart();
       setShowCheckout(false);
       setShowSaveConfirm(false);
@@ -189,7 +221,7 @@ export default function CartPage() {
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-          Your Cart ({cart.length})
+          Your Cart ({inStockItems.length})
         </h1>
         <button
           onClick={clearCart}
@@ -199,10 +231,61 @@ export default function CartPage() {
         </button>
       </div>
 
+      {/* Out of Stock Warning Banner */}
+      {hasOutOfStockItems && (
+        <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-red-500 text-base">⚠️</span>
+            <div>
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                Some plants in your cart are out of stock
+              </p>
+              <p className="text-xs text-red-500 dark:text-red-400">
+                They are shown below and will not be included in your total or order.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2 mt-1">
+            {outOfStockItems.map((item) => (
+              <div
+                key={item.productId}
+                className="flex items-center gap-3 bg-red-100/60 dark:bg-red-900/40 rounded-lg p-2"
+              >
+                <div className="w-12 h-12 rounded-md overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+                  <img
+                    src={item.imageUrl || '/placeholder-plant.jpg'}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-red-900 dark:text-red-50 truncate">
+                    {item.productId}. {item.name}
+                  </p>
+                  <p className="text-[10px] text-red-700 dark:text-red-200">
+                    Out of stock – cannot be ordered
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeFromCart(item.productId)}
+                  className="text-[10px] text-red-700 hover:text-red-900 dark:text-red-200 dark:hover:text-white"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Cart Items */}
       <div className="space-y-3 mb-6">
-        {cart.map((item) => (
-          <div key={item.productId} className="card p-3 flex gap-3 cursor-pointer" onClick={() => handleItemClick(item)}>
+        {inStockItems.map((item) => (
+          <div
+            key={item.productId}
+            className="card p-3 flex gap-3 cursor-pointer"
+            onClick={() => handleItemClick(item)}
+          >
             {/* Image */}
             <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
               <img
@@ -261,7 +344,7 @@ export default function CartPage() {
       <div className="card p-4 space-y-3">
         <div className="flex justify-between text-[var(--text-primary)]">
           <span>Subtotal</span>
-          <span className="font-semibold">{CURRENCY}{cartTotal.toLocaleString('en-IN')}</span>
+          <span className="font-semibold">{CURRENCY}{inStockTotal.toLocaleString('en-IN')}</span>
         </div>
         <div className="flex justify-between text-[var(--text-secondary)] text-sm">
           <span>Shipping</span>
@@ -270,7 +353,7 @@ export default function CartPage() {
         <hr className="border-[var(--border-color)]" />
         <div className="flex justify-between text-[var(--text-primary)] text-lg">
           <span className="font-semibold">Total</span>
-          <span className="font-bold">{CURRENCY}{cartTotal.toLocaleString('en-IN')}</span>
+          <span className="font-bold">{CURRENCY}{inStockTotal.toLocaleString('en-IN')}</span>
         </div>
 
         {!showCheckout ? (

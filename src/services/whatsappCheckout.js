@@ -21,20 +21,24 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
     state = ''
   } = userInfo;
   
-  // Format cart items with numbered list and price calculations
+  // Format cart items with plant ID and price calculations
   const itemsList = cartItems
     .map((item, index) => {
       const subtotal = item.price * item.quantity;
-      return `${index + 1}. ${item.name}- ${CURRENCY}${item.price} * ${item.quantity} = ${CURRENCY}${subtotal}`;
+      const plantId = item.productId || item.id || index + 1;
+      return `${plantId}. ${item.name}- ${CURRENCY}${item.price} * ${item.quantity} = ${CURRENCY}${subtotal}`;
     })
     .join('\n');
   
   // Calculate total plants count
   const totalPlants = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
-  // Generate summary line (e.g., "1-2,2-1,3-1")
+  // Generate summary line using plant IDs (e.g., "10-4,13-1")
   const summaryLine = cartItems
-    .map((item, index) => `${index + 1}-${item.quantity}`)
+    .map((item, index) => {
+      const plantId = item.productId || item.id || index + 1;
+      return `${plantId}-${item.quantity}`;
+    })
     .join(',');
   
   // Format Full Address

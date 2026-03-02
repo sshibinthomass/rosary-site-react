@@ -1,22 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import { getProductById } from '../services/productService';
 
-const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick }) => {
+const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick, isOutOfStock }) => {
   const [quantity, setQuantity] = useState(1);
 
   return (
     <div className="card p-3 flex gap-3 cursor-pointer" onClick={() => onClick(item)}>
       {/* Image */}
-      <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+      <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0 relative">
         <img
           src={item.imageUrl || '/placeholder-plant.jpg'}
           alt={item.name}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${isOutOfStock ? 'opacity-50' : ''}`}
         />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+              Out of Stock
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Details */}
@@ -34,7 +41,7 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick }) => {
 
       {/* Actions */}
       <div className="flex flex-col gap-2 items-end">
-        {!inCart && (
+        {!inCart && !isOutOfStock && (
           <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-7 w-20" onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
@@ -52,19 +59,25 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick }) => {
           </div>
         )}
 
-        <button
-          onClick={(e) => { e.stopPropagation(); onMoveToCart(item, quantity); }}
-          disabled={inCart}
-          className={`
-            px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-24
-            ${inCart 
-              ? 'bg-[var(--color-forest)]/10 text-[var(--text-primary)]'
-              : 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]'
-            }
-          `}
-        >
-          {inCart ? 'In Cart' : 'Add to Cart'}
-        </button>
+        {isOutOfStock ? (
+          <span className="px-3 py-1.5 rounded-lg text-xs font-medium w-24 text-center bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400">
+            Out of Stock
+          </span>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMoveToCart(item, quantity); }}
+            disabled={inCart}
+            className={`
+              px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-24
+              ${inCart 
+                ? 'bg-[var(--color-forest)]/10 text-[var(--text-primary)]'
+                : 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]'
+              }
+            `}
+          >
+            {inCart ? 'In Cart' : 'Add to Cart'}
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(item.productId); }}
           className="text-red-500 hover:text-red-600 text-xs"
@@ -79,6 +92,30 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick }) => {
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist, addToCart, isInCart } = useCart();
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productStockMap, setProductStockMap] = useState({});
+
+  useEffect(() => {
+    if (wishlist.length === 0) return;
+    const fetchStockData = async () => {
+      const map = {};
+      await Promise.all(
+        wishlist.map(async (item) => {
+          try {
+            const product = await getProductById(item.productId);
+            if (product) map[item.productId] = product;
+          } catch {}
+        })
+      );
+      setProductStockMap(map);
+    };
+    fetchStockData();
+  }, [wishlist]);
+
+  const isItemOutOfStock = (item) => {
+    const product = productStockMap[item.productId];
+    if (!product) return false;
+    return product.available === false || (product.qtyAvailable === 'NA' && !product.inStock);
+  };
 
   if (wishlist.length === 0) {
     return (
@@ -147,6 +184,7 @@ export default function WishlistPage() {
             onRemove={removeFromWishlist}
             inCart={isInCart(item.productId)}
             onClick={handleItemClick}
+            isOutOfStock={isItemOutOfStock(item)}
           />
         ))}
       </div>

@@ -1,0 +1,22 @@
+{
+  "name": "Rosary Plant House",
+  "short_name": "Rosary Plants",
+  "description": "Premium succulents and indoor plants in India",
+  "start_url": "/rosary-site-react/",
+  "display": "standalone",
+  "background_color": "#fffbf0",
+  "theme_color": "#064e3b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

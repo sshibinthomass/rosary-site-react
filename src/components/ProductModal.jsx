@@ -35,6 +35,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   const modalRef = useRef(null);
   const [quantity, setQuantity] = useState(1);
   const [addedFeedback, setAddedFeedback] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Normalize product fields
   const title = product?.title || product?.name || product?.commonName;
@@ -50,6 +51,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   useEffect(() => {
     setQuantity(1);
     setAddedFeedback(false);
+    setActiveImageIndex(0);
   }, [product?.id]);
 
   useEffect(() => {
@@ -72,6 +74,20 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   }, [onClose]);
 
   if (!isOpen || !product) return null;
+
+  const imageList = Array.isArray(product?.imageUrls) && product.imageUrls.length > 0
+    ? product.imageUrls
+    : [product?.imageUrl || '/placeholder-plant.jpg'];
+
+  const hasMultipleImages = imageList.length > 1;
+
+  const handleNextImage = () => {
+    setActiveImageIndex((prev) => (prev + 1) % imageList.length);
+  };
+
+  const handlePrevImage = () => {
+    setActiveImageIndex((prev) => (prev - 1 + imageList.length) % imageList.length);
+  };
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -106,64 +122,111 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         </button>
 
         {/* LEFT: Image Section */}
-        <div className="relative w-full h-[35vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 group">
-          <img
-            src={product.imageUrl || '/placeholder-plant.jpg'}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* ID Badge */}
-          <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1.5 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-md z-10">
-            #{plantId}
+        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 flex flex-col">
+          {/* Main image area */}
+          <div className="relative flex-1 group">
+            <img
+              src={imageList[activeImageIndex]}
+              alt={title}
+              className="w-full h-full object-cover transition-transform duration-300"
+            />
+            
+            {/* ID Badge */}
+            <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1.5 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-md z-10">
+              #{plantId}
+            </div>
+
+            {/* Category Badge */}
+            {product.category && (
+              <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-10">
+                {product.category}
+              </div>
+            )}
+            
+            {/* Image navigation arrows (only when multiple images) */}
+            {hasMultipleImages && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
+                  className="absolute inset-y-0 left-0 flex items-center px-2 md:px-3 text-white/80 hover:text-white hover:bg-black/20 transition-colors"
+                >
+                  <span className="text-lg md:text-xl font-bold">‹</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
+                  className="absolute inset-y-0 right-0 flex items-center px-2 md:px-3 text-white/80 hover:text-white hover:bg-black/20 transition-colors"
+                >
+                  <span className="text-lg md:text-xl font-bold">›</span>
+                </button>
+              </>
+            )}
+            
+            {/* Wishlist Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWishlist && onToggleWishlist(product); }}
+              title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              className={`absolute top-3 right-3 md:top-4 md:right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm
+                ${inWishlist
+                  ? 'bg-rose-500 text-white scale-110'
+                  : 'bg-white/80 text-[var(--text-secondary)] hover:bg-rose-50 hover:text-rose-500'
+                }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={inWishlist ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth="2"
+                className="w-5 h-5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+              </svg>
+            </button>
+
+            {hasDiscount && (
+              <div className="absolute top-3 left-3 md:top-4 md:right-4 md:left-auto px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg shadow-sm z-10 w-auto h-auto min-w-[max-content]">
+                -{discountPercent}% OFF
+              </div>
+            )}
+            
+            {product.isRestocked && inStock && (
+              <div className="absolute top-12 left-3 md:top-14 md:left-4 px-2 py-1 bg-green-500 text-white text-[10px] font-medium rounded-lg shadow-sm z-10">
+                Restocked
+              </div>
+            )}
+            
+            {!inStock && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
+                 <div className="px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-full shadow-lg transform rotate-[-10deg]">
+                   Out of Stock
+                 </div>
+              </div>
+            )}
           </div>
 
-          {/* Category Badge */}
-          {product.category && (
-            <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-10">
-              {product.category}
-            </div>
-          )}
-          
-          {/* Wishlist Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleWishlist && onToggleWishlist(product); }}
-            title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-            className={`absolute top-3 right-3 md:top-4 md:right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm
-              ${inWishlist
-                ? 'bg-rose-500 text-white scale-110'
-                : 'bg-white/80 text-[var(--text-secondary)] hover:bg-rose-50 hover:text-rose-500'
-              }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill={inWishlist ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              strokeWidth="2"
-              className="w-5 h-5"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-            </svg>
-          </button>
-
-          {hasDiscount && (
-            <div className="absolute top-3 left-3 md:top-4 md:right-4 md:left-auto px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg shadow-sm z-10 w-auto h-auto min-w-[max-content]">
-              -{discountPercent}% OFF
-            </div>
-          )}
-          
-          {product.isRestocked && inStock && (
-            <div className="absolute top-12 left-3 md:top-14 md:left-4 px-2 py-1 bg-green-500 text-white text-[10px] font-medium rounded-lg shadow-sm z-10">
-              Restocked
-            </div>
-          )}
-          
-          {!inStock && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
-               <div className="px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-full shadow-lg transform rotate-[-10deg]">
-                 Out of Stock
-               </div>
+          {/* Thumbnails row */}
+          {hasMultipleImages && (
+            <div className="px-3 py-2 bg-[var(--bg-primary)]/80 border-t border-[var(--border-color)] flex gap-2 overflow-x-auto no-scrollbar">
+              {imageList.map((src, idx) => (
+                <button
+                  key={src + idx}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx); }}
+                  className={`relative w-14 h-14 rounded-lg overflow-hidden border transition-all flex-shrink-0 ${
+                    idx === activeImageIndex
+                      ? 'border-[var(--color-forest)] ring-2 ring-[var(--color-forest)]'
+                      : 'border-[var(--border-color)] hover:border-[var(--color-forest)]/70'
+                  }`}
+                >
+                  <img
+                    src={src}
+                    alt={`${title} thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
           )}
         </div>

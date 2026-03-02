@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { getProducts, getProductById } from '../services/productService';
+import { getLimitedPlants } from '../services/limitedService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { CATEGORIES } from '../config/constants';
@@ -41,8 +42,25 @@ export default function HomePage() {
     setLoading(true);
     setShowAll(false);
     try {
-      const data = await getProducts(selectedCategory === 'All' ? null : selectedCategory);
-      setProducts(data);
+      // For category pages, keep current behaviour and show only normal products
+      if (selectedCategory !== 'All') {
+        const data = await getProducts(selectedCategory);
+        setProducts(data);
+        return;
+      }
+
+      // For home (All), load limited plants and normal products, then show limited first
+      const [limited, normal] = await Promise.all([
+        getLimitedPlants(), // available-only by default
+        getProducts(null)
+      ]);
+
+      const limitedWithCategory = (limited || []).map((item) => ({
+        ...item,
+        category: item.category || 'Limited'
+      }));
+
+      setProducts([...limitedWithCategory, ...(normal || [])]);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {

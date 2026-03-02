@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -12,6 +13,8 @@ export default function AccountPage() {
   const { cart, wishlist } = useCart();
   const { success, error } = useToast();
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   const [profile, setProfile] = useState({
     name: '',
@@ -41,6 +44,16 @@ export default function AccountPage() {
       loadProfile();
     }
   }, [user]);
+
+  // After login, redirect back to requested page (e.g., order detail)
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(location.search);
+    const redirectPath = params.get('redirect');
+    if (redirectPath) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, location.search, navigate]);
 
   const loadProfile = async () => {
     try {

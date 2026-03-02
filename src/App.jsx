@@ -16,6 +16,7 @@ import HomePage from './pages/HomePage';
 const CartPage = lazy(() => import('./pages/CartPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
+const AdminHome = lazy(() => import('./pages/AdminHome'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
@@ -24,7 +25,10 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ReviewsPage = lazy(() => import('./pages/ReviewsPage'));
 const OrderPage = lazy(() => import('./pages/OrderPage'));
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'));
+const AdminCreateOrderPage = lazy(() => import('./pages/AdminCreateOrderPage'));
 const UserOrdersPage = lazy(() => import('./pages/UserOrdersPage'));
+const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
+const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 
 function PageLoader() {
   return (
@@ -84,7 +88,7 @@ function App() {
                       path="/admin" 
                       element={
                         <ProtectedRoute requireAdmin>
-                          <AdminDashboard />
+                          <AdminHome />
                         </ProtectedRoute>
                       } 
                     />
@@ -92,7 +96,7 @@ function App() {
                       path="/admin.html" 
                       element={
                         <ProtectedRoute requireAdmin>
-                          <AdminDashboard />
+                          <AdminHome />
                         </ProtectedRoute>
                       } 
                     />
@@ -125,6 +129,70 @@ function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <AdminOrdersPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/orders/new" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminCreateOrderPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/orders/new.html" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminCreateOrderPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/products" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminDashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/products.html" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminDashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/limited" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminLimitedPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/limited.html" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminLimitedPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/export" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminExportPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/export.html" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminExportPage />
                         </ProtectedRoute>
                       } 
                     />

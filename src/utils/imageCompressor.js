@@ -6,7 +6,7 @@
 const MAX_WIDTH = 800;
 const MAX_HEIGHT = 800;
 const QUALITY = 0.8;
-const MAX_SIZE_KB = 200;
+const MAX_SIZE_KB = 80;
 
 /**
  * Compress an image file

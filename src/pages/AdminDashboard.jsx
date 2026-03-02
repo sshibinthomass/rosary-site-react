@@ -23,6 +23,8 @@ const emptyProduct = {
   commonName: '',
   title: '',
   imageUrl: '',
+  imageUrls: [],
+  displayId: '',
   
   // Pricing
   salesPrice: '',
@@ -113,18 +115,31 @@ export default function AdminDashboard() {
   };
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
     setUploading(true);
     try {
-      const compressed = await compressImage(file);
-      const fileName = `products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-      const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, compressed);
-      const url = await getDownloadURL(storageRef);
-      setFormData(prev => ({ ...prev, imageUrl: url }));
-      success('Image uploaded!');
+      const urls = [];
+      for (const file of files) {
+        const compressed = await compressImage(file);
+        const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+        const fileName = `products/${Date.now()}_${safeName}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, compressed);
+        const url = await getDownloadURL(storageRef);
+        urls.push(url);
+      }
+
+      setFormData(prev => {
+        const nextImageUrls = [...(prev.imageUrls || []), ...urls];
+        return {
+          ...prev,
+          imageUrls: nextImageUrls,
+          imageUrl: nextImageUrls[0] || prev.imageUrl
+        };
+      });
+      success('Image(s) uploaded!');
     } catch (err) {
       error('Failed to upload image');
       console.error(err);
@@ -146,9 +161,31 @@ export default function AdminDashboard() {
       return;
     }
 
+    const trimmedDisplayId = (formData.displayId ?? '').toString().trim();
+    if (trimmedDisplayId) {
+      const normalizedNewId = trimmedDisplayId.toLowerCase();
+      const hasDuplicateId = products.some(p => {
+        if (editingProduct && p.id === editingProduct.id) return false;
+        const existingId = (p.displayId ?? p.id ?? '').toString().trim().toLowerCase();
+        return existingId === normalizedNewId;
+      });
+
+      if (hasDuplicateId) {
+        error('Plant ID must be unique. Another product already uses this ID.');
+        return;
+      }
+    }
+
     try {
       const productData = {
         ...formData,
+        imageUrls: formData.imageUrls && formData.imageUrls.length
+          ? formData.imageUrls
+          : (formData.imageUrl ? [formData.imageUrl] : []),
+        imageUrl: (formData.imageUrls && formData.imageUrls.length
+          ? formData.imageUrls[0]
+          : formData.imageUrl) || '',
+        displayId: trimmedDisplayId || null,
         salesPrice: parseFloat(formData.salesPrice),
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         qtyAvailable: formData.qtyAvailable ? parseInt(formData.qtyAvailable) : 0,
@@ -187,7 +224,9 @@ export default function AdminDashboard() {
     setFormData({
       commonName: product.commonName || product.name || '',
       title: product.title || '',
-      imageUrl: product.imageUrl || '',
+      imageUrl: product.imageUrl || (product.imageUrls && product.imageUrls[0]) || '',
+      imageUrls: product.imageUrls || (product.imageUrl ? [product.imageUrl] : []),
+      displayId: (product.displayId || product.id || '').toString(),
       salesPrice: (product.salesPrice || product.price || '').toString(),
       originalPrice: (product.originalPrice || '').toString(),
       available: product.available ?? product.inStock ?? true,
@@ -208,12 +247,12 @@ export default function AdminDashboard() {
     setActiveTab('basic');
   };
 
-  const handleDelete = async (productId) => {
+  const handleDelete = async (product) => {
     if (!confirm('Delete this product?')) return;
     
     try {
-      await deleteProduct(productId);
-      setProducts(prev => prev.filter(p => p.id !== productId));
+      await deleteProduct(product.id, product.imageUrl);
+      setProducts(prev => prev.filter(p => p.id !== product.id));
       success('Product deleted!');
     } catch (err) {
       error('Failed to delete product');
@@ -566,13 +605,10 @@ export default function AdminDashboard() {
   return (
     <div className="animate-fade-in pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-        <h1 className="text-xl font-semibold text-[var(--color-forest)]">Admin Dashboard</h1>
+        <h1 className="text-xl font-semibold text-[var(--color-forest)]">Products</h1>
         <div className="flex flex-wrap gap-2">
-          <NavLink to="/admin/orders" className="btn btn-secondary text-sm flex items-center gap-2">
-            <span>📋</span> Orders
-          </NavLink>
-          <NavLink to="/admin/users" className="btn btn-secondary text-sm flex items-center gap-2">
-            <span>👥</span> Users
+          <NavLink to="/admin" className="btn btn-secondary text-sm">
+            ← Back
           </NavLink>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -644,12 +680,42 @@ export default function AdminDashboard() {
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">
-                  Product Image
+                  Product Images
                 </label>
+                <div className="flex flex-wrap gap-3 mb-2">
+                  {(formData.imageUrls || []).map((url, idx) => (
+                    <div
+                      key={url + idx}
+                      className="relative w-14 h-14 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]"
+                    >
+                      <img
+                        src={url}
+                        alt={`Product ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData(prev => {
+                            const next = (prev.imageUrls || []).filter(u => u !== url);
+                            return {
+                              ...prev,
+                              imageUrls: next,
+                              imageUrl: next[0] || ''
+                            };
+                          })
+                        }
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
                 <div className="flex items-center gap-4">
                   {formData.imageUrl && (
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]">
-                      <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={formData.imageUrl} alt="Primary preview" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -657,6 +723,7 @@ export default function AdminDashboard() {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={handleImageUpload}
                       className="hidden"
                       id="image-upload"
@@ -665,17 +732,34 @@ export default function AdminDashboard() {
                       htmlFor="image-upload"
                       className={`btn btn-secondary text-sm cursor-pointer ${uploading ? 'opacity-50' : ''}`}
                     >
-                      {uploading ? 'Uploading...' : 'Choose Image'}
+                      {uploading ? 'Uploading...' : 'Choose image files'}
                     </label>
                   </div>
                 </div>
                 <input
                   type="text"
-                  placeholder="Or paste image URL"
+                  placeholder="Or paste primary image URL"
                   value={formData.imageUrl}
-                  onChange={(e) => updateField('imageUrl', e.target.value)}
+                  onChange={(e) =>
+                    setFormData(prev => {
+                      const url = e.target.value;
+                      const existing = prev.imageUrls || [];
+                      const next =
+                        url && (existing.length === 0 || existing[0] !== url)
+                          ? [url, ...existing.slice(1)]
+                          : existing;
+                      return {
+                        ...prev,
+                        imageUrl: url,
+                        imageUrls: next
+                      };
+                    })
+                  }
                   className="input mt-2 text-sm"
                 />
+                <p className="mt-1 text-xs text-[var(--color-forest)]/60">
+                  First image will be shown on cards. You can upload multiple photos.
+                </p>
               </div>
 
               {/* Common Name */}
@@ -705,6 +789,23 @@ export default function AdminDashboard() {
                   className="input"
                   placeholder="e.g. Beautiful Mexican Snowball"
                 />
+              </div>
+
+              {/* Plant ID */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">
+                  Plant ID
+                </label>
+                <input
+                  type="text"
+                  value={formData.displayId}
+                  onChange={(e) => updateField('displayId', e.target.value)}
+                  className="input"
+                  placeholder="Unique ID shown as # on cards"
+                />
+                <p className="text-xs text-[var(--color-forest)]/60 mt-1">
+                  This should be unique across all plants.
+                </p>
               </div>
 
               {/* Category & Size */}
@@ -972,13 +1073,6 @@ export default function AdminDashboard() {
           Products ({filteredProducts.length})
         </h2>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleExportAvailableAsPdf}
-            className="btn btn-secondary text-xs sm:text-sm"
-          >
-            Export available as PDF
-          </button>
           <select
             value={availabilityFilter}
             onChange={(e) => setAvailabilityFilter(e.target.value)}
@@ -1142,7 +1236,33 @@ export default function AdminDashboard() {
                   {activeTab === 'others' && (
                     <div className="space-y-4 animate-fade-in">
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Product Image</label>
+                        <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Product Images</label>
+                        <div className="flex flex-wrap gap-3 mb-2">
+                          {(formData.imageUrls || []).map((url, idx) => (
+                            <div
+                              key={url + idx}
+                              className="relative w-14 h-14 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]"
+                            >
+                              <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData(prev => {
+                                    const next = (prev.imageUrls || []).filter(u => u !== url);
+                                    return {
+                                      ...prev,
+                                      imageUrls: next,
+                                      imageUrl: next[0] || ''
+                                    };
+                                  })
+                                }
+                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                         <div className="flex items-center gap-4">
                           {formData.imageUrl && (
                             <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]">
@@ -1150,18 +1270,66 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="flex-1">
-                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload-inline-others" />
-                            <label htmlFor="image-upload-inline-others" className={`btn btn-secondary text-sm cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
-                              {uploading ? 'Uploading...' : 'Choose Image'}
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageUpload}
+                              className="hidden"
+                              id="image-upload-inline-others"
+                            />
+                            <label
+                              htmlFor="image-upload-inline-others"
+                              className={`btn btn-secondary text-sm cursor-pointer ${uploading ? 'opacity-50' : ''}`}
+                            >
+                              {uploading ? 'Uploading...' : 'Choose image files'}
                             </label>
                           </div>
                         </div>
-                        <input type="text" placeholder="Or paste image URL" value={formData.imageUrl} onChange={(e) => updateField('imageUrl', e.target.value)} className="input mt-2 text-sm" />
+                        <input
+                          type="text"
+                          placeholder="Or paste primary image URL"
+                          value={formData.imageUrl}
+                          onChange={(e) =>
+                            setFormData(prev => {
+                              const url = e.target.value;
+                              const existing = prev.imageUrls || [];
+                              const next =
+                                url && (existing.length === 0 || existing[0] !== url)
+                                  ? [url, ...existing.slice(1)]
+                                  : existing;
+                              return {
+                                ...prev,
+                                imageUrl: url,
+                                imageUrls: next
+                              };
+                            })
+                          }
+                          className="input mt-2 text-sm"
+                        />
+                        <p className="mt-1 text-xs text-[var(--color-forest)]/60">
+                          First image will be used as the main photo.
+                        </p>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Title/Display Name</label>
                         <input type="text" value={formData.title} onChange={(e) => updateField('title', e.target.value)} className="input" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Plant ID</label>
+                        <input
+                          type="text"
+                          value={formData.displayId}
+                          onChange={(e) => updateField('displayId', e.target.value)}
+                          className="input"
+                          placeholder="Unique ID shown as # on cards"
+                        />
+                        <p className="text-xs text-[var(--color-forest)]/60 mt-1">
+                          Must be unique across all plants.
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1252,7 +1420,7 @@ export default function AdminDashboard() {
                         <div className="pt-4 border-t border-red-500/10">
                           <button
                             type="button"
-                            onClick={() => { resetForm(); handleDelete(product.id); }}
+                            onClick={() => { resetForm(); handleDelete(product); }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-medium transition-colors"
                           >
                             🗑️ Delete Product permanently

@@ -1,17 +1,18 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  getDocs,
   getDoc,
-  addDoc, 
-  updateDoc, 
+  addDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
   orderBy,
   limit
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 
 const COLLECTION_NAME = 'products';
 
@@ -131,12 +132,20 @@ export async function getProductById(productId) {
 // Add new product (Admin only)
 export async function addProduct(productData) {
   try {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    const normalized = {
       ...productData,
+      imageUrls: Array.isArray(productData.imageUrls) && productData.imageUrls.length
+        ? productData.imageUrls
+        : (productData.imageUrl ? [productData.imageUrl] : []),
+    };
+    normalized.imageUrl = normalized.imageUrls.length ? normalized.imageUrls[0] : (productData.imageUrl || '');
+
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      ...normalized,
       createdAt: new Date(),
       updatedAt: new Date()
     });
-    return { id: docRef.id, ...productData };
+    return { id: docRef.id, ...normalized };
   } catch (error) {
     console.error('Error adding product:', error);
     throw error;
@@ -146,21 +155,38 @@ export async function addProduct(productData) {
 // Update product (Admin only)
 export async function updateProduct(productId, productData) {
   try {
+    const normalized = {
+      ...productData,
+      imageUrls: Array.isArray(productData.imageUrls) && productData.imageUrls.length
+        ? productData.imageUrls
+        : (productData.imageUrl ? [productData.imageUrl] : []),
+    };
+    normalized.imageUrl = normalized.imageUrls.length ? normalized.imageUrls[0] : (productData.imageUrl || '');
+
     const docRef = doc(db, COLLECTION_NAME, productId);
     await updateDoc(docRef, {
-      ...productData,
+      ...normalized,
       updatedAt: new Date()
     });
-    return { id: productId, ...productData };
+    return { id: productId, ...normalized };
   } catch (error) {
     console.error('Error updating product:', error);
     throw error;
   }
 }
 
-// Delete product (Admin only)
-export async function deleteProduct(productId) {
+// Delete product (Admin only). Also deletes associated image from Storage if provided.
+export async function deleteProduct(productId, imageUrl) {
   try {
+    if (imageUrl) {
+      try {
+        const imageRef = ref(storage, imageUrl);
+        await deleteObject(imageRef);
+      } catch (storageError) {
+        console.warn('Error deleting product image from Storage:', storageError);
+      }
+    }
+
     const docRef = doc(db, COLLECTION_NAME, productId);
     await deleteDoc(docRef);
     return productId;

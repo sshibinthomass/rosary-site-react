@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
           <span className="badge badge-forest">{users.length} Users</span>
         </div>
         <NavLink to="/admin" className="btn btn-secondary text-sm">
-          ← Back to Dashboard
+          ← Back
         </NavLink>
       </div>
 

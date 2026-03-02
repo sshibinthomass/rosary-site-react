@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAllProducts } from '../services/productService';
+import { getLimitedPlants } from '../services/limitedService';
 import { CURRENCY } from '../config/constants';
 
 /**
@@ -7,8 +8,9 @@ import { CURRENCY } from '../config/constants';
  * @param {Array} items - Current order items
  * @param {Function} onSave - Callback when items are saved (receives updated items array)
  * @param {boolean} saving - Whether save is in progress
+ * @param {Function} [onChange] - Optional callback whenever items change (receives updated items array)
  */
-export default function OrderItemEditor({ items, onSave, saving }) {
+export default function OrderItemEditor({ items, onSave, saving, onChange }) {
   const [editItems, setEditItems] = useState(items || []);
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,16 +19,34 @@ export default function OrderItemEditor({ items, onSave, saving }) {
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    setEditItems(items || []);
+    const next = items || [];
+    setEditItems(next);
     setHasChanges(false);
-  }, [items]);
+    if (onChange) {
+      onChange(next);
+    }
+  }, [items, onChange]);
 
   const loadProducts = async () => {
     if (products.length > 0) return;
     setLoadingProducts(true);
     try {
-      const data = await getAllProducts();
-      setProducts(data);
+      const [allProducts, limited] = await Promise.all([
+        getAllProducts(),
+        getLimitedPlants({ availableOnly: false })
+      ]);
+
+      const limitedWithFlag = (limited || []).map((p) => ({
+        ...p,
+        _source: 'limited'
+      }));
+
+      const normalWithFlag = (allProducts || []).map((p) => ({
+        ...p,
+        _source: 'product'
+      }));
+
+      setProducts([...normalWithFlag, ...limitedWithFlag]);
     } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
@@ -36,18 +56,27 @@ export default function OrderItemEditor({ items, onSave, saving }) {
 
   const handleAddProduct = (product) => {
     const existing = editItems.find(i => i.productId === product.id);
+    let nextItems;
     if (existing) {
-      setEditItems(prev => prev.map(i =>
+      nextItems = editItems.map(i =>
         i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
-      ));
+      );
     } else {
-      setEditItems(prev => [...prev, {
-        productId: product.id,
-        name: product.commonName || product.name || product.title,
-        price: product.salesPrice || product.price,
-        quantity: 1,
-        imageUrl: product.imageUrl || null
-      }]);
+      nextItems = [
+        ...editItems,
+        {
+          productId: product.id,
+          displayId: product.displayId || product.id,
+          name: product.commonName || product.name || product.title,
+          price: product.salesPrice || product.price,
+          quantity: 1,
+          imageUrl: product.imageUrl || null
+        }
+      ];
+    }
+    setEditItems(nextItems);
+    if (onChange) {
+      onChange(nextItems);
     }
     setHasChanges(true);
     setShowSearch(false);
@@ -55,16 +84,24 @@ export default function OrderItemEditor({ items, onSave, saving }) {
   };
 
   const handleRemoveItem = (productId) => {
-    setEditItems(prev => prev.filter(i => i.productId !== productId));
+    const nextItems = editItems.filter(i => i.productId !== productId);
+    setEditItems(nextItems);
+    if (onChange) {
+      onChange(nextItems);
+    }
     setHasChanges(true);
   };
 
   const handleQuantityChange = (productId, delta) => {
-    setEditItems(prev => prev.map(i => {
+    const nextItems = editItems.map(i => {
       if (i.productId !== productId) return i;
       const newQty = Math.max(1, i.quantity + delta);
       return { ...i, quantity: newQty };
-    }));
+    });
+    setEditItems(nextItems);
+    if (onChange) {
+      onChange(nextItems);
+    }
     setHasChanges(true);
   };
 
@@ -74,21 +111,37 @@ export default function OrderItemEditor({ items, onSave, saving }) {
   };
 
   const handleCancel = () => {
-    setEditItems(items || []);
+    const next = items || [];
+    setEditItems(next);
+    if (onChange) {
+      onChange(next);
+    }
     setHasChanges(false);
     setShowSearch(false);
     setSearchQuery('');
   };
 
   const filteredProducts = products.filter(p => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+
     const alreadyAdded = editItems.some(i => i.productId === p.id);
     if (alreadyAdded) return false;
+
+    const id = (p.id || '').toString().toLowerCase();         // e.g. "l7"
+    const idNumeric = id.replace(/^l/, '');                    // e.g. "7" for limited ids
+    const displayId = (p.displayId || '').toString().toLowerCase();
+    const commonName = (p.commonName || '').toLowerCase();
+    const title = (p.title || '').toLowerCase();
+    const name = (p.name || '').toLowerCase();
+
     return (
-      (p.commonName || '').toLowerCase().includes(q) ||
-      (p.title || '').toLowerCase().includes(q) ||
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.id || '').includes(q)
+      commonName.includes(q) ||
+      title.includes(q) ||
+      name.includes(q) ||
+      id.includes(q) ||           // matches "l7"
+      idNumeric.includes(q) ||    // matches "7" for "L7"
+      displayId.includes(q)
     );
   });
 
@@ -103,7 +156,14 @@ export default function OrderItemEditor({ items, onSave, saving }) {
             <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
           )}
           <div className="flex-1 min-w-0">
-            <p className="truncate text-[var(--text-primary)]">{item.name}</p>
+            <p className="truncate text-[var(--text-primary)]">
+              {item.name}
+              {(item.displayId || item.productId) && (
+                <span className="text-[var(--text-secondary)] text-xs ml-1">
+                  (ID: {item.displayId || item.productId})
+                </span>
+              )}
+            </p>
             <p className="text-xs text-[var(--text-secondary)]">
               {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
             </p>
@@ -163,10 +223,12 @@ export default function OrderItemEditor({ items, onSave, saving }) {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-[var(--text-primary)]">
-                      {product.id}. {product.commonName || product.name}
+                      {product.id}. {product.commonName || product.name || product.title}
                     </p>
                     <p className="text-xs text-[var(--text-secondary)]">
-                      {product.title} · {CURRENCY}{product.salesPrice || product.price}
+                      {product._source === 'limited' ? 'Limited' : (product.title || product.category || '')}
+                      {' · '}
+                      {CURRENCY}{product.salesPrice || product.price}
                     </p>
                   </div>
                 </button>

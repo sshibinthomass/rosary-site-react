@@ -67,10 +67,15 @@ export async function createOrder(orderData) {
     };
     
     const docRef = await addDoc(collection(db, COLLECTION_NAME), order);
+
+    // Generate and store public order URL on the document
+    const orderUrl = getOrderUrl(docRef.id);
+    await updateDoc(docRef, { orderUrl });
     
     return {
       id: docRef.id,
       orderId,
+      orderUrl,
       ...order
     };
   } catch (error) {
@@ -218,10 +223,20 @@ export async function updateOrderItems(orderId, items) {
  */
 export function getOrderUrl(docId) {
   // Using window.location.origin for dynamic base URL
-  const baseUrl = typeof window !== 'undefined' 
-    ? window.location.origin 
+  const baseUrl = typeof window !== 'undefined'
+    ? window.location.origin
     : '';
-  return `${baseUrl}/rosary-site-react/order/${docId}`;
+
+  // Detect if app is served from a sub-path (e.g. /rosary-site-react on GitHub Pages)
+  let basePath = '';
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname || '';
+    if (path.startsWith('/rosary-site-react')) {
+      basePath = '/rosary-site-react';
+    }
+  }
+
+  return `${baseUrl}${basePath}/order/${docId}`;
 }
 
 /**

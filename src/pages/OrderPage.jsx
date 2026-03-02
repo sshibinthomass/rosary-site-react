@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, NavLink } from 'react-router-dom';
+import { useParams, NavLink, useNavigate } from 'react-router-dom';
 import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
+import { getLimitedById } from '../services/limitedService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
@@ -11,7 +12,8 @@ const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancell
 
 export default function OrderPage() {
   const { orderId } = useParams();
-  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth();
   const { success, error: showError } = useToast();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,17 @@ export default function OrderPage() {
   // Item editing state
   const [editingItems, setEditingItems] = useState(false);
   const [savingItems, setSavingItems] = useState(false);
+
+  const handleSwitchAccount = async () => {
+    try {
+      if (user) {
+        await logout();
+      }
+    } catch (e) {
+      console.error('Error during logout before switching account:', e);
+    }
+    navigate(`/account?redirect=/order/${orderId}`, { replace: true });
+  };
 
   useEffect(() => {
     if (orderId) {
@@ -73,14 +86,23 @@ export default function OrderPage() {
     try {
       const names = {};
       for (const item of items) {
-        const product = await getProductById(item.productId);
+        const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+        let product = null;
+        try {
+          product = isLimited
+            ? await getLimitedById(item.productId)
+            : await getProductById(item.productId);
+        } catch {
+          // ignore individual failures
+        }
+
         if (product) {
-          names[item.productId] = {
-            title: product.title || item.name,
-            commonName: product.commonName || product.name || item.name
-          };
+          const title = product.title || item.name || product.name || product.commonName;
+          const commonName = product.commonName || product.name || item.name || title;
+          const plantId = product.displayId || product.id || item.productId;
+          names[item.productId] = { title, commonName, plantId };
         } else {
-          names[item.productId] = { title: item.name, commonName: item.name };
+          names[item.productId] = { title: item.name, commonName: item.name, plantId: item.productId };
         }
       }
       setProductNames(names);
@@ -96,7 +118,20 @@ export default function OrderPage() {
   const getItemName = (item) => {
     const names = productNames[item.productId];
     if (!names) return item.name;
+
+    // For non-admin viewers, always show the Title/Display name.
+    if (!isAdmin) {
+      return names.title;
+    }
+
+    // Admins can toggle between Title and Common Name.
     return showTitle ? names.title : names.commonName;
+  };
+
+  const getItemPlantId = (item) => {
+    const names = productNames[item.productId];
+    if (names?.plantId) return names.plantId;
+    return item.displayId || item.productId || '';
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -179,6 +214,49 @@ export default function OrderPage() {
         <NavLink to="/" className="btn btn-primary mt-4">
           Back to Home
         </NavLink>
+      </div>
+    );
+  }
+
+  if (order.status === 'cancelled' && !isAdmin) {
+    return (
+      <div className="animate-fade-in text-center py-12">
+        <span className="text-5xl">📋</span>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Order Not Found</h2>
+        <p className="text-[var(--text-secondary)] mt-2">This order is no longer available.</p>
+        <NavLink to="/" className="btn btn-primary mt-4">
+          Back to Home
+        </NavLink>
+      </div>
+    );
+  }
+
+  const hasOwnerUserId = !!order.customer?.userId;
+  const isOwner = hasOwnerUserId && user && user.uid === order.customer.userId;
+  const isLoggedIn = !!user;
+
+  if (hasOwnerUserId && !isAdmin && !isOwner) {
+    return (
+      <div className="animate-fade-in text-center py-12">
+        <span className="text-5xl">📋</span>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Order Not Found</h2>
+        <p className="text-[var(--text-secondary)] mt-2">
+          {isLoggedIn
+            ? 'This order belongs to a different account. Please switch to the account used to place this order.'
+            : 'Please log in with the account used to place this order to view it.'}
+        </p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSwitchAccount}
+            className="btn btn-primary min-w-[180px]"
+          >
+            Login to your account
+          </button>
+          <NavLink to="/" className="btn btn-secondary min-w-[180px]">
+            Back to Home
+          </NavLink>
+        </div>
       </div>
     );
   }
@@ -294,6 +372,11 @@ export default function OrderPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-[var(--text-primary)] truncate">
                   {index + 1}. {getItemName(item)}
+                  {getItemPlantId(item) && (
+                    <span className="text-[var(--text-secondary)] text-xs ml-1">
+                      (ID: {getItemPlantId(item)})
+                    </span>
+                  )}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}

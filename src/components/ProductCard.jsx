@@ -41,6 +41,9 @@ const ProductCard = memo(function ProductCard({ product, onQuickView }) {
   const inCart = isInCart(product.id);
   const inWishlist = isInWishlist(product.id);
   const plantId = product.displayId || product.serialNo || product.serial || product.index || product.id;
+  const primaryImage = Array.isArray(product.imageUrls) && product.imageUrls.length
+    ? product.imageUrls[0]
+    : product.imageUrl;
 
   return (
     <div 
@@ -50,7 +53,7 @@ const ProductCard = memo(function ProductCard({ product, onQuickView }) {
       {/* Image */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--bg-tertiary)]">
         <img
-          src={product.imageUrl || '/placeholder-plant.jpg'}
+          src={primaryImage || '/placeholder-plant.jpg'}
           alt={name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"

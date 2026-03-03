@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 import Layout from './components/Layout';
 import Toast from './components/Toast';
@@ -30,6 +31,7 @@ const AdminCreateOrderPage = lazy(() => import('./pages/AdminCreateOrderPage'));
 const UserOrdersPage = lazy(() => import('./pages/UserOrdersPage'));
 const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
 const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
+const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 
 function PageLoader() {
   return (
@@ -43,6 +45,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
+        <SettingsProvider>
         <AuthProvider>
           <ToastProvider>
             <CartProvider>
@@ -213,6 +216,14 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+                    <Route 
+                      path="/admin/settings" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminSettingsPage />
+                        </ProtectedRoute>
+                      } 
+                    />
                   </Routes>
                 </Suspense>
               </Layout>
@@ -222,6 +233,7 @@ function App() {
             </CartProvider>
           </ToastProvider>
         </AuthProvider>
+        </SettingsProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

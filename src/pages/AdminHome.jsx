@@ -44,6 +44,13 @@ const cards = [
     icon: '📤',
     path: '/admin/export',
   },
+  {
+    id: 'settings',
+    title: 'Settings',
+    description: 'Configure site-wide display and behaviour options.',
+    icon: '⚙️',
+    path: '/admin/settings',
+  },
 ];
 
 export default function AdminHome() {

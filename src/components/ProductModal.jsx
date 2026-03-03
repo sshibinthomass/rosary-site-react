@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { CURRENCY } from '../config/constants';
 import { resolveImageUrl } from '../utils/imageCompressor';
+import { useSettings } from '../context/SettingsContext';
 
 function DescriptionBlock({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -35,6 +36,7 @@ function DescriptionBlock({ text }) {
 export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart, inWishlist, onToggleWishlist }) {
   const modalRef = useRef(null);
   const [quantity, setQuantity] = useState(1);
+  const { settings } = useSettings();
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -292,7 +294,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             </div>
 
             {/* Description */}
-            {product.description && <DescriptionBlock text={product.description} />}
+            {settings.showPlantDescription && product.description && <DescriptionBlock text={product.description} />}
           </div>
 
           {/* Footer (Price, Quantity & Action) - Fixed at Bottom of Right Col */}

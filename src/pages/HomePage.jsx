@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { getProducts, getProductById, getProductsPage } from '../services/productService';
+import { getProducts, getProductById } from '../services/productService';
 import { getLimitedPlants } from '../services/limitedService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -25,6 +25,15 @@ export default function HomePage() {
   const [previousCategory, setPreviousCategory] = useState(null);
   // Cache the first page so "Show Less" never re-fetches
   const firstPageRef = useRef([]);
+  // Scroll anchor placed just before the 21st item
+  const moreAnchorRef = useRef(null);
+
+  // After "Show More" loads, scroll to the 21st plant (first new item)
+  useEffect(() => {
+    if (showAll && moreAnchorRef.current) {
+      moreAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showAll]);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
@@ -54,12 +63,15 @@ export default function HomePage() {
         return;
       }
 
-      // For 'All': only fetch the first INITIAL_LIMIT normal products from Firestore.
-      // Limited plants and remaining products are loaded on demand when "Show More" is clicked.
-      const { products: page, hasMore: more } = await getProductsPage(null, INITIAL_LIMIT);
-      firstPageRef.current = page;
-      setProducts(page);
-      setHasMore(more);
+      // For 'All': fetch all normal products (sorted numerically by ID via getProducts),
+      // cache the full list, and display only the first INITIAL_LIMIT.
+      // Limited plants are still deferred until "Show More" is clicked.
+      const normal = await getProducts(null);
+      const normalList = normal || [];
+      const firstPage = normalList.slice(0, INITIAL_LIMIT);
+      firstPageRef.current = firstPage;
+      setProducts(firstPage);
+      setHasMore(normalList.length > INITIAL_LIMIT);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -235,12 +247,17 @@ export default function HomePage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 stagger-children">
               {products.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onQuickView={handleQuickView}
-                  index={index}
-                />
+                <Fragment key={product.id}>
+                  {/* Invisible scroll anchor placed just before the 21st item */}
+                  {index === INITIAL_LIMIT && (
+                    <div ref={moreAnchorRef} className="col-span-full h-0" aria-hidden="true" />
+                  )}
+                  <ProductCard
+                    product={product}
+                    onQuickView={handleQuickView}
+                    index={index}
+                  />
+                </Fragment>
               ))}
             </div>
 

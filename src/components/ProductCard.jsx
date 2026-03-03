@@ -135,26 +135,23 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
         {/* Line 2: Water, Sun, Transit tiles */}
         <div className="flex flex-wrap gap-1.5">
           <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-            <span className="text-sm">💧</span>
-            <div>
-              <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Water</p>
-              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.watering || 'Med'}</p>
-            </div>
+            <span className="text-sm leading-none">💧</span>
+            <span data-label="Water" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
+              {product.watering || 'Med'}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-            <span className="text-sm">☀️</span>
-            <div>
-              <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Sun</p>
-              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.sunlight || 'Med'}</p>
-            </div>
+            <span className="text-sm leading-none">☀️</span>
+            <span data-label="Sun" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
+              {product.sunlight || 'Med'}
+            </span>
           </div>
           {product.transit && (
             <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-              <span className="text-sm">📦</span>
-              <div>
-                <p className="text-[8px] text-[var(--text-secondary)] font-medium uppercase leading-none">Ship</p>
-                <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{product.transit}</p>
-              </div>
+              <span className="text-sm leading-none">📦</span>
+              <span data-label="Ship" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
+                {product.transit}
+              </span>
             </div>
           )}
         </div>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { getAllUsers, getUserProfile } from '../services/userService';
 import { getCart } from '../services/cartService';
+import { resolveImageUrl } from '../utils/imageCompressor';
 import { getWishlist } from '../services/wishlistService';
 import { getOrdersByUserId } from '../services/orderService';
 import { CURRENCY } from '../config/constants';
@@ -191,7 +192,7 @@ export default function AdminUsersPage() {
                          <div className="space-y-3">
                            {userData.cart.map(item => (
                              <div key={item.id} className="flex gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
-                               <img src={item.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-[var(--bg-tertiary)]" />
+                               <img src={resolveImageUrl(item.imageUrl)} alt="" className="w-12 h-12 rounded-lg object-cover bg-[var(--bg-tertiary)]" />
                                <div className="flex-1 min-w-0">
                                  <p className="font-medium truncate">{item.name}</p>
                                  <div className="flex justify-between text-sm mt-1">
@@ -222,7 +223,7 @@ export default function AdminUsersPage() {
                          <div className="space-y-3">
                            {userData.wishlist.map(item => (
                              <div key={item.id} className="flex gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
-                               <img src={item.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-[var(--bg-tertiary)]" />
+                               <img src={resolveImageUrl(item.imageUrl)} alt="" className="w-12 h-12 rounded-lg object-cover bg-[var(--bg-tertiary)]" />
                                <div className="flex-1 min-w-0">
                                  <p className="font-medium truncate">{item.name}</p>
                                  <p className="text-sm text-[var(--text-secondary)] mt-1">{CURRENCY}{item.price}</p>

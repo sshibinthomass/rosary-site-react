@@ -3,6 +3,20 @@
  * Ensures we stay within free tier limits
  */
 
+/**
+ * Resolves an image value to a usable src string.
+ * - Full URLs (http/https) are returned as-is.
+ * - Paths starting with "public/" have "public" stripped so Vite serves them
+ *   from the root (e.g. "public/sale_plants/1.jpg" → "/sale_plants/1.jpg").
+ * - Everything else is returned as-is.
+ */
+export function resolveImageUrl(value) {
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  if (value.startsWith('public/')) return '/' + value.slice('public/'.length);
+  return value;
+}
+
 const MAX_WIDTH = 480;
 const MAX_HEIGHT = 480;
 const QUALITY = 0.5;

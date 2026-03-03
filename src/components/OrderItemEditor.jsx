@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllProducts } from '../services/productService';
 import { getLimitedPlants } from '../services/limitedService';
 import { CURRENCY } from '../config/constants';
+import { resolveImageUrl } from '../utils/imageCompressor';
 
 /**
  * OrderItemEditor - Admin component to add/remove items from an order
@@ -66,7 +67,6 @@ export default function OrderItemEditor({ items, onSave, saving, onChange }) {
         ...editItems,
         {
           productId: product.id,
-          displayId: product.displayId || product.id,
           name: product.commonName || product.name || product.title,
           price: product.salesPrice || product.price,
           quantity: 1,
@@ -128,9 +128,8 @@ export default function OrderItemEditor({ items, onSave, saving, onChange }) {
     const alreadyAdded = editItems.some(i => i.productId === p.id);
     if (alreadyAdded) return false;
 
-    const id = (p.id || '').toString().toLowerCase();         // e.g. "l7"
-    const idNumeric = id.replace(/^l/, '');                    // e.g. "7" for limited ids
-    const displayId = (p.displayId || '').toString().toLowerCase();
+    const id = (p.id || '').toString().toLowerCase();
+    const idNumeric = id.replace(/^l/, '');
     const commonName = (p.commonName || '').toLowerCase();
     const title = (p.title || '').toLowerCase();
     const name = (p.name || '').toLowerCase();
@@ -139,9 +138,8 @@ export default function OrderItemEditor({ items, onSave, saving, onChange }) {
       commonName.includes(q) ||
       title.includes(q) ||
       name.includes(q) ||
-      id.includes(q) ||           // matches "l7"
-      idNumeric.includes(q) ||    // matches "7" for "L7"
-      displayId.includes(q)
+      id.includes(q) ||
+      idNumeric.includes(q)
     );
   });
 
@@ -153,14 +151,14 @@ export default function OrderItemEditor({ items, onSave, saving, onChange }) {
       {editItems.map((item) => (
         <div key={item.productId} className="flex items-center gap-2 text-sm">
           {item.imageUrl && (
-            <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+            <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
           )}
           <div className="flex-1 min-w-0">
             <p className="truncate text-[var(--text-primary)]">
               {item.name}
-              {(item.displayId || item.productId) && (
+              {item.productId && (
                 <span className="text-[var(--text-secondary)] text-xs ml-1">
-                  (ID: {item.displayId || item.productId})
+                  (ID: {item.productId})
                 </span>
               )}
             </p>
@@ -219,7 +217,7 @@ export default function OrderItemEditor({ items, onSave, saving, onChange }) {
                   className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-tertiary)] transition-colors text-left text-sm"
                 >
                   {product.imageUrl && (
-                    <img src={product.imageUrl} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    <img src={resolveImageUrl(product.imageUrl)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-[var(--text-primary)]">

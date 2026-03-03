@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../services/productService';
 import { seedProducts, getProductCount, clearAllProducts } from '../services/seedService';
-import { compressImage } from '../utils/imageCompressor';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { compressImage, resolveImageUrl } from '../utils/imageCompressor';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '../config/firebase';
 import { 
   CATEGORIES, 
@@ -24,7 +24,6 @@ const emptyProduct = {
   title: '',
   imageUrl: '',
   imageUrls: [],
-  displayId: '',
   
   // Pricing
   salesPrice: '',
@@ -161,21 +160,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    const trimmedDisplayId = (formData.displayId ?? '').toString().trim();
-    if (trimmedDisplayId) {
-      const normalizedNewId = trimmedDisplayId.toLowerCase();
-      const hasDuplicateId = products.some(p => {
-        if (editingProduct && p.id === editingProduct.id) return false;
-        const existingId = (p.displayId ?? p.id ?? '').toString().trim().toLowerCase();
-        return existingId === normalizedNewId;
-      });
-
-      if (hasDuplicateId) {
-        error('Plant ID must be unique. Another product already uses this ID.');
-        return;
-      }
-    }
-
     try {
       const productData = {
         ...formData,
@@ -185,7 +169,6 @@ export default function AdminDashboard() {
         imageUrl: (formData.imageUrls && formData.imageUrls.length
           ? formData.imageUrls[0]
           : formData.imageUrl) || '',
-        displayId: trimmedDisplayId || null,
         salesPrice: parseFloat(formData.salesPrice),
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         qtyAvailable: formData.qtyAvailable ? parseInt(formData.qtyAvailable) : 0,
@@ -196,8 +179,16 @@ export default function AdminDashboard() {
       };
 
       if (editingProduct) {
+        const oldUrls = editingProduct.imageUrls || (editingProduct.imageUrl ? [editingProduct.imageUrl] : []);
+        const newUrls = productData.imageUrls || [];
+        const removedUrls = oldUrls.filter(url =>
+          !newUrls.includes(url) && url.includes('firebasestorage.googleapis.com')
+        );
+        await Promise.all(removedUrls.map(url =>
+          deleteObject(ref(storage, url)).catch(err => console.warn('Could not delete image:', url, err))
+        ));
         await updateProduct(editingProduct.id, productData);
-        setProducts(prev => prev.map(p => 
+        setProducts(prev => prev.map(p =>
           p.id === editingProduct.id ? { ...p, ...productData } : p
         ));
         success('Product updated!');
@@ -226,7 +217,6 @@ export default function AdminDashboard() {
       title: product.title || '',
       imageUrl: product.imageUrl || (product.imageUrls && product.imageUrls[0]) || '',
       imageUrls: product.imageUrls || (product.imageUrl ? [product.imageUrl] : []),
-      displayId: (product.displayId || product.id || '').toString(),
       salesPrice: (product.salesPrice || product.price || '').toString(),
       originalPrice: (product.originalPrice || '').toString(),
       available: product.available ?? product.inStock ?? true,
@@ -251,7 +241,7 @@ export default function AdminDashboard() {
     if (!confirm('Delete this product?')) return;
     
     try {
-      await deleteProduct(product.id, product.imageUrl);
+      await deleteProduct(product.id, product.imageUrls || (product.imageUrl ? [product.imageUrl] : []));
       setProducts(prev => prev.filter(p => p.id !== product.id));
       success('Product deleted!');
     } catch (err) {
@@ -689,7 +679,7 @@ export default function AdminDashboard() {
                       className="relative w-14 h-14 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]"
                     >
                       <img
-                        src={url}
+                        src={resolveImageUrl(url)}
                         alt={`Product ${idx + 1}`}
                         className="w-full h-full object-cover"
                       />
@@ -715,7 +705,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-4">
                   {formData.imageUrl && (
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]">
-                      <img src={formData.imageUrl} alt="Primary preview" className="w-full h-full object-cover" />
+                      <img src={resolveImageUrl(formData.imageUrl)} alt="Primary preview" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -789,23 +779,6 @@ export default function AdminDashboard() {
                   className="input"
                   placeholder="e.g. Beautiful Mexican Snowball"
                 />
-              </div>
-
-              {/* Plant ID */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">
-                  Plant ID
-                </label>
-                <input
-                  type="text"
-                  value={formData.displayId}
-                  onChange={(e) => updateField('displayId', e.target.value)}
-                  className="input"
-                  placeholder="Unique ID shown as # on cards"
-                />
-                <p className="text-xs text-[var(--color-forest)]/60 mt-1">
-                  This should be unique across all plants.
-                </p>
               </div>
 
               {/* Category & Size */}
@@ -1110,7 +1083,7 @@ export default function AdminDashboard() {
                 {/* Image */}
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)] flex-shrink-0">
                   <img
-                    src={product.imageUrl || '/placeholder-plant.jpg'}
+                    src={resolveImageUrl(product.imageUrl) || '/placeholder-plant.jpg'}
                     alt={product.commonName || product.name}
                     className="w-full h-full object-cover"
                   />
@@ -1199,7 +1172,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]">
                           <img 
-                            src={formData.imageUrl || '/placeholder-plant.jpg'} 
+                            src={resolveImageUrl(formData.imageUrl) || '/placeholder-plant.jpg'} 
                             alt={formData.commonName || 'Preview'} 
                             className="w-full h-full object-cover" 
                           />
@@ -1243,7 +1216,7 @@ export default function AdminDashboard() {
                               key={url + idx}
                               className="relative w-14 h-14 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]"
                             >
-                              <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(url)} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
                               <button
                                 type="button"
                                 onClick={() =>
@@ -1266,7 +1239,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           {formData.imageUrl && (
                             <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--color-cream-dark)]">
-                              <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(formData.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                           )}
                           <div className="flex-1">
@@ -1316,20 +1289,6 @@ export default function AdminDashboard() {
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Title/Display Name</label>
                         <input type="text" value={formData.title} onChange={(e) => updateField('title', e.target.value)} className="input" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-[var(--color-forest)] mb-1">Plant ID</label>
-                        <input
-                          type="text"
-                          value={formData.displayId}
-                          onChange={(e) => updateField('displayId', e.target.value)}
-                          className="input"
-                          placeholder="Unique ID shown as # on cards"
-                        />
-                        <p className="text-xs text-[var(--color-forest)]/60 mt-1">
-                          Must be unique across all plants.
-                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { CURRENCY } from '../config/constants';
+import { resolveImageUrl } from '../utils/imageCompressor';
 
 function DescriptionBlock({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -45,7 +46,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
   const hasDiscount = originalPrice && originalPrice > price;
   const discountPercent = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
-  const plantId = product?.displayId || product?.serialNo || product?.serial || product?.index || product?.id;
+  const plantId = product?.id;
 
   // Reset quantity when product changes
   useEffect(() => {
@@ -75,9 +76,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
   if (!isOpen || !product) return null;
 
-  const imageList = Array.isArray(product?.imageUrls) && product.imageUrls.length > 0
-    ? product.imageUrls
-    : [product?.imageUrl || '/placeholder-plant.jpg'];
+  const imageList = (
+    Array.isArray(product?.imageUrls) && product.imageUrls.length > 0
+      ? product.imageUrls
+      : [product?.imageUrl || '/placeholder-plant.jpg']
+  ).map(resolveImageUrl);
 
   const hasMultipleImages = imageList.length > 1;
 

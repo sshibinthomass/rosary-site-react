@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { getAllOrders, updateOrderStatus, deleteOrder, updateDeliveryCharge, updateOrderItems, updateOrderCustomer, getOrderUrl } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
+import { resolveImageUrl } from '../utils/imageCompressor';
 import { CURRENCY } from '../config/constants';
 import { useToast } from '../context/ToastContext';
 import OrderItemEditor from '../components/OrderItemEditor';
@@ -62,7 +63,7 @@ export default function AdminOrdersPage() {
             if (product) {
               const title = product.title || product.name || product.commonName;
               const commonName = product.commonName || product.name || product.title || title;
-              const plantId = product.displayId || product.id || pid;
+              const plantId = product.id || pid;
               names[pid] = { title, commonName, plantId };
             }
           } catch (e) {
@@ -572,7 +573,7 @@ export default function AdminOrdersPage() {
   const getItemPlantId = (item) => {
     const names = productNames[item.productId];
     if (names?.plantId) return names.plantId;
-    return item.displayId || item.productId || '';
+    return item.productId || '';
   };
 
   const handleSaveDelivery = async (orderId) => {
@@ -1163,7 +1164,7 @@ export default function AdminOrdersPage() {
                         <div key={index} className="flex items-center gap-2 text-sm">
                           {item.imageUrl && (
                             <img 
-                              src={item.imageUrl} 
+                              src={resolveImageUrl(item.imageUrl)} 
                               alt={item.name} 
                               className="w-10 h-10 rounded object-cover"
                             />

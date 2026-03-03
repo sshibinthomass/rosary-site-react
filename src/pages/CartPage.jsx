@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { resolveImageUrl } from '../utils/imageCompressor';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getProductById } from '../services/productService';
@@ -253,7 +254,7 @@ export default function CartPage() {
               >
                 <div className="w-12 h-12 rounded-md overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
                   <img
-                    src={item.imageUrl || '/placeholder-plant.jpg'}
+                    src={resolveImageUrl(item.imageUrl) || '/placeholder-plant.jpg'}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
@@ -289,7 +290,7 @@ export default function CartPage() {
             {/* Image */}
             <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
               <img
-                src={item.imageUrl || '/placeholder-plant.jpg'}
+                src={resolveImageUrl(item.imageUrl) || '/placeholder-plant.jpg'}
                 alt={item.name}
                 className="w-full h-full object-cover"
               />

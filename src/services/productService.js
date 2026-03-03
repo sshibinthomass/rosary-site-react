@@ -175,17 +175,32 @@ export async function updateProduct(productId, productData) {
   }
 }
 
-// Delete product (Admin only). Also deletes associated image from Storage if provided.
-export async function deleteProduct(productId, imageUrl) {
-  try {
-    if (imageUrl) {
+/** Returns true only for files hosted in Firebase Storage (not external URLs). */
+function isFirebaseStorageUrl(url) {
+  return typeof url === 'string' && url.includes('firebasestorage.googleapis.com');
+}
+
+/** Deletes an array of Firebase Storage image URLs. Silently skips non-Storage URLs. */
+export async function deleteStorageImages(imageUrls = []) {
+  const urls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+  await Promise.all(
+    urls.filter(isFirebaseStorageUrl).map(async (url) => {
       try {
-        const imageRef = ref(storage, imageUrl);
-        await deleteObject(imageRef);
-      } catch (storageError) {
-        console.warn('Error deleting product image from Storage:', storageError);
+        await deleteObject(ref(storage, url));
+      } catch (err) {
+        console.warn('Could not delete image from Storage:', url, err);
       }
-    }
+    })
+  );
+}
+
+// Delete product (Admin only). Also deletes all associated images from Storage.
+export async function deleteProduct(productId, imageUrls) {
+  try {
+    const urls = Array.isArray(imageUrls)
+      ? imageUrls
+      : imageUrls ? [imageUrls] : [];
+    await deleteStorageImages(urls);
 
     const docRef = doc(db, COLLECTION_NAME, productId);
     await deleteDoc(docRef);

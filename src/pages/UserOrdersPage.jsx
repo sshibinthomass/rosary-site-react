@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getOrdersByUserId } from '../services/orderService';
 import { NavLink } from 'react-router-dom';
 import { CURRENCY } from '../config/constants';
+import { resolveImageUrl } from '../utils/imageCompressor';
 
 export default function UserOrdersPage() {
   const { user } = useAuth();
@@ -110,7 +111,7 @@ export default function UserOrdersPage() {
                     {order.items?.slice(0, 4).map((item, idx) => (
                       <img 
                         key={idx}
-                        src={item.imageUrl} 
+                        src={resolveImageUrl(item.imageUrl)} 
                         alt="" 
                         className="w-10 h-10 rounded-full border-2 border-[var(--bg-secondary)] object-cover bg-white"
                         title={item.name}

@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
+import { resolveImageUrl } from '../utils/imageCompressor';
 import { getProductById } from '../services/productService';
 
 const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick, isOutOfStock }) => {
@@ -13,7 +14,7 @@ const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick, isOutOfSt
       {/* Image */}
       <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0 relative">
         <img
-          src={item.imageUrl || '/placeholder-plant.jpg'}
+          src={resolveImageUrl(item.imageUrl) || '/placeholder-plant.jpg'}
           alt={item.name}
           className={`w-full h-full object-cover ${isOutOfStock ? 'opacity-50' : ''}`}
         />

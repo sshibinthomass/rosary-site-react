@@ -45,7 +45,18 @@ export default function AdminExportPage() {
     const productCards = availableProducts.map((product) => {
       const fullName = product.title || product.commonName || product.name || '';
       const name = fullName.length > 20 ? fullName.slice(0, 20) : fullName;
-      const imageUrl = product.imageUrl || '/placeholder-plant.jpg';
+
+      // Resolve to absolute URL so the blank export window can load images
+      const rawImageUrl = product.imageUrl || '/placeholder-plant.jpg';
+      let imageUrl;
+      if (rawImageUrl.startsWith('http://') || rawImageUrl.startsWith('https://')) {
+        imageUrl = rawImageUrl;
+      } else if (rawImageUrl.startsWith('public/')) {
+        imageUrl = baseUrl + '/' + rawImageUrl.slice('public/'.length);
+      } else {
+        imageUrl = baseUrl + (rawImageUrl.startsWith('/') ? '' : '/') + rawImageUrl;
+      }
+
       const salesPrice = (product.salesPrice || product.price || '').toString();
       const originalPrice = product.originalPrice
         ? product.originalPrice.toString()

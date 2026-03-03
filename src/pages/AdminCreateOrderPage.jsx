@@ -161,7 +161,6 @@ export default function AdminCreateOrderPage() {
             ...nextItems,
             {
               productId,
-              displayId: product.displayId || product.id,
               name,
               price,
               quantity,

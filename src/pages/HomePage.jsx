@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { getProducts, getProductById } from '../services/productService';
+import { getProducts, getProductById, getProductsPage } from '../services/productService';
 import { getLimitedPlants } from '../services/limitedService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -18,17 +18,20 @@ export default function HomePage() {
   const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [previousCategory, setPreviousCategory] = useState(null);
+  // Cache the first page so "Show Less" never re-fetches
+  const firstPageRef = useRef([]);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
 
-  // Load products when category changes; also reset pagination
+  // Load products when category changes
   useEffect(() => {
     loadProducts();
-    setShowAll(false);
   }, [selectedCategory]);
 
   // Load specific product if productId is in URL
@@ -41,18 +44,36 @@ export default function HomePage() {
   const loadProducts = async () => {
     setLoading(true);
     setShowAll(false);
+    setHasMore(false);
+    firstPageRef.current = [];
     try {
-      // For category pages, keep current behaviour and show only normal products
+      // For category pages load all products in that category (usually small sets)
       if (selectedCategory !== 'All') {
         const data = await getProducts(selectedCategory);
         setProducts(data);
         return;
       }
 
-      // For home (All), load limited plants and normal products, then show limited first
-      const [limited, normal] = await Promise.all([
-        getLimitedPlants(), // available-only by default
-        getProducts(null)
+      // For 'All': only fetch the first INITIAL_LIMIT normal products from Firestore.
+      // Limited plants and remaining products are loaded on demand when "Show More" is clicked.
+      const { products: page, hasMore: more } = await getProductsPage(null, INITIAL_LIMIT);
+      firstPageRef.current = page;
+      setProducts(page);
+      setHasMore(more);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch remaining products + limited plants only when the user clicks "Show More"
+  const handleShowMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const [allNormal, limited] = await Promise.all([
+        getProducts(null),
+        getLimitedPlants()
       ]);
 
       const limitedWithCategory = (limited || []).map((item) => ({
@@ -60,13 +81,28 @@ export default function HomePage() {
         category: item.category || 'Limited'
       }));
 
-      setProducts([...limitedWithCategory, ...(normal || [])]);
+      const normalList = allNormal || [];
+      // Place limited plants right after the first INITIAL_LIMIT normal products
+      setProducts([
+        ...normalList.slice(0, INITIAL_LIMIT),
+        ...limitedWithCategory,
+        ...normalList.slice(INITIAL_LIMIT)
+      ]);
+      setShowAll(true);
+      setHasMore(false);
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Error loading more products:', error);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  // Restore first page from cache — no network call needed
+  const handleShowLess = useCallback(() => {
+    setProducts(firstPageRef.current);
+    setShowAll(false);
+    setHasMore(true);
+  }, []);
 
   const loadProductFromUrl = async (id) => {
     try {
@@ -198,7 +234,7 @@ export default function HomePage() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 stagger-children">
-              {(selectedCategory === 'All' && !showAll ? products.slice(0, INITIAL_LIMIT) : products).map((product, index) => (
+              {products.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -208,18 +244,19 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Show all / Show less — only for the 'All' category */}
-            {selectedCategory === 'All' && products.length > INITIAL_LIMIT && (
+            {/* Show More / Show Less — only for the 'All' category */}
+            {selectedCategory === 'All' && (hasMore || showAll) && (
               <div className="mt-6 flex flex-col items-center gap-1">
                 <button
-                  onClick={() => setShowAll((v) => !v)}
-                  className="px-8 py-2.5 rounded-full text-sm font-semibold border border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)] hover:text-white transition-all"
+                  onClick={showAll ? handleShowLess : handleShowMore}
+                  disabled={loadingMore}
+                  className="px-8 py-2.5 rounded-full text-sm font-semibold border border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)] hover:text-white transition-all disabled:opacity-60"
                 >
-                  {showAll ? 'Show less' : `Show all ${products.length} plants`}
+                  {loadingMore ? 'Loading…' : showAll ? 'Show less' : 'Show more plants'}
                 </button>
                 {!showAll && (
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Showing {INITIAL_LIMIT} of {products.length}
+                    Showing {products.length} plants
                   </p>
                 )}
               </div>

@@ -3,6 +3,7 @@ import { useParams, NavLink, useNavigate } from 'react-router-dom';
 import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
+import { resolveImageUrl } from '../utils/imageCompressor';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
@@ -99,7 +100,7 @@ export default function OrderPage() {
         if (product) {
           const title = product.title || item.name || product.name || product.commonName;
           const commonName = product.commonName || product.name || item.name || title;
-          const plantId = product.displayId || product.id || item.productId;
+          const plantId = product.id || item.productId;
           names[item.productId] = { title, commonName, plantId };
         } else {
           names[item.productId] = { title: item.name, commonName: item.name, plantId: item.productId };
@@ -131,7 +132,7 @@ export default function OrderPage() {
   const getItemPlantId = (item) => {
     const names = productNames[item.productId];
     if (names?.plantId) return names.plantId;
-    return item.displayId || item.productId || '';
+    return item.productId || '';
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -363,7 +364,7 @@ export default function OrderPage() {
               {item.imageUrl && (
                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
                   <img
-                    src={item.imageUrl}
+                    src={resolveImageUrl(item.imageUrl)}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />

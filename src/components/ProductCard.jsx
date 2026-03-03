@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { resolveImageUrl } from '../utils/imageCompressor';
 
 const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99 }) {
   const [quantity, setQuantity] = useState(1);
@@ -40,10 +41,12 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
 
   const inCart = isInCart(product.id);
   const inWishlist = isInWishlist(product.id);
-  const plantId = product.displayId || product.serialNo || product.serial || product.index || product.id;
-  const primaryImage = Array.isArray(product.imageUrls) && product.imageUrls.length
-    ? product.imageUrls[0]
-    : product.imageUrl;
+  const plantId = product.id;
+  const primaryImage = resolveImageUrl(
+    Array.isArray(product.imageUrls) && product.imageUrls.length
+      ? product.imageUrls[0]
+      : product.imageUrl
+  );
 
   return (
     <div 

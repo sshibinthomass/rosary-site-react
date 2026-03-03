@@ -198,11 +198,12 @@ export default function HomePage() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 stagger-children">
-              {(selectedCategory === 'All' && !showAll ? products.slice(0, INITIAL_LIMIT) : products).map((product) => (
+              {(selectedCategory === 'All' && !showAll ? products.slice(0, INITIAL_LIMIT) : products).map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   onQuickView={handleQuickView}
+                  index={index}
                 />
               ))}
             </div>

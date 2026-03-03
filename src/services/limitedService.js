@@ -11,7 +11,8 @@ import {
   runTransaction,
   serverTimestamp
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 
 const COLLECTION_NAME = 'limited';
 const COUNTERS_COLLECTION = 'counters';
@@ -160,11 +161,25 @@ export async function updateLimitedPlant(limitedId, data) {
 }
 
 /**
- * Delete a limited plant document.
- * (Does not delete any images from Storage – do that separately if required.)
+ * Delete a limited plant document and (best-effort) delete associated images from Storage.
  */
-export async function deleteLimitedPlant(limitedId) {
+export async function deleteLimitedPlant(limitedId, imageUrls = []) {
   const docRef = doc(db, COLLECTION_NAME, limitedId);
+
+  const urls = Array.isArray(imageUrls)
+    ? imageUrls
+    : (imageUrls ? [imageUrls] : []);
+
+  for (const url of urls) {
+    if (!url) continue;
+    try {
+      const imageRef = ref(storage, url);
+      await deleteObject(imageRef);
+    } catch (err) {
+      console.warn('Failed to delete limited image from Storage:', err);
+    }
+  }
+
   await deleteDoc(docRef);
   return limitedId;
 }

@@ -3,10 +3,10 @@
  * Ensures we stay within free tier limits
  */
 
-const MAX_WIDTH = 800;
-const MAX_HEIGHT = 800;
-const QUALITY = 0.8;
-const MAX_SIZE_KB = 80;
+const MAX_WIDTH = 480;
+const MAX_HEIGHT = 480;
+const QUALITY = 0.5;
+const MAX_SIZE_KB = 20;
 
 /**
  * Compress an image file
@@ -16,14 +16,14 @@ const MAX_SIZE_KB = 80;
 export async function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = (event) => {
       const img = new Image();
-      
+
       img.onload = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         let { width, height } = img;
-        
+
         // Calculate new dimensions
         if (width > height) {
           if (width > MAX_WIDTH) {
@@ -36,26 +36,26 @@ export async function compressImage(file) {
             height = MAX_HEIGHT;
           }
         }
-        
+
         canvas.width = width;
         canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
+
+        const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Try to get the right quality
         let quality = QUALITY;
-        
+
         const tryCompress = () => {
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                reject(new Error('Failed to compress image'));
+                reject(new Error("Failed to compress image"));
                 return;
               }
-              
+
               const sizeKB = blob.size / 1024;
-              
+
               // If still too large and quality can be reduced
               if (sizeKB > MAX_SIZE_KB && quality > 0.3) {
                 quality -= 0.1;
@@ -64,19 +64,19 @@ export async function compressImage(file) {
                 resolve(blob);
               }
             },
-            'image/jpeg',
-            quality
+            "image/jpeg",
+            quality,
           );
         };
-        
+
         tryCompress();
       };
-      
-      img.onerror = () => reject(new Error('Failed to load image'));
+
+      img.onerror = () => reject(new Error("Failed to load image"));
       img.src = event.target.result;
     };
-    
-    reader.onerror = () => reject(new Error('Failed to read file'));
+
+    reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
 }

@@ -373,16 +373,22 @@ export default function AccountPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mt-4">
-        <div className="card p-3 text-center">
+        <NavLink
+          to="/cart"
+          className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
+        >
           <span className="text-3xl">🛒</span>
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{cart.length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Cart Items</p>
-        </div>
-        <div className="card p-3 text-center">
+        </NavLink>
+        <NavLink
+          to="/wishlist"
+          className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
+        >
           <span className="text-3xl">💚</span>
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{wishlist.length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Saved</p>
-        </div>
+        </NavLink>
         <NavLink to={user ? `/orders` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
           <span className="text-3xl">📦</span>
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">

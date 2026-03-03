@@ -24,6 +24,13 @@ const cards = [
     path: '/admin/products',
   },
   {
+    id: 'plant-analysis',
+    title: 'Plant analysis',
+    description: 'See how many of each plant is sold by status.',
+    icon: '📊',
+    path: '/admin/plant-analysis',
+  },
+  {
     id: 'limited',
     title: 'Limited',
     description: 'Configure limited-stock special plants.',

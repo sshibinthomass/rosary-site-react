@@ -3,7 +3,7 @@ import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
-const ProductCard = memo(function ProductCard({ product, onQuickView }) {
+const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99 }) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
   const { error } = useToast();
@@ -56,7 +56,8 @@ const ProductCard = memo(function ProductCard({ product, onQuickView }) {
           src={primaryImage || '/placeholder-plant.jpg'}
           alt={name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
+          loading={index < 3 ? 'eager' : 'lazy'}
+          fetchPriority={index === 0 ? 'high' : undefined}
         />
         
         {/* Discount Badge — top right */}

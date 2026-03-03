@@ -19,6 +19,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AdminHome = lazy(() => import('./pages/AdminHome'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
+const AdminPlantAnalysis = lazy(() => import('./pages/AdminPlantAnalysis'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
@@ -193,6 +194,22 @@ function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <AdminExportPage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/plant-analysis" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminPlantAnalysis />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/plant-analysis.html" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminPlantAnalysis />
                         </ProtectedRoute>
                       } 
                     />

@@ -146,8 +146,8 @@ export default function Layout({ children }) {
           </div>
         </div>
       </nav>
-      {/* Floating Cart Button */}
-      {location.pathname !== '/cart' && (
+      {/* Floating Cart Button (hidden on cart & admin pages) */}
+      {location.pathname !== '/cart' && !location.pathname.startsWith('/admin') && (
         <NavLink
           to="/cart"
           className="fixed bottom-24 right-5 z-40 md:hidden animate-scale-in"

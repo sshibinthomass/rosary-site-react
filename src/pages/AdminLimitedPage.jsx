@@ -116,7 +116,12 @@ export default function AdminLimitedPage() {
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete limited plant ${item.id}?`)) return;
     try {
-      await deleteLimitedPlant(item.id);
+      const imageUrls =
+        (item.imageUrls && item.imageUrls.length)
+          ? item.imageUrls
+          : (item.imageUrl ? [item.imageUrl] : []);
+
+      await deleteLimitedPlant(item.id, imageUrls);
       setItems((prev) => prev.filter((p) => p.id !== item.id));
       if (editingId === item.id) {
         resetForm();

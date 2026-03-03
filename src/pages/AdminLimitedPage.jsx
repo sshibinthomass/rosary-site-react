@@ -32,6 +32,7 @@ export default function AdminLimitedPage() {
   const [editingId, setEditingId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [showForm, setShowForm] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadLimited();
@@ -150,6 +151,8 @@ export default function AdminLimitedPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (saving) return;
+
     if (!formData.commonName || !formData.price) {
       error('Common name and price are required');
       return;
@@ -168,6 +171,12 @@ export default function AdminLimitedPage() {
     };
 
     try {
+      setSaving(true);
+      if (!editingId) {
+        // Close the add form immediately so the card disappears on click
+        setShowForm(false);
+      }
+
       if (editingId) {
         await updateLimitedPlant(editingId, payload);
         setItems((prev) =>
@@ -187,6 +196,8 @@ export default function AdminLimitedPage() {
     } catch (e) {
       console.error(e);
       error('Failed to save limited plant');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -391,11 +402,12 @@ export default function AdminLimitedPage() {
             type="button"
             className="btn btn-secondary flex-1"
             onClick={resetForm}
+            disabled={saving}
           >
             Clear
           </button>
-          <button type="submit" className="btn btn-primary flex-1">
-            {editingId ? 'Update' : 'Add'} Limited Plant
+          <button type="submit" className="btn btn-primary flex-1" disabled={saving}>
+            {saving ? 'Saving…' : editingId ? 'Update' : 'Add'} Limited Plant
           </button>
         </div>
       </form>
@@ -664,11 +676,12 @@ export default function AdminLimitedPage() {
                       type="button"
                       className="btn btn-secondary flex-1"
                       onClick={resetForm}
+                      disabled={saving}
                     >
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary flex-1">
-                      Update Limited Plant
+                    <button type="submit" className="btn btn-primary flex-1" disabled={saving}>
+                      {saving ? 'Saving…' : 'Update Limited Plant'}
                     </button>
                   </div>
                 </form>

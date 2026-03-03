@@ -109,16 +109,20 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
 
       {/* Content */}
       <div className="p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 bg-[var(--bg-primary)]">
-        {/* Line 1: Plant id. Name (size) on left, Price on right */}
-        <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-baseline justify-between gap-2">
-          <div className="flex flex-wrap items-baseline gap-1 md:gap-2 min-w-0">
-            <span className="text-[var(--text-secondary)] text-xs md:text-sm">{plantId}.</span>
-            <span className="truncate">{name}</span>
-            {product.size && (
-              <span className="text-[var(--text-secondary)] text-xs md:text-sm">
-                {product.size}
-              </span>
-            )}
+        {/* Line 1: Name with id and size on left, Price on right */}
+        <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <p className="text-xs md:text-sm font-medium text-[var(--text-secondary)]">
+              #{plantId}
+            </p>
+            <p className="leading-snug break-words">
+              {name}
+              {product.size && (
+                <span className="ml-1 text-[var(--text-secondary)] text-xs md:text-sm font-normal">
+                  {product.size}
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex items-baseline gap-1 md:gap-2 flex-shrink-0">
             <span className="text-base md:text-lg font-bold">

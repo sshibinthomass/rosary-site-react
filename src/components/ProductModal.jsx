@@ -35,14 +35,14 @@ function DescriptionBlock({ text }) {
 
 export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart, inWishlist, onToggleWishlist }) {
   const modalRef = useRef(null);
+  const detailsRef = useRef(null);
   const [quantity, setQuantity] = useState(1);
   const { settings } = useSettings();
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Normalize product fields
-  const title = product?.title || product?.name || product?.commonName;
-  const commonName = product?.commonName || product?.name;
+  // Normalize product fields — prefer the recognizable common name as the main display title
+  const title = product?.commonName || product?.name || product?.title;
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
@@ -55,6 +55,13 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
     setQuantity(1);
     setAddedFeedback(false);
     setActiveImageIndex(0);
+    // Ensure we always start viewing from the top of the modal content
+    if (modalRef.current) {
+      modalRef.current.scrollTop = 0;
+    }
+    if (detailsRef.current) {
+      detailsRef.current.scrollTop = 0;
+    }
   }, [product?.id]);
 
   useEffect(() => {
@@ -127,7 +134,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         </button>
 
         {/* LEFT: Image Section */}
-        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 flex flex-col">
+        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 flex flex-col overflow-hidden">
           {/* Main image area */}
           <div className="relative flex-1 group">
             <img
@@ -135,6 +142,19 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
               alt={title}
               className="w-full h-full object-cover transition-transform duration-300"
             />
+
+            {/* Plant name + size overlay — bottom of image, mobile only */}
+            <div className="lg:hidden absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 px-3 pb-10">
+              <h2 className="text-base font-bold text-white leading-tight break-words drop-shadow">
+                {title}
+                <span className="ml-2 text-xs font-normal text-white/60">#{plantId}</span>
+              </h2>
+              {product.size && (
+                <span className="mt-1.5 inline-block text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-full px-2.5 py-0.5">
+                  {product.size}
+                </span>
+              )}
+            </div>
             
             {/* ID Badge */}
             <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1.5 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-md z-10">
@@ -143,7 +163,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
             {/* Category Badge */}
             {product.category && (
-              <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-10">
+              <div className="absolute bottom-10 right-3 lg:bottom-4 lg:left-4 lg:right-auto px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-30">
                 {product.category}
               </div>
             )}
@@ -211,9 +231,9 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             )}
           </div>
 
-          {/* Thumbnails row */}
+          {/* Thumbnails row — desktop only (inside image section on lg) */}
           {hasMultipleImages && (
-            <div className="px-3 py-2 bg-[var(--bg-primary)]/80 border-t border-[var(--border-color)] flex gap-2 overflow-x-auto no-scrollbar">
+            <div className="hidden lg:flex px-3 py-2 bg-[var(--bg-primary)]/80 border-t border-[var(--border-color)] gap-2 overflow-x-auto no-scrollbar">
               {imageList.map((src, idx) => (
                 <button
                   key={src + idx}
@@ -236,19 +256,52 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
           )}
         </div>
 
+        {/* Thumbnails row — sits between image and content, always fully visible on mobile */}
+        {hasMultipleImages && (
+          <div className="shrink-0 px-3 py-2.5 bg-[var(--bg-primary)] border-b border-[var(--border-color)] lg:hidden">
+            {/* Inner wrapper handles horizontal scroll; py-1 prevents ring outline from being clipped */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+              {imageList.map((src, idx) => (
+                <button
+                  key={src + idx}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx); }}
+                  className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                    idx === activeImageIndex
+                      ? 'border-[var(--color-forest)] ring-2 ring-[var(--color-forest)]'
+                      : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={src}
+                    alt={`${title} thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* RIGHT: Content Section */}
         <div className="flex flex-col flex-1 min-h-0 bg-[var(--bg-primary)]">
-          {/* Scrollable Details */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-            <div>
-              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] leading-tight">
-                <span className="text-sm font-normal text-[var(--text-secondary)] mr-2">#{plantId}</span>{title}
-              </h2>
-            </div>
+          {/* Plant name — desktop only (on mobile it's the image overlay) */}
+          <div className="hidden lg:block shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-color)]">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] leading-snug break-words">
+              {title}
+              <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">#{plantId}</span>
+            </h2>
+          </div>
 
-            {/* Size */}
+          {/* Scrollable Details */}
+          <div
+            ref={detailsRef}
+            className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
+          >
+
+            {/* Size — hidden on mobile (shown in image overlay), visible on desktop */}
             {product.size && (
-              <div className="flex flex-wrap gap-2">
+              <div className="hidden lg:flex flex-wrap gap-2">
                 <span className="badge bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs py-1.5 px-3">{product.size}</span>
               </div>
             )}

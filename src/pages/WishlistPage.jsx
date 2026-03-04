@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { getProductById } from '../services/productService';
+import { getLimitedById } from '../services/limitedService';
 
 const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick, isOutOfStock }) => {
   const [quantity, setQuantity] = useState(1);
@@ -102,7 +103,10 @@ export default function WishlistPage() {
       await Promise.all(
         wishlist.map(async (item) => {
           try {
-            const product = await getProductById(item.productId);
+            const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+            const product = isLimited
+              ? await getLimitedById(item.productId)
+              : await getProductById(item.productId);
             if (product) map[item.productId] = product;
           } catch {}
         })
@@ -144,7 +148,10 @@ export default function WishlistPage() {
 
   const handleItemClick = async (item) => {
     try {
-      const fullProduct = await getProductById(item.productId);
+      const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+      const fullProduct = isLimited
+        ? await getLimitedById(item.productId)
+        : await getProductById(item.productId);
       if (fullProduct) {
         setSelectedProduct(fullProduct);
       } else {

@@ -6,6 +6,7 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getProductById } from '../services/productService';
+import { getLimitedById } from '../services/limitedService';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
@@ -24,7 +25,10 @@ export default function CartPage() {
       await Promise.all(
         cart.map(async (item) => {
           try {
-            const product = await getProductById(item.productId);
+            const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+            const product = isLimited
+              ? await getLimitedById(item.productId)
+              : await getProductById(item.productId);
             if (product) map[item.productId] = product;
           } catch {}
         })
@@ -207,7 +211,10 @@ export default function CartPage() {
 
   const handleItemClick = async (item) => {
     try {
-      const fullProduct = await getProductById(item.productId);
+      const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+      const fullProduct = isLimited
+        ? await getLimitedById(item.productId)
+        : await getProductById(item.productId);
       if (fullProduct) {
         setSelectedProduct(fullProduct);
       } else {

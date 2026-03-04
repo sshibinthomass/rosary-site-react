@@ -155,13 +155,15 @@ export async function addProduct(productData) {
 // Update product (Admin only)
 export async function updateProduct(productId, productData) {
   try {
-    const normalized = {
-      ...productData,
-      imageUrls: Array.isArray(productData.imageUrls) && productData.imageUrls.length
+    const normalized = { ...productData };
+    
+    // Only update image data if it was provided in the update payload
+    if ('imageUrls' in productData || 'imageUrl' in productData) {
+      normalized.imageUrls = Array.isArray(productData.imageUrls) && productData.imageUrls.length
         ? productData.imageUrls
-        : (productData.imageUrl ? [productData.imageUrl] : []),
-    };
-    normalized.imageUrl = normalized.imageUrls.length ? normalized.imageUrls[0] : (productData.imageUrl || '');
+        : (productData.imageUrl ? [productData.imageUrl] : []);
+      normalized.imageUrl = normalized.imageUrls.length ? normalized.imageUrls[0] : (productData.imageUrl || '');
+    }
 
     const docRef = doc(db, COLLECTION_NAME, productId);
     await updateDoc(docRef, {

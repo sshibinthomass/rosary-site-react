@@ -1,5 +1,8 @@
 // Admin email for role-based access
-export const ADMIN_EMAIL = 'sshibinthomass@gmail.com';
+export const ADMIN_EMAILS = [
+  'sshibinthomass@gmail.com',
+  'rosaryplanthouse@gmail.com'
+];
 
 // WhatsApp business number (with country code, no + sign)
 export const WHATSAPP_NUMBER = '+4915566440790';

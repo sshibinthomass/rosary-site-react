@@ -7,7 +7,7 @@ import {
   getRedirectResult
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
-import { ADMIN_EMAIL } from '../config/constants';
+import { ADMIN_EMAILS } from '../config/constants';
 
 const AuthContext = createContext(null);
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
           console.log('Redirect user found:', result.user.email);
           sessionStorage.setItem('isFreshLogin', 'true');
           setUser(result.user);
-          setIsAdmin(result.user.email === ADMIN_EMAIL);
+          setIsAdmin(ADMIN_EMAILS.includes(result.user.email));
         }
       })
       .catch((error) => {
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
         loggingInRef.current = false;
       }
       setUser(currentUser);
-      setIsAdmin(currentUser?.email === ADMIN_EMAIL);
+      setIsAdmin(ADMIN_EMAILS.includes(currentUser?.email));
       setLoading(false);
     });
 

@@ -32,6 +32,7 @@ const UserOrdersPage = lazy(() => import('./pages/UserOrdersPage'));
 const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
 const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
+const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
 
 function PageLoader() {
   return (
@@ -213,6 +214,14 @@ function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <AdminPlantAnalysis />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/plant-tester" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminPlantTesterPage />
                         </ProtectedRoute>
                       } 
                     />

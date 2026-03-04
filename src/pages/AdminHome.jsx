@@ -45,6 +45,13 @@ const cards = [
     path: '/admin/export',
   },
   {
+    id: 'plant-tester',
+    title: 'Plant Tester',
+    description: 'Quickly look up plants by ID and preview them in a table.',
+    icon: '🧪',
+    path: '/admin/plant-tester',
+  },
+  {
     id: 'settings',
     title: 'Settings',
     description: 'Configure site-wide display and behaviour options.',

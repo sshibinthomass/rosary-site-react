@@ -11,6 +11,8 @@ import Toast from './components/Toast';
 import MergeDataModal from './components/MergeDataModal';
 import ProfileSetupModal from './components/ProfileSetupModal';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // Lazy-load page components so only the home page is fetched on first visit
 import HomePage from './pages/HomePage';
@@ -44,7 +46,9 @@ function PageLoader() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
+      <ScrollToTop />
       <ThemeProvider>
         <SettingsProvider>
         <AuthProvider>
@@ -245,6 +249,7 @@ function App() {
         </SettingsProvider>
       </ThemeProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

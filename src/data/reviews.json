@@ -1,8 +1,58 @@
 [
   {
-    "author": "Google Map Reviewer",
+    "author": "Priya Nair",
     "rating": 5,
-    "text": "Beautiful setup and healthy plants! Excellent customer service.",
-    "time": "Recent"
+    "text": "Absolutely love the succulents I ordered! They arrived in perfect condition, well-packed with care. The quality is outstanding — will order again!",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Rahul Sharma",
+    "rating": 5,
+    "text": "Beautiful setup and healthy plants! Excellent customer service. The team was very helpful in selecting the right plants for my apartment.",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Deepa Krishnan",
+    "rating": 5,
+    "text": "Ordered a combo pack and each plant was labeled with care instructions. The packaging was eco-friendly and the plants were thriving when they arrived.",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Ankit Verma",
+    "rating": 4,
+    "text": "Great collection of rare succulents! Delivery took a bit longer than expected to North India but the plants were worth the wait. Healthy and vibrant.",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Meera Thomas",
+    "rating": 5,
+    "text": "This is my third order from Rosary Plant House. The Echeveria collection is simply amazing. Plants always arrive fresh and the prices are very reasonable.",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Sanjay Gupta",
+    "rating": 5,
+    "text": "Found some really unique cacti here that I couldn't find anywhere else. The WhatsApp support is prompt and they helped me pick plants for low-light areas.",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Kavitha Rajan",
+    "rating": 4,
+    "text": "Wonderful variety of indoor plants. One of the succulents had minor transit damage but they offered a replacement without any hassle. Great customer service!",
+    "link": null,
+    "images": []
+  },
+  {
+    "author": "Arjun Menon",
+    "rating": 5,
+    "text": "Best plant nursery from Nilgiris! The jade plants and haworthias I received were top quality. You can tell they're grown with genuine love and expertise.",
+    "link": null,
+    "images": []
   }
 ]

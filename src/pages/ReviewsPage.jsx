@@ -22,7 +22,6 @@ export default function ReviewsPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg text-[var(--text-primary)]">{review.author}</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">{review.time}</p>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -40,6 +39,23 @@ export default function ReviewsPage() {
             <p className="text-[var(--text-primary)] leading-relaxed italic">
               "{review.text}"
             </p>
+            {review.images && review.images.length > 0 && (
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                {review.images.map((img, i) => (
+                  <img key={i} src={img} alt={`Review photo ${i + 1}`} className="h-24 w-24 md:h-32 md:w-32 object-cover rounded-lg shadow-sm shrink-0" />
+                ))}
+              </div>
+            )}
+            {review.link && (
+              <div className="mt-4">
+                <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1">
+                  View full review
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            )}
           </div>
         ))}
       </div>

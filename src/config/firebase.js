@@ -1,7 +1,7 @@
 // Firebase Configuration
 // Uses environment variables for security
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -23,6 +23,7 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+export const facebookProvider = new FacebookAuthProvider();
 
 // Firestore
 export const db = getFirestore(app);

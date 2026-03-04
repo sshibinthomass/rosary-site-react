@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { CURRENCY } from '../config/constants';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { useSettings } from '../context/SettingsContext';
+import SEO from './SEO';
 
 function DescriptionBlock({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -116,6 +117,12 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
       className="fixed inset-0 z-[9999] flex md:items-center md:justify-center md:p-4"
       onClick={onClose}
     >
+      <SEO 
+        title={title} 
+        description={product?.description || `Buy ${title} online from Rosary Plant House. Quality plants delivered across India.`}
+        image={imageList[0]}
+        productData={{...product, name: title, price}}
+      />
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in hidden md:block" />
       
@@ -285,11 +292,26 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
         {/* RIGHT: Content Section */}
         <div className="flex flex-col flex-1 min-h-0 bg-[var(--bg-primary)]">
-          {/* Plant name — desktop only (on mobile it's the image overlay) */}
-          <div className="hidden lg:block shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-color)]">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] leading-snug break-words">
+          {/* Top Bar with Breadcrumbs */}
+          <div className="shrink-0 px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-4 border-b border-[var(--border-color)]">
+            <div className="flex items-center text-[10px] md:text-xs text-[var(--text-secondary)] font-medium mb-1.5 md:mb-2">
+               <span className="hover:text-[var(--color-forest)] cursor-pointer transition-colors" onClick={onClose}>Home</span>
+               <span className="mx-2">/</span>
+               {product.category && (
+                 <>
+                   <span className="hover:text-[var(--color-forest)] cursor-pointer transition-colors" onClick={() => { onClose(); window.location.href=`/#/category/${encodeURIComponent(product.category)}`; }}>
+                     {product.category}
+                   </span>
+                   <span className="mx-2">/</span>
+                 </>
+               )}
+               <span className="text-[var(--text-primary)] truncate max-w-[120px] md:max-w-[200px]">{title}</span>
+            </div>
+            
+            {/* Plant name — desktop only (on mobile it's the image overlay) */}
+            <h2 className="hidden lg:block text-2xl font-bold text-[var(--text-primary)] leading-snug break-words">
               {title}
-              <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">#{plantId}</span>
+              <span className="ml-3 text-sm font-normal text-[var(--text-secondary)]">#{plantId}</span>
             </h2>
           </div>
 

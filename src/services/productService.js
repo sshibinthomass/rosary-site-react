@@ -16,13 +16,51 @@ import { db, storage } from '../config/firebase';
 
 const COLLECTION_NAME = 'products';
 
-// In-memory cache keyed by category (null = 'All'). Cleared on page refresh.
-const productCache = new Map();
+// Cache key prefix for localStorage persistence
+const CACHE_PREFIX = 'rosary_products_';
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
 
 /** Call this after adding/updating/deleting products to keep the cache fresh. */
 export function clearProductCache() {
-  productCache.clear();
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(CACHE_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
 }
+
+/** Internal helper: Gets valid parsed cache or null */
+function getLocalCache(cacheKey) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + cacheKey);
+    if (!raw) return null;
+    const { timestamp, data } = JSON.parse(raw);
+    const isValid = Date.now() - timestamp < CACHE_TTL_MS;
+    if (isValid && Array.isArray(data)) {
+      return data;
+    } else {
+      // Clean up expired cache
+      localStorage.removeItem(CACHE_PREFIX + cacheKey);
+    }
+  } catch (e) {
+    console.warn('Failed to read product cache:', e);
+  }
+  return null;
+}
+
+/** Internal helper: Sets cache */
+function setLocalCache(cacheKey, data) {
+  try {
+    localStorage.setItem(
+      CACHE_PREFIX + cacheKey,
+      JSON.stringify({ timestamp: Date.now(), data })
+    );
+  } catch (e) {
+    console.warn('Failed to write product cache:', e);
+  }
+}
+
 
 /**
  * Fast first-page fetch using Firestore limit().
@@ -60,9 +98,10 @@ export async function getProductsPage(category = null, pageSize = 20) {
 export async function getProducts(category = null) {
   const cacheKey = category || 'All';
 
-  // Return cached result if available
-  if (productCache.has(cacheKey)) {
-    return productCache.get(cacheKey);
+  // Return cached result if available and valid
+  const cachedData = getLocalCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
   }
 
   try {
@@ -89,7 +128,7 @@ export async function getProducts(category = null) {
     const sorted = products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
     // Store in cache
-    productCache.set(cacheKey, sorted);
+    setLocalCache(cacheKey, sorted);
     return sorted;
   } catch (error) {
     console.error('Error getting products:', error);
@@ -145,6 +184,7 @@ export async function addProduct(productData) {
       createdAt: new Date(),
       updatedAt: new Date()
     });
+    clearProductCache();
     return { id: docRef.id, ...normalized };
   } catch (error) {
     console.error('Error adding product:', error);
@@ -170,6 +210,7 @@ export async function updateProduct(productId, productData) {
       ...normalized,
       updatedAt: new Date()
     });
+    clearProductCache();
     return { id: productId, ...normalized };
   } catch (error) {
     console.error('Error updating product:', error);
@@ -206,6 +247,7 @@ export async function deleteProduct(productId, imageUrls) {
 
     const docRef = doc(db, COLLECTION_NAME, productId);
     await deleteDoc(docRef);
+    clearProductCache();
     return productId;
   } catch (error) {
     console.error('Error deleting product:', error);

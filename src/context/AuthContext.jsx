@@ -6,7 +6,7 @@ import {
   signInWithRedirect,
   getRedirectResult
 } from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
+import { auth, googleProvider, facebookProvider } from '../config/firebase';
 import { ADMIN_EMAILS } from '../config/constants';
 
 const AuthContext = createContext(null);
@@ -88,6 +88,41 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const signInWithFacebook = async () => {
+    try {
+      loggingInRef.current = true;
+      const result = await signInWithPopup(auth, facebookProvider);
+      console.log('Facebook popup success:', result.user?.email || result.user?.uid);
+      setUser(result.user);
+    } catch (error) {
+      console.error('Facebook sign-in error:', error);
+      
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        alert('An account already exists with the same email. Please sign in using your original method.');
+        loggingInRef.current = false;
+        return;
+      }
+      
+      if (error.code === 'auth/popup-blocked' || 
+          error.code === 'auth/popup-closed-by-user' ||
+          error.code === 'auth/cancelled-popup-request') {
+        try {
+          console.log('Falling back to Facebook redirect...');
+          sessionStorage.setItem('isFreshLogin', 'true');
+          await signInWithRedirect(auth, facebookProvider);
+        } catch (redirectError) {
+          console.error('Facebook redirect also failed:', redirectError);
+          loggingInRef.current = false;
+          throw redirectError;
+        }
+      } else {
+        loggingInRef.current = false;
+        alert(`Facebook sign-in failed: ${error.message}`);
+        throw error;
+      }
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -104,6 +139,7 @@ export function AuthProvider({ children }) {
     loading,
     isAdmin,
     signInWithGoogle,
+    signInWithFacebook,
     logout
   };
 

@@ -3,6 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { syncUser } from '../services/userService';
+import Footer from './Footer';
+import BackToTop from './BackToTop';
 import logo from '../assets/logo.png';
 const HomeIcon = ({ active }) => (
   <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
@@ -111,6 +113,9 @@ export default function Layout({ children }) {
         {children}
       </main>
 
+      {/* Footer */}
+      <Footer />
+
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
         <div className="max-w-lg mx-auto px-4">
@@ -164,6 +169,9 @@ export default function Layout({ children }) {
           </div>
         </NavLink>
       )}
+
+      {/* Back to Top Button */}
+      <BackToTop />
     </div>
   );
 }

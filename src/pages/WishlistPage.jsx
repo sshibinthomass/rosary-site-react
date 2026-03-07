@@ -6,6 +6,7 @@ import ProductModal from '../components/ProductModal';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
+import SEO from '../components/SEO';
 
 const WishlistItem = ({ item, onMoveToCart, onRemove, inCart, onClick, isOutOfStock }) => {
   const [quantity, setQuantity] = useState(1);
@@ -170,6 +171,7 @@ export default function WishlistPage() {
 
   return (
     <div className="animate-fade-in">
+      <SEO title="Your Wishlist" description="Plants you've saved for later. Browse and add to cart from your wishlist." />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Your Wishlist ({wishlist.length})

@@ -6,6 +6,7 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   orderBy,
@@ -45,6 +46,15 @@ export async function createOrder(orderData) {
       })),
       totalAmount: orderData.totalAmount,
       totalItems: orderData.items.reduce((sum, item) => sum + item.quantity, 0),
+
+      // Promo / discount
+      ...(orderData.promoCode ? {
+        promoCode: orderData.promoCode,
+        discountAmount: orderData.discountAmount || 0,
+        discountType: orderData.discountType || null,
+        discountValue: orderData.discountValue || 0,
+        originalAmount: orderData.originalAmount || orderData.totalAmount
+      } : {}),
       
       // Customer info
       customer: {
@@ -198,20 +208,74 @@ export async function updateDeliveryCharge(orderId, deliveryCharge) {
 }
 
 /**
- * Update order items and recalculate totals (admin)
+ * Update order items and recalculate totals (admin).
+ * Re-applies any existing promo code discount after recalculating the raw total.
+ * If the new total falls below the promo's minimum order amount the promo is removed.
  */
 export async function updateOrderItems(orderId, items) {
   try {
     const docRef = doc(db, COLLECTION_NAME, orderId);
-    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const originalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    await updateDoc(docRef, {
+
+    // Fetch existing order to check for a promo code
+    const snap = await getDoc(docRef);
+    const existing = snap.exists() ? snap.data() : {};
+
+    let totalAmount = originalAmount;
+    let discountAmount = 0;
+    let promoRemoved = false;
+
+    if (existing.promoCode && existing.discountType) {
+      const meetsMinimum = originalAmount >= (existing.minOrderAmount || 0);
+
+      if (meetsMinimum) {
+        if (existing.discountType === 'percentage') {
+          discountAmount = Math.round((originalAmount * existing.discountValue) / 100);
+        } else {
+          discountAmount = existing.discountValue || 0;
+        }
+        discountAmount = Math.min(discountAmount, originalAmount);
+        totalAmount = originalAmount - discountAmount;
+      } else {
+        // New total is below the promo minimum — remove the promo entirely
+        promoRemoved = true;
+      }
+    }
+
+    const updates = {
       items,
-      totalAmount,
       totalItems,
+      originalAmount: promoRemoved ? deleteField() : originalAmount,
+      totalAmount: promoRemoved ? originalAmount : totalAmount,
       updatedAt: serverTimestamp()
-    });
-    return { id: orderId, items, totalAmount, totalItems };
+    };
+
+    if (existing.promoCode) {
+      if (promoRemoved) {
+        updates.promoCode = deleteField();
+        updates.discountAmount = deleteField();
+        updates.discountType = deleteField();
+        updates.discountValue = deleteField();
+        updates.originalAmount = deleteField();
+      } else {
+        updates.discountAmount = discountAmount;
+        updates.originalAmount = originalAmount;
+      }
+    }
+
+    await updateDoc(docRef, updates);
+
+    return {
+      id: orderId,
+      items,
+      totalItems,
+      originalAmount: promoRemoved ? undefined : originalAmount,
+      totalAmount: promoRemoved ? originalAmount : totalAmount,
+      discountAmount: promoRemoved ? 0 : discountAmount,
+      promoRemoved
+    };
   } catch (error) {
     console.error('Error updating order items:', error);
     throw error;

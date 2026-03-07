@@ -43,7 +43,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Normalize product fields — prefer the recognizable common name as the main display title
-  const title = product?.commonName || product?.name || product?.title;
+  const title = product?.title || product?.name || product?.commonName;
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);

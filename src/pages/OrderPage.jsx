@@ -186,10 +186,30 @@ export default function OrderPage() {
     setSavingItems(true);
     try {
       const result = await updateOrderItems(order.id, newItems);
-      setOrder(prev => ({ ...prev, items: newItems, totalAmount: result.totalAmount, totalItems: result.totalItems }));
+      setOrder(prev => {
+        const updated = {
+          ...prev,
+          items: newItems,
+          totalItems: result.totalItems,
+          totalAmount: result.totalAmount,
+          originalAmount: result.originalAmount,
+          discountAmount: result.promoRemoved ? 0 : (result.discountAmount ?? prev.discountAmount)
+        };
+        if (result.promoRemoved) {
+          delete updated.promoCode;
+          delete updated.discountType;
+          delete updated.discountValue;
+          delete updated.originalAmount;
+        }
+        return updated;
+      });
       setEditingItems(false);
       fetchProductNames(newItems);
-      success('Order items updated!');
+      if (result.promoRemoved) {
+        success('Items updated. Promo removed — order total is below the minimum.');
+      } else {
+        success('Order items updated!');
+      }
     } catch (err) {
       showError('Failed to update items');
     } finally {
@@ -389,10 +409,29 @@ export default function OrderPage() {
         )}
         
         <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-2">
+          {/* Subtotal — show original pre-discount amount when a promo was used */}
           <div className="flex justify-between text-sm text-[var(--text-secondary)]">
             <span>Subtotal</span>
-            <span>{CURRENCY}{order.totalAmount.toLocaleString('en-IN')}</span>
+            <span>{CURRENCY}{(order.originalAmount ?? order.totalAmount).toLocaleString('en-IN')}</span>
           </div>
+
+          {/* Promo discount row */}
+          {order.promoCode && order.discountAmount > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                <span>🏷️</span>
+                <span className="font-mono font-semibold">{order.promoCode}</span>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  ({order.discountType === 'percentage'
+                    ? `${order.discountValue}% off`
+                    : `${CURRENCY}${order.discountValue} off`})
+                </span>
+              </span>
+              <span className="font-medium text-green-600 dark:text-green-400">
+                −{CURRENCY}{order.discountAmount.toLocaleString('en-IN')}
+              </span>
+            </div>
+          )}
 
           {/* Delivery Charge */}
           <div className="flex justify-between items-center text-sm">

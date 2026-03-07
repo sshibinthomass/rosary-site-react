@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -7,14 +7,19 @@ import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
+import { validatePromoCode } from '../services/promoService';
+import { useSettings } from '../context/SettingsContext';
 import { CURRENCY } from '../config/constants';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
+import SEO from '../components/SEO';
 
 export default function CartPage() {
   const { user } = useAuth();
   const { cart, removeFromCart, updateQuantity, clearCart, addToCart, isInCart } = useCart();
   const { success, error } = useToast();
+  const { settings } = useSettings();
+  const promoEnabled = settings.promoCodesEnabled ?? true;
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productStockMap, setProductStockMap] = useState({});
 
@@ -52,9 +57,74 @@ export default function CartPage() {
     0
   );
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoInfo, setPromoInfo] = useState(null); // { code, discount, type, value }
+  const [promoError, setPromoError] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+
+  const discountedTotal = promoInfo ? Math.max(0, inStockTotal - promoInfo.discount) : inStockTotal;
+
+  // Re-validate promo whenever cart total changes
+  useEffect(() => {
+    if (!promoInfo) return;
+    validatePromoCode(promoInfo.code, inStockTotal).then((result) => {
+      if (!result.valid) {
+        setPromoInfo(null);
+        setPromoCode(promoInfo.code);
+        setPromoError(result.reason);
+      } else {
+        // Recalculate discount for updated total (e.g. percentage)
+        setPromoInfo(prev => prev ? { ...prev, discount: result.discount } : null);
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inStockTotal]);
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError('');
+    setPromoInfo(null);
+    try {
+      const result = await validatePromoCode(promoCode.trim(), inStockTotal);
+      if (result.valid) {
+        setPromoInfo({
+          code: promoCode.trim().toUpperCase(),
+          discount: result.discount,
+          type: result.promo.type,
+          value: result.promo.value
+        });
+        success(`Promo applied! You save ${CURRENCY}${result.discount.toLocaleString('en-IN')}`);
+      } else {
+        setPromoError(result.reason);
+      }
+    } catch {
+      setPromoError('Could not validate promo code. Please try again.');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoInfo(null);
+    setPromoCode('');
+    setPromoError('');
+  };
+
+  // Clear promo whenever the user navigates away from this page
+  useEffect(() => {
+    return () => {
+      setPromoInfo(null);
+      setPromoCode('');
+      setPromoError('');
+    };
+  }, []);
+
   const [showCheckout, setShowCheckout] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
+  const checkoutRef = useRef(null);
   
   const [checkoutInfo, setCheckoutInfo] = useState({
     name: '',
@@ -151,7 +221,7 @@ export default function CartPage() {
     // If not logged in, proceed directly
     if (!user) {
       try {
-        await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, null);
+        await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, null, promoInfo);
         clearCart();
         setShowCheckout(false);
         success('Order created successfully!');
@@ -185,7 +255,7 @@ export default function CartPage() {
     
     // Proceed with order
     try {
-      await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, user.uid);
+      await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user.uid, promoInfo);
       clearCart();
       setShowCheckout(false);
       setShowSaveConfirm(false);
@@ -199,7 +269,7 @@ export default function CartPage() {
 
   const handleSkipSave = async () => {
     try {
-      await initiateWhatsAppCheckout(inStockItems, inStockTotal, checkoutInfo, user?.uid || null);
+      await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
       clearCart();
       setShowCheckout(false);
       setShowSaveConfirm(false);
@@ -227,6 +297,7 @@ export default function CartPage() {
 
   return (
     <div className="animate-fade-in">
+      <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Your Cart ({inStockItems.length})
@@ -354,6 +425,60 @@ export default function CartPage() {
           <span>Subtotal</span>
           <span className="font-semibold">{CURRENCY}{inStockTotal.toLocaleString('en-IN')}</span>
         </div>
+
+        {/* Promo Code Section */}
+        {promoEnabled && !promoInfo ? (
+          <div className="space-y-1.5">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                placeholder="Promo code"
+                className="input flex-1 text-sm uppercase placeholder:normal-case"
+              />
+              <button
+                onClick={handleApplyPromo}
+                disabled={promoLoading || !promoCode.trim()}
+                className="btn btn-secondary text-sm px-4 shrink-0 disabled:opacity-50"
+              >
+                {promoLoading ? (
+                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+                ) : 'Apply'}
+              </button>
+            </div>
+            {promoError && (
+              <p className="text-xs text-red-500">{promoError}</p>
+            )}
+          </div>
+        ) : promoEnabled && promoInfo ? (
+          <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-green-600 dark:text-green-400 text-base">🏷️</span>
+              <div>
+                <p className="text-xs font-semibold text-green-700 dark:text-green-300">{promoInfo.code}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  −{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')} saved
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleRemovePromo}
+              className="text-xs text-green-700 dark:text-green-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        ) : null}
+
+        {promoInfo && (
+          <div className="flex justify-between text-green-600 dark:text-green-400 text-sm font-medium">
+            <span>Discount</span>
+            <span>−{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')}</span>
+          </div>
+        )}
+
         <div className="flex justify-between text-[var(--text-secondary)] text-sm">
           <span>Shipping</span>
           <span>Calculated at checkout</span>
@@ -361,18 +486,43 @@ export default function CartPage() {
         <hr className="border-[var(--border-color)]" />
         <div className="flex justify-between text-[var(--text-primary)] text-lg">
           <span className="font-semibold">Total</span>
-          <span className="font-bold">{CURRENCY}{inStockTotal.toLocaleString('en-IN')}</span>
+          <div className="text-right">
+            {promoInfo && (
+              <p className="text-xs text-[var(--text-secondary)] line-through">
+                {CURRENCY}{inStockTotal.toLocaleString('en-IN')}
+              </p>
+            )}
+            <span className="font-bold">{CURRENCY}{discountedTotal.toLocaleString('en-IN')}</span>
+          </div>
         </div>
 
         {!showCheckout ? (
           <button
-            onClick={() => setShowCheckout(true)}
+            onClick={() => {
+              setShowCheckout(true);
+              setTimeout(() => {
+                checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 100);
+            }}
             className="btn btn-primary w-full mt-4"
           >
             Proceed to Checkout
           </button>
         ) : (
-          <div className="space-y-4 mt-4 animate-fade-in border-t border-[var(--color-forest)]/10 pt-4">
+          <div ref={checkoutRef} className="space-y-4 mt-4 animate-fade-in border-t-2 border-[var(--color-forest)]/20 pt-4">
+            {/* Step indicator */}
+            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mb-2">
+              <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                <span className="w-5 h-5 rounded-full bg-[var(--color-forest)] text-white text-[10px] font-bold flex items-center justify-center">✓</span>
+                Cart
+              </span>
+              <span className="flex-1 h-px bg-[var(--color-forest)]/30" />
+              <span className="flex items-center gap-1 text-[var(--color-forest)] font-semibold">
+                <span className="w-5 h-5 rounded-full bg-[var(--color-forest)] text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                Delivery Details
+              </span>
+            </div>
+
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-[var(--text-primary)]">Delivery Details</h3>
               <button 

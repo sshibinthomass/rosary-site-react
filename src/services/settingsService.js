@@ -5,6 +5,7 @@ const SETTINGS_DOC = doc(db, 'settings', 'siteConfig');
 
 const DEFAULTS = {
   showPlantDescription: true,
+  promoCodesEnabled: true,
 };
 
 export async function getSettings() {

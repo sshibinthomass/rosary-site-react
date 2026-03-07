@@ -611,11 +611,30 @@ export default function AdminOrdersPage() {
     setSavingItems(true);
     try {
       const result = await updateOrderItems(orderId, newItems);
-      setOrders(prev => prev.map(o =>
-        o.id === orderId ? { ...o, items: newItems, totalAmount: result.totalAmount, totalItems: result.totalItems } : o
-      ));
+      setOrders(prev => prev.map(o => {
+        if (o.id !== orderId) return o;
+        const updated = {
+          ...o,
+          items: newItems,
+          totalItems: result.totalItems,
+          totalAmount: result.totalAmount,
+          originalAmount: result.originalAmount,
+          discountAmount: result.promoRemoved ? 0 : (result.discountAmount ?? o.discountAmount)
+        };
+        if (result.promoRemoved) {
+          delete updated.promoCode;
+          delete updated.discountType;
+          delete updated.discountValue;
+          delete updated.originalAmount;
+        }
+        return updated;
+      }));
       setEditingItemsFor(null);
-      success('Order items updated!');
+      if (result.promoRemoved) {
+        success('Items updated. Promo removed — order total is below the minimum.');
+      } else {
+        success('Order items updated!');
+      }
     } catch (err) {
       error('Failed to update items');
     } finally {
@@ -985,7 +1004,12 @@ export default function AdminOrdersPage() {
                     <span className={`badge ${getStatusColor(order.status)} capitalize text-xs`}>
                       {order.status}
                     </span>
-                    <p className="font-semibold text-[var(--text-primary)] mt-2">
+                    {order.promoCode && order.discountAmount > 0 && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        🏷️ {order.promoCode} −{CURRENCY}{order.discountAmount.toLocaleString('en-IN')}
+                      </p>
+                    )}
+                    <p className="font-semibold text-[var(--text-primary)] mt-1">
                       {CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}
                     </p>
                     <p className="text-xs text-[var(--text-secondary)]">
@@ -1192,8 +1216,24 @@ export default function AdminOrdersPage() {
                   <div className="mb-4 pt-3 border-t border-[var(--border-color)] space-y-2 text-sm">
                     <div className="flex justify-between text-[var(--text-secondary)]">
                       <span>Subtotal</span>
-                      <span>{CURRENCY}{order.totalAmount?.toLocaleString('en-IN')}</span>
+                      <span>{CURRENCY}{(order.originalAmount ?? order.totalAmount)?.toLocaleString('en-IN')}</span>
                     </div>
+                    {order.promoCode && order.discountAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                          <span>🏷️</span>
+                          <span className="font-mono font-semibold">{order.promoCode}</span>
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            ({order.discountType === 'percentage'
+                              ? `${order.discountValue}% off`
+                              : `${CURRENCY}${order.discountValue} off`})
+                          </span>
+                        </span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          −{CURRENCY}{order.discountAmount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="text-[var(--text-secondary)]">Delivery</span>
                       {editingDelivery === order.id ? (

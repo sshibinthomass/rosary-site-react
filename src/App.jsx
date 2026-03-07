@@ -35,6 +35,7 @@ const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
 const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function PageLoader() {
   return (
@@ -237,6 +238,8 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+                    {/* 404 Catch-all */}
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
               </Layout>

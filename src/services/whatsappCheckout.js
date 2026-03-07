@@ -1,16 +1,18 @@
 import { WHATSAPP_NUMBER, CURRENCY } from '../config/constants';
 import { createOrder, getOrderUrl } from './orderService';
+import { incrementPromoUsage } from './promoService';
 
 /**
  * Generate WhatsApp checkout URL with pre-filled order message
  * @param {Array} cartItems - Array of cart items
- * @param {number} total - Total price
+ * @param {number} total - Final total after discount
  * @param {Object} userInfo - User name and address details
  * @param {string} orderUrl - URL to view order details
  * @param {string} orderId - Unique order ID
+ * @param {Object|null} promoInfo - { code, discount, type, value } or null
  * @returns {string} WhatsApp URL
  */
-export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, orderUrl = '', orderId = '') {
+export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, orderUrl = '', orderId = '', promoInfo = null) {
   const { 
     name = 'Customer', 
     address = '',
@@ -32,6 +34,9 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
   
   // Calculate total plants count
   const totalPlants = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Calculate subtotal before discount
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   
   // Generate summary line using plant IDs (e.g., "10-4,13-1")
   const summaryLine = cartItems
@@ -48,12 +53,21 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
     if (parts) fullAddress += `\n${parts}`;
   }
 
+  // Build promo line if applicable
+  let promoLines = '';
+  if (promoInfo && promoInfo.discount > 0) {
+    const discountLabel = promoInfo.type === 'percentage'
+      ? `${promoInfo.value}% off`
+      : `${CURRENCY}${promoInfo.value} off`;
+    promoLines = `\nSubtotal= ${CURRENCY}${subtotal.toLocaleString('en-IN')}\nPromo Code: ${promoInfo.code} (${discountLabel}) -${CURRENCY}${promoInfo.discount.toLocaleString('en-IN')}`;
+  }
+
   // Build message
   const message = `Hello, I have chosen the following plants from your site
 
 ${itemsList}
 
-Total Plants= ${totalPlants}
+Total Plants= ${totalPlants}${promoLines}
 Total Price=${CURRENCY}${total.toLocaleString('en-IN')} (delivery additional)
 
 ${summaryLine}
@@ -77,20 +91,35 @@ ${address ? `Address:\n${fullAddress}` : ''}
 /**
  * Create order in database and open WhatsApp with checkout message
  * @param {Array} cartItems - Array of cart items
- * @param {number} total - Total price
+ * @param {number} total - Final total (after promo discount)
  * @param {Object} userInfo - User name and address details
  * @param {string|null} userId - User ID if logged in
+ * @param {Object|null} promoInfo - { code, discount, type, value, promo } or null
  * @returns {Object} Order details and WhatsApp URL
  */
-export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userId = null) {
+export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userId = null, promoInfo = null) {
   try {
+    const originalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
     // Create order in database
     const order = await createOrder({
       items: cartItems,
       totalAmount: total,
+      originalAmount,
       customerInfo: userInfo,
-      userId: userId
+      userId: userId,
+      ...(promoInfo?.code ? {
+        promoCode: promoInfo.code,
+        discountAmount: promoInfo.discount,
+        discountType: promoInfo.type,
+        discountValue: promoInfo.value
+      } : {})
     });
+
+    // Increment promo usage count (fire-and-forget)
+    if (promoInfo?.code) {
+      incrementPromoUsage(promoInfo.code);
+    }
     
     // Get order URL
     const orderUrl = getOrderUrl(order.id);
@@ -101,7 +130,8 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
       total, 
       userInfo, 
       orderUrl, 
-      order.orderId
+      order.orderId,
+      promoInfo
     );
     
     // Open WhatsApp
@@ -117,4 +147,3 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
     throw error;
   }
 }
-

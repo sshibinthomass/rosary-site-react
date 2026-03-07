@@ -25,6 +25,11 @@ export default function HomePage() {
   const [filterWatering, setFilterWatering] = useState('Not Specific');
   const [filterSunlight, setFilterSunlight] = useState('Not Specific');
   const [filterTransit, setFilterTransit] = useState('Not Specific');
+  const [filterPriceMin, setFilterPriceMin] = useState('');
+  const [filterPriceMax, setFilterPriceMax] = useState('');
+  const categoryScrollerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
@@ -134,6 +139,23 @@ export default function HomePage() {
 
   const categories = ['All', 'Limited', ...CATEGORIES];
 
+  // Track category scroller scroll position
+  useEffect(() => {
+    const el = categoryScrollerRef.current;
+    if (!el) return;
+    const updateScrollState = () => {
+      setCanScrollLeft(el.scrollLeft > 2);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+    };
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    window.addEventListener('resize', updateScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [categories.length]);
+
   // Filter products by search query and attributes
   const filteredProducts = products.filter((p) => {
     // Search condition
@@ -155,7 +177,13 @@ export default function HomePage() {
     const passesSunlight = filterSunlight === 'Not Specific' || (productSunlight === filterSunlight);
     const passesTransit = filterTransit === 'Not Specific' || (productTransit === filterTransit);
     
-    return passesSearch && passesWatering && passesSunlight && passesTransit;
+    // Price
+    const productPrice = p.salesPrice || p.price || 0;
+    const passesPrice = 
+      (!filterPriceMin || productPrice >= Number(filterPriceMin)) &&
+      (!filterPriceMax || productPrice <= Number(filterPriceMax));
+    
+    return passesSearch && passesWatering && passesSunlight && passesTransit && passesPrice;
   });
 
   const sortedProducts = useMemo(() => {
@@ -231,13 +259,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Decorative plant emoji circle (mobile-hidden for cleaner layout) */}
+            {/* Hero plant image (desktop only) */}
             <div className="hidden md:flex items-center justify-center shrink-0">
               <div className="relative w-40 h-40 lg:w-52 lg:h-52">
-                <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse-soft" />
-                <div className="absolute inset-2 bg-white/5 rounded-full border-2 border-white/20 flex items-center justify-center">
-                  <span className="text-7xl lg:text-8xl">🌿</span>
-                </div>
+                <div className="absolute -inset-1 bg-white/15 rounded-full animate-pulse-soft" />
+                <img
+                  src="/hero-plant.png"
+                  alt="Beautiful succulents from Rosary Plant House nursery"
+                  className="w-full h-full object-cover rounded-full border-3 border-white/30 shadow-xl"
+                />
               </div>
             </div>
           </div>
@@ -300,20 +330,24 @@ export default function HomePage() {
       <section className="mb-4">
         <div className="relative group">
           {/* Left scroll arrow */}
-          <button
-            onClick={() => {
-              const el = document.getElementById('category-scroller');
-              if (el) el.scrollBy({ left: -200, behavior: 'smooth' });
-            }}
-            className="absolute left-0 top-0 bottom-0 z-10 w-8 flex items-center justify-center bg-gradient-to-r from-[var(--bg-primary)] to-transparent md:hidden"
-            aria-label="Scroll left"
-          >
-            <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          {canScrollLeft && (
+            <button
+              onClick={() => {
+                const el = categoryScrollerRef.current;
+                if (el) el.scrollBy({ left: -200, behavior: 'smooth' });
+              }}
+              className="absolute left-0 top-0 bottom-0 z-10 w-10 flex items-center justify-center bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-primary)]/80 to-transparent transition-opacity"
+              aria-label="Scroll left"
+            >
+              <div className="w-7 h-7 rounded-full bg-[var(--bg-secondary)] shadow-md border border-[var(--border-color)] flex items-center justify-center">
+                <svg className="w-4 h-4 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </div>
+            </button>
+          )}
 
-          <div id="category-scroller" className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1 scroll-smooth">
+          <div ref={categoryScrollerRef} className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1 scroll-smooth">
             {categories.map((category) => {
               const isLimited = category === 'Limited';
               const isSelected = selectedCategory === category;
@@ -344,18 +378,22 @@ export default function HomePage() {
           </div>
 
           {/* Right scroll arrow */}
-          <button
-            onClick={() => {
-              const el = document.getElementById('category-scroller');
-              if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
-            }}
-            className="absolute right-0 top-0 bottom-0 z-10 w-8 flex items-center justify-center bg-gradient-to-l from-[var(--bg-primary)] to-transparent md:hidden"
-            aria-label="Scroll right"
-          >
-            <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          {canScrollRight && (
+            <button
+              onClick={() => {
+                const el = categoryScrollerRef.current;
+                if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
+              }}
+              className="absolute right-0 top-0 bottom-0 z-10 w-10 flex items-center justify-center bg-gradient-to-l from-[var(--bg-primary)] via-[var(--bg-primary)]/80 to-transparent transition-opacity"
+              aria-label="Scroll right"
+            >
+              <div className="w-7 h-7 rounded-full bg-[var(--bg-secondary)] shadow-md border border-[var(--border-color)] flex items-center justify-center">
+                <svg className="w-4 h-4 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )}
         </div>
       </section>
 
@@ -413,12 +451,36 @@ export default function HomePage() {
             <option value="High">📦 High</option>
           </select>
           
-          {(filterWatering !== 'Not Specific' || filterSunlight !== 'Not Specific' || filterTransit !== 'Not Specific') && (
+          {/* Price Range */}
+          <div className="flex items-center gap-1 flex-1 min-w-[180px] sm:flex-none sm:w-auto">
+            <span className="text-xs text-[var(--text-secondary)] font-medium whitespace-nowrap">₹</span>
+            <input
+              type="number"
+              value={filterPriceMin}
+              onChange={(e) => setFilterPriceMin(e.target.value)}
+              placeholder="Min"
+              min="0"
+              className="w-20 text-xs bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-full px-3 py-1.5 focus:outline-none focus:border-[var(--color-forest)] focus:ring-1 focus:ring-[var(--color-forest)]"
+            />
+            <span className="text-xs text-[var(--text-secondary)]">–</span>
+            <input
+              type="number"
+              value={filterPriceMax}
+              onChange={(e) => setFilterPriceMax(e.target.value)}
+              placeholder="Max"
+              min="0"
+              className="w-20 text-xs bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-full px-3 py-1.5 focus:outline-none focus:border-[var(--color-forest)] focus:ring-1 focus:ring-[var(--color-forest)]"
+            />
+          </div>
+          
+          {(filterWatering !== 'Not Specific' || filterSunlight !== 'Not Specific' || filterTransit !== 'Not Specific' || filterPriceMin || filterPriceMax) && (
              <button
               onClick={() => {
                 setFilterWatering('Not Specific');
                 setFilterSunlight('Not Specific');
                 setFilterTransit('Not Specific');
+                setFilterPriceMin('');
+                setFilterPriceMax('');
               }}
               className="text-xs text-[var(--color-forest)] font-medium hover:underline ml-1"
             >
@@ -466,14 +528,37 @@ export default function HomePage() {
       {/* Products Grid */}
       <section>
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="card animate-pulse">
-                <div className="aspect-square bg-gray-200" />
-                <div className="p-3 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-8 bg-gray-200 rounded w-full mt-2" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card overflow-hidden flex flex-col">
+                {/* Image skeleton */}
+                <div className="relative w-full aspect-[4/3] skeleton-shimmer">
+                  {/* Category badge placeholder */}
+                  <div className="absolute bottom-2 left-2 w-16 h-5 bg-white/20 rounded-lg" />
+                  {/* Heart button placeholder */}
+                  <div className="absolute bottom-2 right-2 w-8 h-8 bg-white/20 rounded-full" />
+                </div>
+                {/* Content skeleton */}
+                <div className="p-3 md:p-4 flex flex-col gap-2 bg-[var(--bg-primary)]">
+                  {/* ID + Name + Price row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 skeleton-shimmer rounded w-10" />
+                      <div className="h-4 skeleton-shimmer rounded w-3/4" />
+                    </div>
+                    <div className="h-5 skeleton-shimmer rounded w-16 shrink-0" />
+                  </div>
+                  {/* Attribute tiles */}
+                  <div className="flex gap-1.5">
+                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
+                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
+                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
+                  </div>
+                  {/* Add to cart row */}
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="h-9 skeleton-shimmer rounded-lg w-24" />
+                    <div className="h-9 skeleton-shimmer rounded-lg flex-1" />
+                  </div>
                 </div>
               </div>
             ))}

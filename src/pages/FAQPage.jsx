@@ -31,8 +31,8 @@ export default function FAQPage() {
         { q: "Do you deliver to all parts of the country?", a: "Delivery limited due to Transportation Delay. But we deliver to all major part of the Country." },
         { q: "When will the plants be dispatched?", a: "Plants will be sent only after payment. Will be dispatched on nearest Monday or Wednesday if payment is made by previous Day." },
         { q: "How will the plants be sent?", a: "Plants will be sent barerooted. (packed with tissue, cotton and cocopeat depending on Plants)" },
-        { q: "What if \"I dont receive plants safe\"?", a: "Any Damage during transportation will be replaced with customers next order. (If plants dont survive). High Transit Risk plants are not Replaceable." },
-        { q: "What if \"I dont look after the plants after i receive, will it be replaced\"?", a: "After receiving the plants its customer's responsibility to take care of plants so it doesn't come under our replacement policy. Note: replacement policy is applicable only for transportation damage. Any requests on the day of receiving and following day will surely be considered." },
+        { q: "What if \"I don't receive plants safe\"?", a: "Any Damage during transportation will be replaced with customers next order. (If plants don't survive). High Transit Risk plants are not Replaceable." },
+        { q: "What if \"I don't look after the plants after I receive, will it be replaced\"?", a: "After receiving the plants it's customer's responsibility to take care of plants so it doesn't come under our replacement policy. Note: replacement policy is applicable only for transportation damage. Any requests on the day of receiving and following day will surely be considered." },
         { q: "How will the plants be dispatched?", a: "Plants will be dispatched by DTDC (since its fast and we have proper customer support). On customer request Speed post or Professional will be considered (delay should be taken care by customer)." }
       ]
     },

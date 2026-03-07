@@ -6,6 +6,7 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 
 const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99 }) {
   const [quantity, setQuantity] = useState(1);
+  const [heartAnim, setHeartAnim] = useState(false);
   const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
   const { error } = useToast();
 
@@ -28,6 +29,8 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
 
   const handleToggleWishlist = async (e) => {
     e.stopPropagation();
+    setHeartAnim(true);
+    setTimeout(() => setHeartAnim(false), 400);
     try {
       if (isInWishlist(product.id)) {
         await removeFromWishlist(product.id);
@@ -95,9 +98,10 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
           className={`
             absolute bottom-2 right-2 w-9 h-9 md:w-8 md:h-8 rounded-full flex items-center justify-center
             transition-all duration-200 shadow-md
+            ${heartAnim ? 'animate-heart-pop' : ''}
             ${inWishlist 
-              ? 'bg-[var(--color-terracotta)] text-white' 
-              : 'bg-white/90 text-[var(--text-primary)] hover:bg-[var(--color-terracotta)] hover:text-white dark:bg-gray-800/90 dark:text-white'
+              ? 'bg-red-500 text-white' 
+              : 'bg-white/90 text-gray-600 hover:bg-red-50 hover:text-red-500 dark:bg-gray-800/90 dark:text-gray-300 dark:hover:bg-red-900/30 dark:hover:text-red-400'
             }
           `}
         >

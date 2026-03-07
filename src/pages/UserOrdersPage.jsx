@@ -77,6 +77,7 @@ export default function UserOrdersPage() {
               day: 'numeric', month: 'long', year: 'numeric' 
             });
             const total = (order.totalAmount || 0) + (order.deliveryCharge || 0);
+            const hasPromo = order.promoCode && order.discountAmount > 0;
 
             return (
               <NavLink 
@@ -93,13 +94,28 @@ export default function UserOrdersPage() {
                       <span className={`badge ${statusColors[order.status] || 'bg-gray-100 text-gray-700'} capitalize text-xs shadow-sm`}>
                         {order.status}
                       </span>
+                      {hasPromo && (
+                        <span className="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs flex items-center gap-1">
+                          🏷️ {order.promoCode}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-[var(--text-secondary)]">
                       Placed on {dateStr}
                     </p>
+                    {hasPromo && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                        Saved {CURRENCY}{order.discountAmount.toLocaleString('en-IN')} with promo
+                      </p>
+                    )}
                   </div>
                   <div className="text-left sm:text-right">
                     <p className="text-xs text-[var(--text-secondary)] mb-1">Total Amount</p>
+                    {hasPromo && (
+                      <p className="text-xs text-[var(--text-secondary)] line-through">
+                        {CURRENCY}{((order.originalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}
+                      </p>
+                    )}
                     <p className="font-bold text-[var(--text-primary)] text-xl">
                       {CURRENCY}{total.toLocaleString('en-IN')}
                     </p>

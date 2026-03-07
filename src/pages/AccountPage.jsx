@@ -7,9 +7,10 @@ import { useTheme } from '../context/ThemeContext';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getOrdersByUserId } from '../services/orderService';
 import { NavLink } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 export default function AccountPage() {
-  const { user, loading, isAdmin, signInWithGoogle, signInWithFacebook, logout } = useAuth();
+  const { user, loading, isAdmin, signInWithGoogle, logout } = useAuth();
   const { cart, wishlist } = useCart();
   const { success, error } = useToast();
   const { theme, setTheme } = useTheme();
@@ -135,17 +136,6 @@ export default function AccountPage() {
     }
   };
 
-  const handleFacebookSignIn = async () => {
-    try {
-      await signInWithFacebook();
-      success('Welcome back! 🌿');
-    } catch (err) {
-      if (err?.code !== 'auth/account-exists-with-different-credential') {
-        error('Failed to sign in with Facebook.');
-      }
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -167,6 +157,7 @@ export default function AccountPage() {
 
   return (
     <div className="animate-fade-in">
+      <SEO title="My Account" description="Manage your profile, view orders, and update delivery details." />
       {user ? (
         /* Profile Card for Logged In User */
         <div className="card p-5">
@@ -381,15 +372,6 @@ export default function AccountPage() {
               <span className="font-medium text-[var(--color-forest)] whitespace-nowrap">Continue with Google</span>
             </button>
             
-            <button
-              onClick={handleFacebookSignIn}
-              className="flex items-center gap-3 w-full justify-center px-6 py-3 bg-[#1877F2] text-white rounded-xl border border-transparent hover:bg-[#166FE5] transition-all hover:shadow-md"
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.34 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z" />
-              </svg>
-              <span className="font-medium whitespace-nowrap">Continue with Facebook</span>
-            </button>
           </div>
         </div>
       )}

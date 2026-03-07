@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { syncUser } from '../services/userService';
+import { CATEGORIES } from '../config/constants';
 import Footer from './Footer';
 import BackToTop from './BackToTop';
 import logo from '../assets/logo.png';
@@ -41,7 +42,16 @@ export default function Layout({ children }) {
   const { isAdmin } = useAuth();
   const { cartCount } = useCart();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const allCategories = ['All', 'Limited', ...CATEGORIES];
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   // Sync user to Firestore on login
   useEffect(() => {
@@ -50,15 +60,42 @@ export default function Layout({ children }) {
     }
   }, [user]);
 
+  // Prevent body scroll when sidebar open
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
+  const handleCategoryClick = (cat) => {
+    setSidebarOpen(false);
+    if (cat === 'All') {
+      navigate('/');
+    } else {
+      navigate(`/category/${encodeURIComponent(cat)}`);
+    }
+  };
+
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <NavLink to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-            <h1 className="font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
-          </NavLink>
+          <div className="flex items-center gap-2">
+            {/* Hamburger Menu */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 -ml-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              aria-label="Open categories menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <NavLink to="/" className="flex items-center gap-2">
+              <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+              <h1 className="font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
+            </NavLink>
+          </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -107,6 +144,70 @@ export default function Layout({ children }) {
           )}
         </div>
       </header>
+
+      {/* Category Sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={() => setSidebarOpen(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" />
+        </div>
+      )}
+      <aside
+        className={`
+          fixed top-0 left-0 z-[70] h-full w-72 bg-[var(--bg-primary)] border-r border-[var(--border-color)]
+          transform transition-transform duration-300 ease-in-out shadow-2xl
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between px-4 h-16 border-b border-[var(--border-color)]">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🌿</span>
+            <h2 className="font-semibold text-[var(--text-primary)]">Categories</h2>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Category List */}
+        <nav className="overflow-y-auto h-[calc(100%-4rem)] py-2">
+          {allCategories.map((cat) => {
+            const isActive = 
+              (cat === 'All' && (location.pathname === '/' || location.pathname === '')) ||
+              location.pathname === `/category/${encodeURIComponent(cat)}`;
+            
+            const emoji = {
+              'All': '🏠', 'Limited': '⭐', 'Succulent': '🪴', 'Cactus': '🌵',
+              'Echeveria': '🌸', 'Jade': '💎', 'Crassula': '🍀', 'Peperomia': '🌿',
+              'Aloe': '🌱', 'Sedum': '🪻', 'Haworthia': '🌾', 'Creeper': '🍃',
+              'Sansevieria': '🐍', 'Indoor': '🏡', 'Hanging': '🎋', 'Mother': '🌳',
+              'Combo': '🎁', 'Others': '📦'
+            }[cat] || '🌿';
+
+            return (
+              <button
+                key={cat}
+                onClick={() => handleCategoryClick(cat)}
+                className={`
+                  w-full flex items-center gap-3 px-5 py-3 text-left text-sm transition-all
+                  ${isActive
+                    ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold border-r-3 border-[var(--color-forest)]'
+                    : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                  }
+                `}
+              >
+                <span className="text-lg w-7 text-center">{emoji}</span>
+                <span>{cat}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 md:py-8">

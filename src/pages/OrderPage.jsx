@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, NavLink, useNavigate } from 'react-router-dom';
+import { useParams, NavLink } from 'react-router-dom';
 import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
@@ -14,8 +14,7 @@ const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancell
 
 export default function OrderPage() {
   const { orderId } = useParams();
-  const navigate = useNavigate();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { success, error: showError } = useToast();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,17 +42,6 @@ export default function OrderPage() {
 
   // PDF Exporting state
   const [exportingOrder, setExportingOrder] = useState(false);
-
-  const handleSwitchAccount = async () => {
-    try {
-      if (user) {
-        await logout();
-      }
-    } catch (e) {
-      console.error('Error during logout before switching account:', e);
-    }
-    navigate(`/account?redirect=/order/${orderId}`, { replace: true });
-  };
 
   useEffect(() => {
     if (orderId) {
@@ -281,36 +269,6 @@ export default function OrderPage() {
         <NavLink to="/" className="btn btn-primary mt-4">
           Back to Home
         </NavLink>
-      </div>
-    );
-  }
-
-  const hasOwnerUserId = !!order.customer?.userId;
-  const isOwner = hasOwnerUserId && user && user.uid === order.customer.userId;
-  const isLoggedIn = !!user;
-
-  if (hasOwnerUserId && !isAdmin && !isOwner) {
-    return (
-      <div className="animate-fade-in text-center py-12">
-        <span className="text-5xl">📋</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Order Not Found</h2>
-        <p className="text-[var(--text-secondary)] mt-2">
-          {isLoggedIn
-            ? 'This order belongs to a different account. Please switch to the account used to place this order.'
-            : 'Please log in with the account used to place this order to view it.'}
-        </p>
-        <div className="mt-4 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={handleSwitchAccount}
-            className="btn btn-primary min-w-[180px]"
-          >
-            Login to your account
-          </button>
-          <NavLink to="/" className="btn btn-secondary min-w-[180px]">
-            Back to Home
-          </NavLink>
-        </div>
       </div>
     );
   }

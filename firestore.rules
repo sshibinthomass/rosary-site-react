@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.email in ['sshibinthomass@gmail.com', 'rosaryplanthouse@gmail.com'];
+    }
+
+    // Products: public read of available items, only admin write
+    match /products/{productId} {
+      allow read: if (resource.data.available == true) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Limited-sale items: same pattern as products
+    match /limited/{limitedId} {
+      allow read: if (resource.data.available == true) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Counter doc used for limited IDs
+    match /counters/{counterId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Users and subcollections
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+
+      match /cart/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /wishlist/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /profile/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // Site settings: public read so unauthenticated pages (e.g. popups) load correctly
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Promo codes: public read for checkout validation, admin write
+    match /promoCodes/{code} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow create: if true;
+
+      // Anyone with the unique order link can view a single order.
+      // Listing all orders (e.g. admin dashboard) stays restricted.
+      allow get: if true;
+      allow list: if isAdmin()
+        || (isSignedIn()
+            && resource.data.customer.userId != null
+            && resource.data.customer.userId == request.auth.uid);
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && resource.data.customer.userId != null
+            && resource.data.customer.userId == request.auth.uid);
+
+      allow delete: if isAdmin();
+    }
+
+    // Admin fallback for any other collection
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

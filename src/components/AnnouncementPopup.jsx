@@ -72,8 +72,18 @@ export default function AnnouncementPopup() {
           </svg>
         </button>
 
+        {/* Hero image */}
+        {popup.imageUrl && (
+          <img
+            src={popup.imageUrl}
+            alt=""
+            className="w-full max-h-52 object-cover"
+            loading="eager"
+          />
+        )}
+
         {/* Content */}
-        <div className="px-6 pt-6 pb-5 text-center">
+        <div className={`px-6 pb-5 text-center ${popup.imageUrl ? 'pt-4' : 'pt-6'}`}>
           {popup.emoji && (
             <div className="text-5xl mb-3 leading-none select-none">{popup.emoji}</div>
           )}

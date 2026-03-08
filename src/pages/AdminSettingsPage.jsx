@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { updateSettings } from '../services/settingsService';
 import { useToast } from '../context/ToastContext';
@@ -9,6 +9,9 @@ import {
   deletePromoCode
 } from '../services/promoService';
 import { CURRENCY } from '../config/constants';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage } from '../config/firebase';
+import { compressImage } from '../utils/imageCompressor';
 
 const BG_PRESETS = [
   { label: 'Forest', value: '#2d6a4f' },
@@ -26,6 +29,7 @@ const EMPTY_POPUP = {
   title: '',
   message: '',
   emoji: '🎉',
+  imageUrl: '',
   buttonText: '',
   buttonLink: '',
   bgColor: '#2d6a4f',
@@ -76,6 +80,10 @@ export default function AdminSettingsPage() {
   const [popupForm, setPopupForm] = useState(EMPTY_POPUP);
   const [popupSaving, setPopupSaving] = useState(false);
   const [showPopupPreview, setShowPopupPreview] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef(null);
 
   // Promo codes state
   const [promoCodes, setPromoCodes] = useState([]);
@@ -95,6 +103,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (settings.popup) {
       setPopupForm({ ...EMPTY_POPUP, ...settings.popup });
+      if (settings.popup.imageUrl) setImagePreview('');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popupInitialized]);
@@ -141,15 +150,60 @@ export default function AdminSettingsPage() {
     }
   }
 
+  function handleImagePick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    // Reset input so picking the same file again triggers onChange
+    e.target.value = '';
+  }
+
+  function handleRemoveImage() {
+    setPendingImageFile(null);
+    setImagePreview('');
+    setPopupForm(f => ({ ...f, imageUrl: '' }));
+  }
+
   async function handlePopupSave(e) {
     e.preventDefault();
     if (!popupForm.title.trim() && !popupForm.message.trim()) {
       return toastError('Add a title or message for the popup');
     }
+
     setPopupSaving(true);
+    let finalForm = { ...popupForm };
+
     try {
-      await updateSettings({ popup: popupForm });
-      setSettings(s => ({ ...s, popup: popupForm }));
+      // Upload new image if one was picked
+      if (pendingImageFile) {
+        setUploadingImage(true);
+        try {
+          // Delete old image from storage if one exists
+          if (popupForm.imageUrl) {
+            try {
+              // Extract storage path from URL to delete
+              const oldRef = ref(storage, `popup/announcement.jpg`);
+              await deleteObject(oldRef);
+            } catch {
+              // Old file may not exist — ignore
+            }
+          }
+          const compressed = await compressImage(pendingImageFile);
+          const storageRef = ref(storage, `popup/announcement_${Date.now()}.jpg`);
+          await uploadBytes(storageRef, compressed);
+          const url = await getDownloadURL(storageRef);
+          finalForm = { ...finalForm, imageUrl: url };
+          setPopupForm(finalForm);
+          setPendingImageFile(null);
+          setImagePreview('');
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
+      await updateSettings({ popup: finalForm });
+      setSettings(s => ({ ...s, popup: finalForm }));
       toastSuccess('Popup saved');
     } catch {
       toastError('Failed to save popup');
@@ -327,6 +381,65 @@ export default function AdminSettingsPage() {
             />
           </div>
 
+          {/* Image upload */}
+          <div>
+            <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-2">
+              Image <span className="text-[var(--text-secondary)]">(optional)</span>
+            </label>
+
+            {/* Show existing or pending image */}
+            {(imagePreview || popupForm.imageUrl) ? (
+              <div className="relative group w-full rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-secondary)]">
+                <img
+                  src={imagePreview || popupForm.imageUrl}
+                  alt="Popup image"
+                  className="w-full max-h-48 object-cover"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg bg-white text-gray-800 text-xs font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {pendingImageFile && (
+                  <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    Unsaved
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full h-24 rounded-xl border-2 border-dashed border-[var(--border-color)] flex flex-col items-center justify-center gap-1 hover:border-[var(--color-forest)] hover:bg-[var(--bg-secondary)] transition-all text-[var(--text-secondary)] hover:text-[var(--color-forest)]"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 21h18M3.75 3h16.5M12 3v2.25M9.75 21l2.25-2.25 2.25 2.25" />
+                </svg>
+                <span className="text-xs font-medium">Click to add image</span>
+                <span className="text-[10px] opacity-60">JPG, PNG, WEBP</span>
+              </button>
+            )}
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImagePick}
+              className="hidden"
+            />
+          </div>
+
           {/* Button Text + Link */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -447,8 +560,11 @@ export default function AdminSettingsPage() {
               className="btn btn-primary text-sm flex-1 flex items-center justify-center gap-2"
             >
               {popupSaving ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : 'Save Popup'}
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{uploadingImage ? 'Uploading…' : 'Saving…'}</span>
+                  </>
+                ) : 'Save Popup'}
             </button>
           </div>
         </form>
@@ -467,7 +583,15 @@ export default function AdminSettingsPage() {
                 className="w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden"
                 style={{ backgroundColor: popupForm.bgColor, color: popupForm.textColor }}
               >
-                <div className="px-6 pt-6 pb-5 text-center relative">
+                {/* Preview image */}
+                {(imagePreview || popupForm.imageUrl) && (
+                  <img
+                    src={imagePreview || popupForm.imageUrl}
+                    alt=""
+                    className="w-full max-h-40 object-cover"
+                  />
+                )}
+                <div className="px-6 pt-5 pb-5 text-center relative">
                   <div
                     className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs"
                     style={{ backgroundColor: 'rgba(0,0,0,0.25)', color: popupForm.textColor }}

@@ -11,6 +11,7 @@ const DEFAULTS = {
     title: 'Special Offer!',
     message: 'Check out our latest collection.',
     emoji: '🎉',
+    imageUrl: '',
     buttonText: '',
     buttonLink: '',
     bgColor: '#2d6a4f',

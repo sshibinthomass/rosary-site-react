@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
 Sitemap: https://rosaryplanthouse.com/sitemap.xml

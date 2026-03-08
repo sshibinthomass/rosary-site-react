@@ -5,9 +5,7 @@ import { getAllProducts } from '../services/productService';
 import { getLimitedPlants } from '../services/limitedService';
 import { CURRENCY } from '../config/constants';
 import { resolveImageUrl } from '../utils/imageCompressor';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 export default function AdminPlantTesterPage() {
   const { success, error } = useToast();
@@ -248,203 +246,6 @@ export default function AdminPlantTesterPage() {
     day: 'numeric'
   });
 
-  const getBase64Image = async (url) => {
-    try {
-      if (!url) return null;
-      const resolvedUrl = resolveImageUrl(url);
-      
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // Important for CORS
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => {
-          console.warn('Image load error for Base64 (CORS)', url);
-          resolve(null);
-        };
-        img.src = resolvedUrl;
-      });
-    } catch (err) {
-      console.warn('Failed to encode image to base64', url, err);
-      return null;
-    }
-  };
-
-  const generatePDF = async () => {
-    const pdf = new jsPDF({
-      orientation: 'p',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const ITEMS_PER_PAGE = 10; // Set explicitly to 10 per user request
-    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
-
-    for (let pageInfo = 0; pageInfo < totalPages; pageInfo++) {
-      const startIndex = pageInfo * ITEMS_PER_PAGE;
-      const currentItems = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-      const isLastPage = pageInfo === totalPages - 1;
-
-      // Preload all images on this page into base64 to bypass html2canvas CORS clipping
-      const itemsWithBase64Images = await Promise.all(
-        currentItems.map(async (item) => {
-          const base64 = await getBase64Image(item.imageUrl);
-          return { ...item, base64 };
-        })
-      );
-
-      // We create a temporary detached div for rendering this page
-      const printDiv = document.createElement('div');
-      printDiv.style.position = 'absolute';
-      printDiv.style.top = '-9999px';
-      printDiv.style.left = '-9999px';
-      printDiv.style.width = '800px'; 
-      printDiv.style.backgroundColor = 'white';
-      printDiv.style.padding = '40px';
-      printDiv.style.color = '#000';
-      printDiv.style.fontFamily = 'Arial, sans-serif';
-      document.body.appendChild(printDiv);
-
-      // Build the HTML content to render for this page
-      const tableHtml = itemsWithBase64Images.map((item, index) => `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px 8px; text-align: left;">${startIndex + index + 1}</td>
-          <td style="padding: 12px 8px; text-align: left;">${item.productId}</td>
-          <td style="padding: 12px 8px; text-align: left;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              ${item.base64 
-                  ? `<img src="${item.base64}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;" />` 
-                  : `<div style="width: 40px; height: 40px; border-radius: 4px; background-color: #f3f4f6;"></div>`
-               }
-              <span style="font-weight: 500;">${getDisplayName(item)}</span>
-            </div>
-          </td>
-          <td style="padding: 12px 8px; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px 8px; text-align: right;">${CURRENCY.replace('₹', 'Rs. ')}${item.price}</td>
-          <td style="padding: 12px 8px; text-align: right;">${CURRENCY.replace('₹', 'Rs. ')}${(item.price * item.quantity).toLocaleString('en-IN')}</td>
-        </tr>
-      `).join('');
-
-      let headerHtml = '';
-      if (pageInfo === 0) {
-        // Logo assumes /logo.png exists in public. Using origin to ensure absolute URL for fetch
-        const logoUrl = window.location.origin + '/logo.png';
-        const logoBase64 = await getBase64Image(logoUrl);
-
-        headerHtml = `
-          <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                ${logoBase64 ? `<img src="${logoBase64}" style="width: 60px; height: 60px; object-fit: contain;" />` : ''}
-                <div>
-                  <h1 style="font-size: 26px; font-weight: bold; margin: 0; color: #111827;">Rosary Plant House</h1>
-                  <p style="font-size: 13px; color: #4b5563; margin: 4px 0 0 0;">Premium Indoor & Outdoor Plants</p>
-                </div>
-              </div>
-              <p style="font-size: 12px; color: #6b7280; margin: 20px 0 0 0; line-height: 1.5;">
-                <strong>Rosary Plant House</strong><br/>
-                Samayapuram, Alwarpet, Coonoor<br/>
-                The Nilgiris, Tamil Nadu<br/>
-                Phone / WhatsApp: +91 790 405 0237<br/>
-                Email: rosaryplanthouse@gmail.com
-              </p>
-            </div>
-            <div style="text-align: right;">
-              <h2 style="font-size: 32px; font-weight: bold; margin: 0 0 15px 0; color: #2e7d32; text-transform: uppercase; letter-spacing: 2px;">INVOICE</h2>
-              <table style="display: inline-block; font-size: 13px; color: #4b5563;">
-                <tr>
-                  <td style="text-align: right; padding-right: 15px; padding-bottom: 5px;"><strong>Date:</strong></td>
-                  <td style="text-align: left; padding-bottom: 5px;">${currentDate}</td>
-                </tr>
-                <tr>
-                  <td style="text-align: right; padding-right: 15px;"><strong>Total Items:</strong></td>
-                  <td style="text-align: left;">${totalQuantity}</td>
-                </tr>
-              </table>
-            </div>
-          </div>
-          <hr style="border: none; border-top: 2px solid #e5e7eb; margin-bottom: 30px;" />
-        `;
-      } else {
-        headerHtml = `
-          <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">
-            <h2 style="font-size: 18px; font-weight: bold; margin: 0; color: #111827;">Rosary Plant House - Invoice (Cont.)</h2>
-            <div style="font-size: 12px; color: #6b7280;">Page ${pageInfo + 1} of ${totalPages}</div>
-          </div>
-        `;
-      }
-
-      let footerHtml = '';
-      if (isLastPage) {
-        footerHtml = `
-          <tfoot>
-            <tr style="background-color: #f9fafb; border-top: 2px solid #e5e7eb;">
-              <td colspan="3" style="padding: 16px 8px; text-align: left; font-weight: bold; font-size: 16px;">Total</td>
-              <td style="padding: 16px 8px; text-align: center; font-weight: bold; font-size: 16px;">${totalQuantity}</td>
-              <td></td>
-              <td style="padding: 16px 8px; text-align: right; font-weight: bold; font-size: 16px; color: #2e7d32;">
-                ${CURRENCY.replace('₹', 'Rs. ')}${totalPrice.toLocaleString('en-IN')}
-              </td>
-            </tr>
-          </tfoot>
-        `;
-      }
-
-      printDiv.innerHTML = `
-        ${headerHtml}
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="background-color: #2e7d32; color: white;">
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600;">#</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600;">ID</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600;">Name</th>
-              <th style="padding: 12px 8px; text-align: center; font-weight: 600;">Qty</th>
-              <th style="padding: 12px 8px; text-align: right; font-weight: 600;">Price</th>
-              <th style="padding: 12px 8px; text-align: right; font-weight: 600;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableHtml}
-          </tbody>
-          ${footerHtml}
-        </table>
-      `;
-
-      try {
-        // Need a small delay for images to load if they aren't cached
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const canvas = await html2canvas(printDiv, {
-          scale: 2, // High resolution
-          useCORS: true,
-          allowTaint: true,
-          logging: false
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        if (pageInfo > 0) {
-          pdf.addPage();
-        }
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      } finally {
-        document.body.removeChild(printDiv);
-      }
-    }
-    
-    return pdf;
-  };
-
   const handleExportPDF = async () => {
     if (items.length === 0) {
       error('No plants to export');
@@ -453,7 +254,14 @@ export default function AdminPlantTesterPage() {
     
     setIsExporting(true);
     try {
-      const doc = await generatePDF();
+      // Prepare a generic orderObject state for generateInvoicePDF
+      const orderData = {
+        orderId: 'Plant Tester',
+        dateFormatted: currentDate,
+        customer: null, // No specific customer for tester
+      };
+
+      const doc = await generateInvoicePDF(orderData, items, getDisplayName);
       
       const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/:/g, '-').replace(/ /g, '_');
       const fileName = `Rosary_Bill_${currentDate.replace(/ /g, '_')}_${timeStr}.pdf`;
@@ -494,7 +302,15 @@ export default function AdminPlantTesterPage() {
         try {
           // Check if we can share files
           setIsExporting(true);
-          const doc = await generatePDF();
+
+          // Prepare pseudo-order
+          const orderData = {
+            orderId: 'Plant Tester',
+            dateFormatted: currentDate,
+            customer: null,
+          };
+
+          const doc = await generateInvoicePDF(orderData, items, getDisplayName);
           const arrayBuffer = doc.output('arraybuffer');
           
           const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/:/g, '-').replace(/ /g, '_');

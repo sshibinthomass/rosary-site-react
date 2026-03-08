@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
 import OrderItemEditor from '../components/OrderItemEditor';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -39,6 +40,9 @@ export default function OrderPage() {
   // Item editing state
   const [editingItems, setEditingItems] = useState(false);
   const [savingItems, setSavingItems] = useState(false);
+
+  // PDF Exporting state
+  const [exportingOrder, setExportingOrder] = useState(false);
 
   const handleSwitchAccount = async () => {
     try {
@@ -214,6 +218,35 @@ export default function OrderPage() {
       showError('Failed to update items');
     } finally {
       setSavingItems(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExportingOrder(true);
+    try {
+      const orderData = {
+        orderId: order.orderId || order.id,
+        dateFormatted: formatDate(order.createdAt),
+        customer: order.customer || null,
+        promoCode: order.promoCode,
+        discountAmount: order.discountAmount,
+        discountType: order.discountType,
+        deliveryCharge: order.deliveryCharge || 0
+      };
+
+      const doc = await generateInvoicePDF(orderData, order.items || [], getItemName);
+      
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/:/g, '-').replace(/ /g, '_');
+      const safeDate = formatDate(order.createdAt).replace(/[:,\s]+/g, '_');
+      const fileName = `Rosary_Bill_${order.orderId || order.id}_${safeDate}_${timeStr}.pdf`;
+      
+      doc.save(fileName);
+      success('PDF downloaded successfully');
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      showError('Failed to generate PDF invoice');
+    } finally {
+      setExportingOrder(false);
     }
   };
 
@@ -625,10 +658,22 @@ export default function OrderPage() {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <NavLink to="/" className="btn btn-secondary flex-1">
           Continue Shopping
         </NavLink>
+        {isAdmin && (
+          <button
+            onClick={handleExportPDF}
+            disabled={exportingOrder}
+            className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+          >
+            {exportingOrder ? (
+              <span className="w-4 h-4 border-2 border-[var(--text-secondary)] border-t-[var(--text-primary)] rounded-full animate-spin" />
+            ) : '📄'}
+            {exportingOrder ? 'Generating PDF...' : 'Download PDF Bill'}
+          </button>
+        )}
       </div>
     </div>
   );

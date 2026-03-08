@@ -27,9 +27,22 @@ export default function HomePage() {
   const categoryScrollerRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
+
+  // Auto-swiping carousel logic for mobile reviews
+  useEffect(() => {
+    // Only run interval if reviews exist
+    if (reviewsData && reviewsData.length > 0) {
+      const interval = setInterval(() => {
+        // hard-coded 4 visible reviews on homepage
+        setActiveReviewIndex((prevIndex) => (prevIndex + 1) % 4);
+      }, 5000); // Swipe every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   // Load products when category changes
   useEffect(() => {
@@ -174,8 +187,12 @@ export default function HomePage() {
     return sorted;
   }, [filteredProducts, sortOption]);
 
-  // Pick 4 reviews for the homepage carousel
-  const homeReviews = reviewsData.slice(0, 4);
+  // Pick best reviews for the homepage carousel
+  let homeReviews = reviewsData.filter(r => r.featured).slice(0, 4);
+  if (homeReviews.length < 4) {
+    const additional = reviewsData.filter(r => !r.featured).slice(0, 4 - homeReviews.length);
+    homeReviews.push(...additional);
+  }
 
   const homeSchema = {
     "@context": "https://schema.org",
@@ -247,9 +264,12 @@ export default function HomePage() {
           </div>
 
           {/* Offer banner — subtle, inside hero */}
-          <div className="relative z-10 mt-5 bg-white/10 backdrop-blur-sm rounded-xl py-2.5 px-4 text-center border border-white/15">
-            <p className="text-green-100 text-sm font-medium">
+          <div className="relative z-10 mt-5 bg-white/10 backdrop-blur-sm rounded-xl py-3 px-4 text-center border border-white/15">
+            <p className="text-green-100 text-sm font-medium mb-1.5">
               🎁 Purchase for more than ₹1000/- and get a <span className="text-green-300 font-semibold">Complimentary Plant!</span>
+            </p>
+            <p className="text-green-100 text-sm font-medium">
+              📸 Post an insta story from your previous order, tag us and get a <span className="text-green-300 font-semibold">Complimentary Plant!</span>
             </p>
           </div>
         </div>
@@ -274,6 +294,174 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Customer Reviews Section */}
+      {!searchQuery && selectedCategory === 'All' && (
+        <section className="mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">What Our Customers Say</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">Trusted by plant lovers across India</p>
+          </div>
+          
+          {/* Desktop View: Grid */}
+          <div className="hidden md:grid md:grid-cols-2 gap-4">
+            {homeReviews.map((review, index) => (
+              <div key={index} className="card p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-light)] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    {review.author.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-[var(--text-primary)] truncate">{review.author}</h4>
+                  </div>
+                  <div className="flex gap-0.5 shrink-0">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-3 italic">
+                  "{review.text}"
+                </p>
+                {review.images && review.images.length > 0 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar shrink-0">
+                    {review.images.map((img, i) => (
+                      <img key={i} src={img} alt={`Review photo ${i + 1}`} className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-md shadow-sm shrink-0" />
+                    ))}
+                  </div>
+                )}
+                {review.link && (
+                  <div className="mt-3">
+                    <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1">
+                      Read review on Google
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile View: Auto-swiping Carousel */}
+          <div className="md:hidden relative overflow-hidden">
+            <div 
+              className="flex transition-transform duration-500 ease-in-out" 
+              style={{ transform: `translateX(-${activeReviewIndex * 100}%)` }}
+            >
+              {homeReviews.map((review, index) => (
+                <div key={index} className="w-full flex-shrink-0 px-2 pb-6">
+                  <div className="card p-5 shadow-sm border border-[var(--border-color)]">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-light)] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                        {review.author.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-[var(--text-primary)] truncate">{review.author}</h4>
+                      </div>
+                      <div className="flex gap-0.5 shrink-0">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-4 italic">
+                      "{review.text}"
+                    </p>
+                    {review.images && review.images.length > 0 && (
+                      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar shrink-0">
+                        {review.images.map((img, i) => (
+                          <img key={i} src={img} alt={`Review photo ${i + 1}`} className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-md shadow-sm shrink-0" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Navigation Arrows */}
+            <button 
+              onClick={() => setActiveReviewIndex((prev) => (prev - 1 + 4) % 4)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/80 dark:bg-black/50 text-[var(--text-primary)] rounded-r-xl shadow-md border border-[var(--border-color)] border-l-0 z-10"
+              aria-label="Previous review"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button 
+              onClick={() => setActiveReviewIndex((prev) => (prev + 1) % 4)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/80 dark:bg-black/50 text-[var(--text-primary)] rounded-l-xl shadow-md border border-[var(--border-color)] border-r-0 z-10"
+              aria-label="Next review"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+
+            {/* Dots */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1.5 pb-1">
+              {homeReviews.map((_, idx) => (
+                <button 
+                  key={idx} 
+                  onClick={() => setActiveReviewIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${idx === activeReviewIndex ? 'bg-[var(--color-forest)] w-4' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  aria-label={`Go to review ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="text-center mt-4">
+            <button
+              onClick={() => navigate('/reviews')}
+              className="text-sm font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1"
+            >
+              View all reviews
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Quick Review Links */}
+          <div className="mt-8 flex flex-col items-center">
+            <button 
+              onClick={() => navigate('/insta-reviews')}
+              className="group relative inline-flex items-center justify-center gap-2 px-8 py-3 font-semibold text-white transition-all duration-300 ease-in-out rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 shadow-lg hover:shadow-xl hover:-translate-y-1 overflow-hidden"
+            >
+              <div className="absolute inset-0 w-full h-full bg-white/20 blur-md transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              <span className="tracking-wide">Watch Stories Reviews</span>
+            </button>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-4">
+              <a href="https://www.facebook.com/rosaryplanthouse/reviews" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
+                <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+                </svg>
+                Facebook Reviews
+              </a>
+              <a href="https://www.instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
+                <svg className="w-4 h-4 text-[#E1306C]" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd" />
+                </svg>
+                Insta Reviews
+              </a>
+              <a href="https://maps.app.goo.gl/h5ziUGAuvC4FZZqn8" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
+                <svg className="w-4 h-4 text-[#EA4335]" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                Google Reviews
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Search Bar */}
       <section className="mb-4">
@@ -581,69 +769,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Customer Reviews Section */}
-      {!searchQuery && selectedCategory === 'All' && (
-        <section className="mt-12 mb-6">
-          <div className="text-center mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">What Our Customers Say</h2>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">Trusted by plant lovers across India</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {homeReviews.map((review, index) => (
-              <div key={index} className="card p-5 hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-light)] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                    {review.author.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-[var(--text-primary)] truncate">{review.author}</h4>
-                  </div>
-                  <div className="flex gap-0.5 shrink-0">
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-3 italic">
-                  "{review.text}"
-                </p>
-                {review.images && review.images.length > 0 && (
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar shrink-0">
-                    {review.images.map((img, i) => (
-                      <img key={i} src={img} alt={`Review photo ${i + 1}`} className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-md shadow-sm shrink-0" />
-                    ))}
-                  </div>
-                )}
-                {review.link && (
-                  <div className="mt-3">
-                    <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1">
-                      Read review on Google
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          <div className="text-center mt-4">
-            <button
-              onClick={() => navigate('/reviews')}
-              className="text-sm font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1"
-            >
-              View all reviews
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </section>
-      )}
+
     </div>
   );
 }

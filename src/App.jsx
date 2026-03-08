@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 import Toast from './components/Toast';
 import MergeDataModal from './components/MergeDataModal';
 import ProfileSetupModal from './components/ProfileSetupModal';
+import AnnouncementPopup from './components/AnnouncementPopup';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
@@ -37,6 +38,7 @@ const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
+const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
 import ProductModalWrapper from './components/ProductModalWrapper';
 
 function PageLoader() {
@@ -90,6 +92,7 @@ function AppRoutes() {
           <Route path="/about.html" element={<AboutPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/reviews.html" element={<ReviewsPage />} />
+          <Route path="/insta-reviews" element={<InstaReviewsPage />} />
           <Route path="/order/:orderId" element={<OrderPage />} />
           <Route 
             path="/admin" 
@@ -268,6 +271,7 @@ function App() {
               <Toast />
               <MergeDataModal />
               <ProfileSetupModal />
+              <AnnouncementPopup />
             </CartProvider>
           </ToastProvider>
         </AuthProvider>

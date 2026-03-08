@@ -7,6 +7,7 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 import { CURRENCY } from '../config/constants';
 import { useToast } from '../context/ToastContext';
 import OrderItemEditor from '../components/OrderItemEditor';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -34,6 +35,7 @@ export default function AdminOrdersPage() {
     pincode: ''
   });
   const [selectedOrders, setSelectedOrders] = useState([]); // ids of orders selected for printing
+  const [exportingOrder, setExportingOrder] = useState(null); // id of order being exported
 
   useEffect(() => {
     loadOrders();
@@ -642,6 +644,35 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleExportPDF = async (order) => {
+    setExportingOrder(order.id);
+    try {
+      const orderData = {
+        orderId: order.orderId || order.id,
+        dateFormatted: formatDate(order.createdAt),
+        customer: order.customer || null,
+        promoCode: order.promoCode,
+        discountAmount: order.discountAmount,
+        discountType: order.discountType,
+        deliveryCharge: order.deliveryCharge || 0
+      };
+
+      const doc = await generateInvoicePDF(orderData, order.items || [], getItemName);
+      
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/:/g, '-').replace(/ /g, '_');
+      const safeDate = formatDate(order.createdAt).replace(/[:,\s]+/g, '_');
+      const fileName = `Rosary_Bill_${order.orderId || order.id}_${safeDate}_${timeStr}.pdf`;
+      
+      doc.save(fileName);
+      success('PDF downloaded successfully');
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      error('Failed to generate PDF invoice');
+    } finally {
+      setExportingOrder(null);
+    }
+  };
+
   const filteredOrders = orders
     .filter(o => {
       if (filterStatus === 'all') return o.status !== 'cancelled';
@@ -1164,6 +1195,20 @@ export default function AdminOrdersPage() {
                             </a>
                           );
                         })()}
+                      </div>
+
+                      {/* Export PDF Button */}
+                      <div className="pt-4 mt-2 border-t border-[var(--border-color)]">
+                        <button
+                          onClick={() => handleExportPDF(order)}
+                          disabled={exportingOrder === order.id}
+                          className="btn btn-secondary text-xs w-full sm:w-auto flex items-center justify-center gap-2"
+                        >
+                          {exportingOrder === order.id ? (
+                            <span className="w-3 h-3 border-2 border-[var(--text-secondary)] border-t-[var(--text-primary)] rounded-full animate-spin" />
+                          ) : '📄'}
+                          {exportingOrder === order.id ? 'Generating PDF...' : 'Download PDF Bill'}
+                        </button>
                       </div>
                     </div>
                     )}

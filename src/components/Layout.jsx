@@ -45,8 +45,9 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
-  const allCategories = ['All', 'Limited', ...CATEGORIES];
+  const allCategories = ['All', ...CATEGORIES];
 
   // Close sidebar on route change
   useEffect(() => {
@@ -154,15 +155,16 @@ export default function Layout({ children }) {
       <aside
         className={`
           fixed top-0 left-0 z-[70] h-full w-72 bg-[var(--bg-primary)] border-r border-[var(--border-color)]
-          transform transition-transform duration-300 ease-in-out shadow-2xl
+          transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
+        style={{ height: '100dvh' }}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between px-4 h-16 border-b border-[var(--border-color)]">
+        <div className="flex-none flex items-center justify-between px-4 h-16 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
           <div className="flex items-center gap-2">
             <span className="text-xl">🌿</span>
-            <h2 className="font-semibold text-[var(--text-primary)]">Categories</h2>
+            <h2 className="font-semibold text-[var(--text-primary)]">Menu</h2>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -174,39 +176,205 @@ export default function Layout({ children }) {
           </button>
         </div>
 
-        {/* Category List */}
-        <nav className="overflow-y-auto h-[calc(100%-4rem)] py-2">
-          {allCategories.map((cat) => {
-            const isActive = 
-              (cat === 'All' && (location.pathname === '/' || location.pathname === '')) ||
-              location.pathname === `/category/${encodeURIComponent(cat)}`;
-            
-            const emoji = {
-              'All': '🏠', 'Limited': '⭐', 'Succulent': '🪴', 'Cactus': '🌵',
-              'Echeveria': '🌸', 'Jade': '💎', 'Crassula': '🍀', 'Peperomia': '🌿',
-              'Aloe': '🌱', 'Sedum': '🪻', 'Haworthia': '🌾', 'Creeper': '🍃',
-              'Sansevieria': '🐍', 'Indoor': '🏡', 'Hanging': '🎋', 'Mother': '🌳',
-              'Combo': '🎁', 'Others': '📦'
-            }[cat] || '🌿';
+        {/* Menu Items - Dedicated scrollable container */}
+        <div 
+          className="flex-1 overflow-y-auto"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y'
+          }}
+        >
+          <nav className="py-2 px-2 flex flex-col gap-1">
+          {/* Main Pages */}
+          <NavLink
+            to="/"
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) => `
+              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              ${isActive
+                ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
+                : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+              }
+            `}
+          >
+            {({ isActive }) => (
+              <>
+                <div className="relative">
+                  <HomeIcon active={isActive} />
+                </div>
+                <span className="font-medium">Home</span>
+              </>
+            )}
+          </NavLink>
 
+          {/* Highlighted Limited Collection */}
+          <button
+            onClick={() => handleCategoryClick('Limited')}
+            className={`
+              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              ${location.pathname === `/category/${encodeURIComponent('Limited')}`
+                ? 'bg-[var(--color-terracotta)] text-white font-semibold'
+                : 'bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/20'
+              }
+            `}
+          >
+            <span className="text-lg w-6 flex items-center justify-center">⭐</span>
+            <span className="font-semibold">Limited Collection</span>
+          </button>
+
+          {/* Categories Accordion */}
+          <div className="rounded-lg overflow-hidden bg-transparent">
+            <button
+              onClick={() => setCategoriesOpen(!categoriesOpen)}
+              className="w-full flex items-center justify-between px-3 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 flex items-center justify-center text-lg grayscale">🗂️</span>
+                <span className="font-medium text-[var(--text-primary)]">Categories</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 text-[var(--text-secondary)] transition-transform duration-300 ${categoriesOpen ? 'rotate-180' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor" 
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div 
+              className={`transition-all duration-300 ${categoriesOpen ? 'max-h-[2000px] mt-1 overflow-y-visible' : 'max-h-0 overflow-hidden'}`}
+            >
+              <div className="pl-6 flex flex-col gap-1 border-l-2 border-[var(--bg-tertiary)] ml-6 my-1">
+                {allCategories.map((cat) => {
+                  const isActive = 
+                    (cat === 'All' && (location.pathname === '/' || location.pathname === '')) ||
+                    location.pathname === `/category/${encodeURIComponent(cat)}`;
+                  
+                  const emoji = {
+                    'All': '🏠', 'Limited': '⭐', 'Succulent': '🪴', 'Cactus': '🌵',
+                    'Echeveria': '🌸', 'Jade': '💎', 'Crassula': '🍀', 'Peperomia': '🌿',
+                    'Aloe': '🌱', 'Sedum': '🪻', 'Haworthia': '🌾', 'Creeper': '🍃',
+                    'Sansevieria': '🐍', 'Indoor': '🏡', 'Hanging': '🎋', 'Mother': '🌳',
+                    'Combo': '🎁', 'Others': '📦'
+                  }[cat] || '🌿';
+
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => handleCategoryClick(cat)}
+                      className={`
+                        w-full flex items-center gap-3 px-3 py-2 text-left text-xs transition-all rounded-r-lg
+                        ${isActive
+                          ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold border-l-2 -ml-[2px] border-[var(--color-forest)]'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                        }
+                      `}
+                    >
+                      <span className="text-sm w-5 text-center">{emoji}</span>
+                      <span>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="my-2 border-t border-[var(--border-color)]"></div>
+
+          {/* User Account / Navigation */}
+          {[
+            { path: '/cart', label: 'Cart', Icon: CartIcon, currentCount: cartCount },
+            { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
+            { path: user ? '/orders' : '/account', label: user ? 'Orders' : 'Account', Icon: UserIcon },
+          ].map(({ path, label, Icon, currentCount }) => {
+            const isActive = location.pathname === path;
+            const isCart = path === '/cart';
             return (
-              <button
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
+              <NavLink
+                key={path}
+                to={path}
+                onClick={() => setSidebarOpen(false)}
                 className={`
-                  w-full flex items-center gap-3 px-5 py-3 text-left text-sm transition-all
+                  w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
                   ${isActive
-                    ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold border-r-3 border-[var(--color-forest)]'
+                    ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
                     : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }
                 `}
               >
-                <span className="text-lg w-7 text-center">{emoji}</span>
-                <span>{cat}</span>
-              </button>
+                <div className="relative">
+                  <Icon active={isActive} />
+                  {isCart && currentCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {currentCount > 9 ? '9+' : currentCount}
+                    </span>
+                  )}
+                </div>
+                <span className="font-medium">{label}</span>
+              </NavLink>
             );
           })}
-        </nav>
+
+          <div className="my-2 border-t border-[var(--border-color)]"></div>
+
+          {/* Info Pages */}
+          <div className="flex flex-col gap-1">
+            {[
+              { path: '/reviews', label: 'Reviews', emoji: '⭐' },
+              { path: '/insta-reviews', label: 'Instagram Stories', emoji: '📸' },
+              { path: '/faq', label: 'FAQ', emoji: '❓' },
+              { path: '/about', label: 'About Us', emoji: 'ℹ️' },
+              { path: '/contact', label: 'Contact', emoji: '📞' }
+            ].map(({ path, label, emoji }) => {
+              const isActive = location.pathname === path;
+              return (
+                <NavLink
+                  key={path}
+                  to={path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-all
+                    ${isActive
+                      ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-medium'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                    }
+                  `}
+                >
+                  <span className="text-base w-6 text-center grayscale">{emoji}</span>
+                  <span>{label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+
+          {/* Admin link if Admin */}
+          {isAdmin && (
+            <>
+              <div className="my-2 border-t border-[var(--border-color)]"></div>
+              <NavLink
+                to="/admin"
+                onClick={() => setSidebarOpen(false)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all mt-auto mb-4
+                  ${location.pathname.startsWith('/admin')
+                    ? 'bg-[var(--color-terracotta)] text-white font-semibold'
+                    : 'text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 hover:bg-[var(--color-terracotta)]/20'
+                  }
+                `}
+              >
+                <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="font-medium">Admin Panel</span>
+              </NavLink>
+            </>
+          )}
+          </nav>
+          {/* Extra space at bottom to ensure scrolling is possible and clear */}
+          <div className="h-20 flex-none" />
+        </div>
       </aside>
 
       {/* Main Content */}

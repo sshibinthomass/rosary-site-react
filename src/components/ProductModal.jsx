@@ -8,14 +8,21 @@ import SEO from './SEO';
 
 function DescriptionBlock({ text }) {
   const [expanded, setExpanded] = useState(false);
-  const words = text.split(/\s+/);
+  // Strip markdown syntax for plain-text preview
+  const plainText = text
+    .replace(/#{1,6}\s*/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^[-*]\s+/gm, '')
+    .trim();
+  const words = plainText.split(/\s+/);
   const needsTruncation = words.length > 20;
-  const preview = needsTruncation ? words.slice(0, 20).join(' ') + '...' : text;
+  const preview = needsTruncation ? words.slice(0, 20).join(' ') + '...' : plainText;
 
   return (
     <div className="border-t border-[var(--border-color)] pt-4">
       <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
-      <div className="text-sm text-[var(--text-secondary)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text-primary)] prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-1 prose-p:my-1 prose-li:my-0 prose-strong:text-[var(--text-primary)]">
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text-primary)] prose-headings:text-base prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-1.5 prose-h3:text-sm prose-h3:font-semibold prose-p:my-1 prose-li:my-0 prose-strong:text-[var(--text-primary)]">
         {expanded || !needsTruncation ? (
           <ReactMarkdown>{text}</ReactMarkdown>
         ) : (
@@ -146,7 +153,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
           <div className="relative flex-1 group">
             <img
               src={imageList[activeImageIndex]}
-              alt={title}
+              alt={`${title} - ${product.category || 'Plant'} from Rosary Plant House`}
               className="w-full h-full object-cover transition-transform duration-300"
             />
 

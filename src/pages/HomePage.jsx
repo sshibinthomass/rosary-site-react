@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, Fragment, lazy, Suspense, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { getProducts, getProductById } from '../services/productService';
@@ -6,10 +6,9 @@ import { getLimitedPlants } from '../services/limitedService';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { CATEGORIES } from '../config/constants';
-import reviewsData from '../data/reviews.json';
 import SEO from '../components/SEO';
+import reviewsData from '../data/reviews.json';
 
-const ProductModal = lazy(() => import('../components/ProductModal'));
 
 export default function HomePage() {
   const { categoryName, productId } = useParams();
@@ -18,8 +17,6 @@ export default function HomePage() {
   const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [previousCategory, setPreviousCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('Recommended');
   const [filterWatering, setFilterWatering] = useState('Not Specific');
@@ -39,13 +36,6 @@ export default function HomePage() {
     loadProducts();
     setSearchQuery('');
   }, [selectedCategory]);
-
-  // Load specific product if productId is in URL
-  useEffect(() => {
-    if (productId) {
-      loadProductFromUrl(productId);
-    }
-  }, [productId]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -85,18 +75,6 @@ export default function HomePage() {
     }
   };
 
-  const loadProductFromUrl = async (id) => {
-    try {
-      const product = await getProductById(id);
-      if (product) {
-        setSelectedProduct(product);
-      }
-    } catch (error) {
-      console.error('Error loading product:', error);
-    }
-  };
-
-
   const handleAddToCart = useCallback(async (product, quantity = 1) => {
     await addToCart(product, quantity);
   }, [addToCart]);
@@ -116,26 +94,6 @@ export default function HomePage() {
       navigate(`/category/${encodeURIComponent(category)}`, { state: { preventScroll: true } });
     }
   }, [navigate]);
-
-  const handleQuickView = useCallback((product) => {
-    // Remember current category before opening plant modal
-    setPreviousCategory(selectedCategory);
-    setSelectedProduct(product);
-    // Update URL without full navigation
-    navigate(`/plant/${product.id}`, { replace: true, state: { preventScroll: true } });
-  }, [selectedCategory, navigate]);
-
-  const handleCloseModal = useCallback(() => {
-    setSelectedProduct(null);
-    // Navigate back to previous category or home
-    const returnCategory = previousCategory || categoryName;
-    if (returnCategory && returnCategory !== 'All') {
-      navigate(`/category/${encodeURIComponent(returnCategory)}`, { replace: true, state: { preventScroll: true } });
-    } else {
-      navigate('/', { replace: true, state: { preventScroll: true } });
-    }
-    setPreviousCategory(null);
-  }, [previousCategory, categoryName, navigate]);
 
   const categories = ['All', 'Limited', ...CATEGORIES];
 
@@ -219,13 +177,29 @@ export default function HomePage() {
   // Pick 4 reviews for the homepage carousel
   const homeReviews = reviewsData.slice(0, 4);
 
+  const homeSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Rosary Plant House",
+    "image": "https://rosaryplanthouse.com/hero-bg.jpg",
+    "description": "Buy rare succulents, cacti, and indoor plants online from Rosary Plant House, Coonoor, Nilgiris.",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Samayapuram, Alwarpet",
+      "addressLocality": "Coonoor, The Nilgiris",
+      "addressRegion": "Tamil Nadu",
+      "addressCountry": "IN"
+    },
+    "telephone": "+917904050237",
+    "priceRange": "₹"
+  };
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in min-h-screen pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <SEO 
-        title={selectedCategory === 'All' ? 'Buy Succulents & Indoor Plants Online' : `${selectedCategory} Plants`} 
-        description={selectedCategory === 'All' 
-          ? 'Discover rare succulents, cacti, and beautiful indoor plants curated with love from the Nilgiris. Shop online for safe delivery across India.' 
-          : `Browse our collection of beautiful ${selectedCategory.toLowerCase()} plants. Safe packaging & delivery.`}
+        title="Home" 
+        description="Buy rare succulents, cacti, and indoor plants online from Rosary Plant House, Coonoor, Nilgiris. Safe packaging, transit replacement, and shipping across India." 
+        schemaData={homeSchema}
       />
       {/* Hero Section */}
       <section className="mb-6">
@@ -275,7 +249,7 @@ export default function HomePage() {
           {/* Offer banner — subtle, inside hero */}
           <div className="relative z-10 mt-5 bg-white/10 backdrop-blur-sm rounded-xl py-2.5 px-4 text-center border border-white/15">
             <p className="text-green-100 text-sm font-medium">
-              🎁 Purchase for more than ₹1000/- and get a <span className="text-green-300 font-semibold">Complementary Plant!</span>
+              🎁 Purchase for more than ₹1000/- and get a <span className="text-green-300 font-semibold">Complimentary Plant!</span>
             </p>
           </div>
         </div>
@@ -599,7 +573,6 @@ export default function HomePage() {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onQuickView={handleQuickView}
                   index={index}
                 />
               ))}
@@ -670,25 +643,6 @@ export default function HomePage() {
             </button>
           </div>
         </section>
-      )}
-
-      {/* Product Modal - lazy loaded */}
-      {selectedProduct && (
-        <Suspense fallback={
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-10 h-10 rounded-full border-3 border-white/30 border-t-white animate-spin" />
-          </div>
-        }>
-          <ProductModal
-            product={selectedProduct}
-            isOpen={!!selectedProduct}
-            onClose={handleCloseModal}
-            onAddToCart={handleAddToCart}
-            inCart={selectedProduct ? isInCart(selectedProduct.id) : false}
-            inWishlist={selectedProduct ? isInWishlist(selectedProduct.id) : false}
-            onToggleWishlist={handleToggleWishlist}
-          />
-        </Suspense>
       )}
     </div>
   );

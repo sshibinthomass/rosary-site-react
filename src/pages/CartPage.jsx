@@ -51,7 +51,16 @@ export default function CartPage() {
 
   const outOfStockItems = cart.filter(isItemOutOfStock);
   const hasOutOfStockItems = outOfStockItems.length > 0;
-  const inStockItems = cart.filter((item) => !isItemOutOfStock(item));
+  const inStockItems = cart.filter((item) => !isItemOutOfStock(item)).map(item => {
+    const product = productStockMap[item.productId];
+    if (product) {
+      const currentPrice = product.salesPrice || product.price;
+      if (currentPrice !== undefined) {
+        return { ...item, price: currentPrice };
+      }
+    }
+    return item;
+  });
   const inStockTotal = inStockItems.reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
@@ -450,6 +459,11 @@ export default function CartPage() {
             </div>
             {promoError && (
               <p className="text-xs text-red-500">{promoError}</p>
+            )}
+            {!promoError && (
+              <p className="text-[10px] text-[var(--text-secondary)]">
+                🌿 Follow us on <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="text-[var(--color-forest)] font-medium hover:underline">Instagram</a> for exclusive promo codes!
+              </p>
             )}
           </div>
         ) : promoEnabled && promoInfo ? (

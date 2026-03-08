@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '../components/SEO';
 
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,29 +31,50 @@ export default function FAQPage() {
       items: [
         { q: "Do you deliver to all parts of the country?", a: "Delivery limited due to Transportation Delay. But we deliver to all major part of the Country." },
         { q: "When will the plants be dispatched?", a: "Plants will be sent only after payment. Will be dispatched on nearest Monday or Wednesday if payment is made by previous Day." },
-        { q: "How will the plants be sent?", a: "Plants will be sent barerooted. (packed with tissue, cotton and cocopeat depending on Plants)" },
-        { q: "What if \"I don't receive plants safe\"?", a: "Any Damage during transportation will be replaced with customers next order. (If plants don't survive). High Transit Risk plants are not Replaceable." },
-        { q: "What if \"I don't look after the plants after I receive, will it be replaced\"?", a: "After receiving the plants it's customer's responsibility to take care of plants so it doesn't come under our replacement policy. Note: replacement policy is applicable only for transportation damage. Any requests on the day of receiving and following day will surely be considered." },
-        { q: "How will the plants be dispatched?", a: "Plants will be dispatched by DTDC (since its fast and we have proper customer support). On customer request Speed post or Professional will be considered (delay should be taken care by customer)." }
+        { q: "How will the plants be sent?", a: "Plants will be sent bare-rooted. (packed with tissue, cotton and cocopeat depending on plants)" },
+        { q: "What if \"I don't receive plants safe\"?", a: "Any Damage during transportation will be replaced with customer's next order. (If plants don't survive). High Transit Risk plants are not Replaceable." },
+        { q: "What if \"I don't look after the plants after I receive, will it be replaced\"?", a: "After receiving the plants it's the customer's responsibility to take care of plants so it doesn't come under our replacement policy. Note: replacement policy is applicable only for transportation damage. Any requests on the day of receiving and the following day will surely be considered." },
+        { q: "How will the plants be dispatched?", a: "Plants will be dispatched by DTDC (since it's fast and we have proper customer support). On customer request Speed post or Professional will be considered (delay should be taken care of by customer)." }
       ]
     },
     {
       category: "Frequently Asked Questions",
       items: [
-        { q: "Where can i find cost of the plants?", a: "Size and Cost is Mentioned bellow each Plant from catalogue page." },
+        { q: "Where can I find the cost of plants?", a: "Size and cost are mentioned below each plant on the catalogue page." },
         { q: "What is the minimum quantity that can be ordered?", a: "Minimum of 5 plants is recommended. (minimum delivery charges is applicable for any number of plants)" },
-        { q: "How can choose plants?", a: "Select Plants to cart individually from the catalogue. You can also select based on requirements. After adding click place order to reach us." },
-        { q: "Is delivery charges free?", a: "No, additional delivery charges is applicable from place to place." },
-        { q: "How can i complete payment?", a: "You can complete your payment through Gpay, PayTM, phonePe or Netbanking (whatsapp for further details)" },
-        { q: "Where can i find succulent care?", a: "You can find it under care section." },
+        { q: "How can I choose plants?", a: "Add plants to your cart individually from the catalogue. You can also filter based on requirements. After adding, proceed to checkout to place your order." },
+        { q: "Are delivery charges free?", a: "No, additional delivery charges are applicable depending on the location." },
+        { q: "How can I complete payment?", a: "You can complete your payment through Gpay, PayTM, PhonePe or Netbanking (WhatsApp for further details)." },
+        { q: "Where can I find succulent care?", a: "You can find specific care instructions for water, sunlight, and shipping on every individual plant's page." },
         { q: "Do you provide cash on delivery?", a: "No, we haven't introduced COD yet." },
         { q: "How can we trust you?", a: "Please check out our FB page and Instagram for feedbacks before purchasing. We're always open for your queries." }
       ]
     }
   ];
 
+  // Generate FAQ Schema dynamically
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.flatMap(category => 
+      category.items.map(item => ({
+        "@type": "Question",
+        "name": item.q,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": item.a
+        }
+      }))
+    )
+  };
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto space-y-8 pb-20">
+      <SEO 
+        title="Help & FAQ" 
+        description="Find answers to all your questions about ordering, shipping, and caring for succulents, cacti, and indoor plants from Rosary Plant House." 
+        schemaData={faqSchema}
+      />
       <div className="text-center">
         <span className="text-4xl">🤔</span>
         <h1 className="text-2xl font-bold text-[var(--text-primary)] mt-3">Help & FAQ</h1>

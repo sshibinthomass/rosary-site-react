@@ -1,6 +1,9 @@
+import SEO from '../components/SEO';
+
 export default function AboutPage() {
   return (
     <div className="animate-fade-in max-w-4xl mx-auto space-y-12 pb-20 px-4 mt-8">
+      <SEO title="About Us" description="Learn about Rosary Plant House — a nursery in the Nilgiris, Coonoor, bringing beautiful succulents, cacti and indoor plants to your home." />
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <div className="inline-block p-4 rounded-full bg-[var(--bg-tertiary)] mb-2 hover:scale-110 transition-transform duration-300">
@@ -51,7 +54,7 @@ export default function AboutPage() {
             </p>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/20 hover:bg-white/20 transition-colors">
               <h3 className="font-semibold mb-2 text-green-100/90">Visit Our Oasis:</h3>
-              <p className="text-sm text-white font-medium tracking-wide">Rosary Plant House<br/>Samayapuram Alwarpet Coonoor<br/>The Nilgiris</p>
+              <p className="text-sm text-white font-medium tracking-wide">Rosary Plant House<br/>Samayapuram, Alwarpet, Coonoor<br/>The Nilgiris</p>
             </div>
           </div>
           <div className="hidden md:flex justify-center items-center">

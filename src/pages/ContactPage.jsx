@@ -1,3 +1,5 @@
+import SEO from '../components/SEO';
+
 export default function ContactPage() {
   const contactMethods = [
     {
@@ -34,8 +36,40 @@ export default function ContactPage() {
     }
   ];
 
+  const contactSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Rosary Plant House",
+    "image": "https://rosaryplanthouse.com/hero-bg.jpg",
+    "telephone": "+91 7904050237",
+    "email": "rosaryplanthouse@gmail.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Samayapuram, Alwarpet",
+      "addressLocality": "Coonoor, The Nilgiris",
+      "addressRegion": "Tamil Nadu",
+      "addressCountry": "IN"
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      "opens": "10:00",
+      "closes": "17:00"
+    },
+    "sameAs": [
+      "https://instagram.com/rosary_plant_house",
+      "https://facebook.com/rosaryplanthouse",
+      "https://youtube.com/channel/UCUYHYgkyhoVXy5_h8a5ly6w"
+    ]
+  };
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto space-y-8 pb-20">
+      <SEO 
+        title="Contact Us" 
+        description="Get in touch with Rosary Plant House. Reach us on WhatsApp at +91 79040 50237, Instagram, or visit our nursery in Coonoor, Nilgiris." 
+        schemaData={contactSchema}
+      />
       <div className="text-center">
         <span className="text-4xl">📬</span>
         <h1 className="text-2xl font-bold text-[var(--text-primary)] mt-3">Contact Us</h1>
@@ -72,15 +106,15 @@ export default function ContactPage() {
         <div className="space-y-2 text-[var(--text-secondary)] text-sm leading-relaxed">
           <p>
             We're located at the queen of hills <strong>Nilgiris, Coonoor</strong>. 
-            Very near the famous tourist spot Simspark. Just 5 minutes drive from there.
+            Very near the famous tourist spot Simspark. Just a 5-minute drive from there.
           </p>
           <p>
-            We're exactly located at brooklands at a pleasant on the way from simspark to Lambsrock.
+            We're exactly located at Brooklands, on the pleasant route from Simspark to Lambsrock.
           </p>
           <div className="mt-4 p-4 bg-[var(--bg-tertiary)] rounded-lg">
             <h3 className="font-semibold text-[var(--text-primary)] mb-2">Address</h3>
             <p>Rosary Plant House</p>
-            <p>Samayapuram Alwarpet Coonoor</p>
+            <p>Samayapuram, Alwarpet, Coonoor</p>
             <p>The Nilgiris</p>
           </div>
         </div>

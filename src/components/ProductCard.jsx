@@ -1,10 +1,13 @@
-import { useState, memo } from 'react';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 
-const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99 }) {
+export default function ProductCard({ product, index }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [heartAnim, setHeartAnim] = useState(false);
   const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
@@ -51,16 +54,19 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
       : product.imageUrl
   );
 
+  const generateSlug = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const productSlug = generateSlug(name);
+
   return (
     <div 
-      className="card cursor-pointer group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col"
-      onClick={() => onQuickView?.(product)}
+      className="card cursor-pointer group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col relative"
+      onClick={() => navigate(`/plant/${product.id}-${productSlug}`, { state: { backgroundLocation: location, product } })}
     >
       {/* Image */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--bg-tertiary)]">
         <img
           src={primaryImage || '/placeholder-plant.jpg'}
-          alt={name}
+          alt={`${name} - ${product.category || 'Plant'} from Rosary Plant House`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading={index < 3 ? 'eager' : 'lazy'}
           fetchPriority={index === 0 ? 'high' : undefined}
@@ -104,11 +110,25 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
               : 'bg-white/90 text-gray-600 hover:bg-red-50 hover:text-red-500 dark:bg-gray-800/90 dark:text-gray-300 dark:hover:bg-red-900/30 dark:hover:text-red-400'
             }
           `}
+          aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+          <svg className={`w-5 h-5 md:w-4 md:h-4 ${inWishlist ? 'animate-heart-pop' : ''}`} viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
+
+        {/* Quick View Button (Hover only) */}
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <button 
+            className="pointer-events-auto btn bg-white/95 text-[var(--color-forest)] hover:bg-white scale-95 group-hover:scale-100 transition-all font-semibold shadow-xl border-none text-sm px-5 py-2 rounded-full flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Quick View
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -214,6 +234,4 @@ const ProductCard = memo(function ProductCard({ product, onQuickView, index = 99
       </div>
     </div>
   );
-});
-
-export default ProductCard;
+}

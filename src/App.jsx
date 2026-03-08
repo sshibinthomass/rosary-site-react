@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
@@ -36,12 +36,219 @@ const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ProductPage = lazy(() => import('./pages/ProductPage'));
+import ProductModalWrapper from './components/ProductModalWrapper';
 
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[40vh]">
       <div className="w-8 h-8 rounded-full border-2 border-[var(--color-forest)] border-t-transparent animate-spin" />
     </div>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  const backgroundLocation = location.state?.backgroundLocation;
+
+  return (
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <Routes location={backgroundLocation || location}>
+          {/* Standard Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/index.html" element={<HomePage />} />
+          <Route path="/category/:categoryName" element={<HomePage />} />
+          <Route path="/plant/:productId" element={<ProductPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/cart.html" element={<CartPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/wishlist.html" element={<WishlistPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/account.html" element={<AccountPage />} />
+          <Route 
+            path="/orders" 
+            element={
+              <ProtectedRoute>
+                <UserOrdersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/orders.html" 
+            element={
+              <ProtectedRoute>
+                <UserOrdersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/faq.html" element={<FAQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/contact.html" element={<ContactPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/about.html" element={<AboutPage />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
+          <Route path="/reviews.html" element={<ReviewsPage />} />
+          <Route path="/order/:orderId" element={<OrderPage />} />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminHome />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminHome />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/orders" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminOrdersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/orders.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminOrdersPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/orders/new" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminCreateOrderPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/orders/new.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminCreateOrderPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/products" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/products.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/limited" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminLimitedPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/limited.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminLimitedPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/export" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminExportPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/export.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminExportPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/plant-analysis" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPlantAnalysis />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/plant-analysis.html" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPlantAnalysis />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/plant-tester" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPlantTesterPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/settings" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminSettingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          {/* 404 Catch-all */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+
+      {/* Render the modal OVER the background route if backgroundLocation is present */}
+      {backgroundLocation && (
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/plant/:productId" element={<ProductModalWrapper />} />
+          </Routes>
+        </Suspense>
+      )}
+    </>
   );
 }
 
@@ -56,192 +263,7 @@ function App() {
           <ToastProvider>
             <CartProvider>
               <Layout>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {/* Standard Routes */}
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/index.html" element={<HomePage />} />
-                    <Route path="/category/:categoryName" element={<HomePage />} />
-                    <Route path="/plant/:productId" element={<HomePage />} />
-                    <Route path="/cart" element={<CartPage />} />
-                    <Route path="/cart.html" element={<CartPage />} />
-                    <Route path="/wishlist" element={<WishlistPage />} />
-                    <Route path="/wishlist.html" element={<WishlistPage />} />
-                    <Route path="/account" element={<AccountPage />} />
-                    <Route path="/account.html" element={<AccountPage />} />
-                    <Route 
-                      path="/orders" 
-                      element={
-                        <ProtectedRoute>
-                          <UserOrdersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/orders.html" 
-                      element={
-                        <ProtectedRoute>
-                          <UserOrdersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route path="/faq" element={<FAQPage />} />
-                    <Route path="/faq.html" element={<FAQPage />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/contact.html" element={<ContactPage />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/about.html" element={<AboutPage />} />
-                    <Route path="/reviews" element={<ReviewsPage />} />
-                    <Route path="/reviews.html" element={<ReviewsPage />} />
-                    <Route path="/order/:orderId" element={<OrderPage />} />
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminHome />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminHome />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/users" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminUsersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/users.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminUsersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/orders" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminOrdersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/orders.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminOrdersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/orders/new" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminCreateOrderPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/orders/new.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminCreateOrderPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/products" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminDashboard />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/products.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminDashboard />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/limited" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminLimitedPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/limited.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminLimitedPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/export" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminExportPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/export.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminExportPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/plant-analysis" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminPlantAnalysis />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/plant-analysis.html" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminPlantAnalysis />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/plant-tester" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminPlantTesterPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/settings" 
-                      element={
-                        <ProtectedRoute requireAdmin>
-                          <AdminSettingsPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    {/* 404 Catch-all */}
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </Suspense>
+                <AppRoutes />
               </Layout>
               <Toast />
               <MergeDataModal />

@@ -186,17 +186,23 @@ export default function WishlistPage() {
 
       {/* Wishlist Items */}
       <div className="space-y-3">
-        {wishlist.map((item) => (
-          <WishlistItem 
-            key={item.productId} 
-            item={item} 
-            onMoveToCart={handleMoveToCart}
-            onRemove={removeFromWishlist}
-            inCart={isInCart(item.productId)}
-            onClick={handleItemClick}
-            isOutOfStock={isItemOutOfStock(item)}
-          />
-        ))}
+        {wishlist.map((item) => {
+          const product = productStockMap[item.productId];
+          const currentPrice = product?.salesPrice || product?.price;
+          const displayItem = currentPrice !== undefined ? { ...item, price: currentPrice } : item;
+          
+          return (
+            <WishlistItem 
+              key={item.productId} 
+              item={displayItem} 
+              onMoveToCart={handleMoveToCart}
+              onRemove={removeFromWishlist}
+              inCart={isInCart(item.productId)}
+              onClick={handleItemClick}
+              isOutOfStock={isItemOutOfStock(item)}
+            />
+          );
+        })}
       </div>
 
       {/* Product Modal */}

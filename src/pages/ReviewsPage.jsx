@@ -1,9 +1,44 @@
 import { useState } from 'react';
 import reviewsData from '../data/reviews.json';
+import SEO from '../components/SEO';
 
 export default function ReviewsPage() {
+  // Calculate average rating for AggregateRating schema
+  const averageRating = reviewsData.reduce((acc, rev) => acc + rev.rating, 0) / reviewsData.length;
+
+  const reviewSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Rosary Plant House Shopping Experience",
+    "image": "https://rosaryplanthouse.com/hero-bg.jpg",
+    "description": "Customer reviews and feedback for Rosary Plant House, Coonoor.",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": averageRating.toFixed(1),
+      "reviewCount": reviewsData.length
+    },
+    "review": reviewsData.map(rev => ({
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": rev.author
+      },
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": rev.rating,
+        "bestRating": "5"
+      },
+      "reviewBody": rev.text
+    }))
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 animate-fade-in">
+      <SEO 
+        title="Customer Reviews" 
+        description="Read what our plant lovers say about Rosary Plant House. 5-star rated nursery from Coonoor, Nilgiris packing rare succulents for safety." 
+        schemaData={reviewSchema}
+      />
       <div className="flex flex-col items-center mb-10">
         <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3">Customer Reviews</h1>
         <div className="w-24 h-1 bg-[var(--color-terracotta)] rounded-full mb-4"></div>

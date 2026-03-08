@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 
-export default function SEO({ title, description, image, type = 'website', url, productData }) {
+export default function SEO({ title, description, image, type = 'website', url, productData, schemaData }) {
   const siteTitle = 'Rosary Plant House';
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const defaultDesc = 'Beautiful succulents, cacti & indoor plants from Nilgiris, Coonoor. Shop online and get plants delivered across India.';
@@ -45,6 +45,13 @@ export default function SEO({ title, description, image, type = 'website', url, 
                 : 'https://schema.org/OutOfStock'
             }
           })}
+        </script>
+      )}
+
+      {/* Custom Structured Data (JSON-LD) */}
+      {schemaData && (
+        <script type="application/ld+json">
+          {JSON.stringify(schemaData)}
         </script>
       )}
     </Helmet>

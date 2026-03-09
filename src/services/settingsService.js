@@ -6,18 +6,6 @@ const SETTINGS_DOC = doc(db, 'settings', 'siteConfig');
 const DEFAULTS = {
   showPlantDescription: true,
   promoCodesEnabled: true,
-  popup: {
-    enabled: false,
-    title: 'Special Offer!',
-    message: 'Check out our latest collection.',
-    emoji: '🎉',
-    imageUrl: '',
-    buttonText: '',
-    buttonLink: '',
-    bgColor: '#2d6a4f',
-    textColor: '#ffffff',
-    showOnce: true,
-  },
 };
 
 export async function getSettings() {

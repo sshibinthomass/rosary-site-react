@@ -10,7 +10,7 @@ import Layout from './components/Layout';
 import Toast from './components/Toast';
 import MergeDataModal from './components/MergeDataModal';
 import ProfileSetupModal from './components/ProfileSetupModal';
-import AnnouncementPopup from './components/AnnouncementPopup';
+import LoginPopup from './components/LoginPopup';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
@@ -271,7 +271,7 @@ function App() {
               <Toast />
               <MergeDataModal />
               <ProfileSetupModal />
-              <AnnouncementPopup />
+              <LoginPopup />
             </CartProvider>
           </ToastProvider>
         </AuthProvider>

@@ -202,8 +202,17 @@ export default function AdminLimitedPage() {
   };
 
   return (
-    <div className="animate-fade-in pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+    <>
+      {saving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-[var(--color-forest)] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-[var(--color-forest)] font-medium">Saving Plant...</p>
+          </div>
+        </div>
+      )}
+      <div className="animate-fade-in pb-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-forest)]">
           Limited Plants
         </h1>
@@ -691,6 +700,7 @@ export default function AdminLimitedPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

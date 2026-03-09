@@ -46,6 +46,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/101</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/102</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -86,11 +91,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/11</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/110</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -121,6 +121,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/117</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/119</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -132,6 +137,16 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/120</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/121</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/122</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -156,7 +171,27 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/127</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/129</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/13</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/130</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/131</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -171,7 +206,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/137</loc>
+    <loc>https://rosaryplanthouse.com/plant/135</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/136</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -191,12 +231,32 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/141</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/142</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/143</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/144</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/145</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/146</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -236,12 +296,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/154</loc>
+    <loc>https://rosaryplanthouse.com/plant/155</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/155</loc>
+    <loc>https://rosaryplanthouse.com/plant/158</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -252,6 +312,16 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/16</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/160</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/161</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -281,6 +351,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/167</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/168</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -291,7 +366,22 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/170</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/171</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/172</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/173</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -302,6 +392,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/176</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/177</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -322,6 +417,16 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/180</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/181</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/182</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -352,6 +457,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/19</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/190</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -391,6 +501,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/198</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/199</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/2</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -401,7 +521,17 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/200</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/201</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/202</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -466,6 +596,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/214</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/217</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -477,6 +612,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/22</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/220</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -501,6 +641,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/227</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/228</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -511,22 +656,17 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/23</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/230</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/231</loc>
+    <loc>https://rosaryplanthouse.com/plant/232</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/232</loc>
+    <loc>https://rosaryplanthouse.com/plant/233</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -546,7 +686,22 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/237</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/24</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/240</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/241</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -567,6 +722,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/246</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/247</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -701,6 +861,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/272</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/273</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/274</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -712,11 +882,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/276</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/277</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -741,17 +906,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/284</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/285</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/286</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -771,22 +926,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/290</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/291</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/292</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/294</loc>
+    <loc>https://rosaryplanthouse.com/plant/293</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -821,16 +966,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/30</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/300</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/301</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -847,11 +982,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/304</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/305</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -896,17 +1026,22 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/37</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/38</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/39</loc>
+    <loc>https://rosaryplanthouse.com/plant/4</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/4</loc>
+    <loc>https://rosaryplanthouse.com/plant/43</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -921,7 +1056,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/46</loc>
+    <loc>https://rosaryplanthouse.com/plant/47</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1081,7 +1216,17 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/81</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/82</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/83</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1097,11 +1242,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/86</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/87</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1132,6 +1272,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/93</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/94</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

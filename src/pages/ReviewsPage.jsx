@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import reviewsData from '../data/reviews.json';
 import SEO from '../components/SEO';
 
 export default function ReviewsPage() {
+  const location = useLocation();
   // Calculate average rating for AggregateRating schema
   const averageRating = reviewsData.reduce((acc, rev) => acc + rev.rating, 0) / reviewsData.length;
 
@@ -49,6 +50,7 @@ export default function ReviewsPage() {
 
         <Link 
           to="/insta-reviews" 
+          state={{ from: location.pathname }}
           className="group relative inline-flex items-center justify-center gap-2 px-8 py-3 font-semibold text-white transition-all duration-300 ease-in-out rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 shadow-lg hover:shadow-xl hover:-translate-y-1 overflow-hidden"
         >
           <div className="absolute inset-0 w-full h-full bg-white/20 blur-md transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>

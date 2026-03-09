@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SEO from '../components/SEO';
 
 // Dynamically import all images from the public/insta_reviews folder
@@ -33,6 +33,8 @@ export default function InstaReviewsPage() {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath = location.state?.from || '/';
   const STORY_DURATION = 5000; // 5 seconds per story
   const UPDATE_INTERVAL = 50; // Update progress every 50ms
 
@@ -47,10 +49,10 @@ export default function InstaReviewsPage() {
       setCurrentIndex(prev => prev + 1);
       setProgress(0);
     } else {
-      // End of stories, go back to reviews
-      navigate('/reviews');
+      // End of stories, go back to previous page
+      navigate(fromPath);
     }
-  }, [currentIndex, images.length, navigate]);
+  }, [currentIndex, images.length, navigate, fromPath]);
 
   const prevStory = useCallback(() => {
     if (currentIndex > 0) {
@@ -102,7 +104,7 @@ export default function InstaReviewsPage() {
         <SEO title="Customer Stories" />
         <h2 className="text-xl mb-4">No stories available currently.</h2>
         <button 
-          onClick={() => navigate('/reviews')}
+          onClick={() => navigate(fromPath)}
           className="px-6 py-2 bg-[var(--color-forest)] text-white rounded-full"
         >
           Go Back
@@ -157,7 +159,7 @@ export default function InstaReviewsPage() {
             </span>
           </div>
           <button 
-            onClick={(e) => { e.stopPropagation(); navigate('/reviews'); }}
+            onClick={(e) => { e.stopPropagation(); navigate(fromPath); }}
             className="text-white p-1 pointer-events-auto filter drop-shadow hover:bg-white/20 rounded-full transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

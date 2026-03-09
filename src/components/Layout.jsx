@@ -332,6 +332,7 @@ export default function Layout({ children }) {
                 <NavLink
                   key={path}
                   to={path}
+                  state={{ from: location.pathname }}
                   onClick={() => setSidebarOpen(false)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-all

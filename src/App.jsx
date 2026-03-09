@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
@@ -36,7 +36,7 @@ const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
 const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
 import ProductModalWrapper from './components/ProductModalWrapper';
@@ -239,7 +239,7 @@ function AppRoutes() {
             } 
           />
           {/* 404 Catch-all */}
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
 

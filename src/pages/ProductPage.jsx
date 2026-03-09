@@ -99,12 +99,12 @@ export default function ProductPage() {
     );
   }
 
-  if (!product) {
+  if (!product || !inStock) {
     return (
       <div className="animate-fade-in text-center py-20">
         <span className="text-5xl">🌵</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Plant Not Found</h2>
-        <p className="text-[var(--text-secondary)] mt-2">This plant doesn't exist or has been removed.</p>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Plant Not Available</h2>
+        <p className="text-[var(--text-secondary)] mt-2">This plant doesn't exist, has been removed, or is currently out of stock.</p>
         <NavLink to="/" className="btn btn-primary mt-6 inline-block">Browse Plants</NavLink>
       </div>
     );

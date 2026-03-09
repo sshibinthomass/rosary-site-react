@@ -129,6 +129,10 @@ export default function HomePage() {
 
   // Filter products by search query and attributes
   const filteredProducts = products.filter((p) => {
+    // Stock condition - completely hide out of stock items everywhere
+    const inStock = p.available !== false && (p.qtyAvailable !== 'NA' || p.inStock);
+    if (!inStock) return false;
+
     // Search condition
     let passesSearch = true;
     if (searchQuery.trim()) {
@@ -185,20 +189,7 @@ export default function HomePage() {
       });
     }
 
-    // Always sort out-of-stock items to the bottom, preserving other sort orders
-    const inStockItems = [];
-    const outOfStockItems = [];
-    
-    sorted.forEach(item => {
-      const isItemInStock = item.available !== false && (item.qtyAvailable !== 'NA' || item.inStock);
-      if (isItemInStock) {
-        inStockItems.push(item);
-      } else {
-        outOfStockItems.push(item);
-      }
-    });
-
-    return [...inStockItems, ...outOfStockItems];
+    return sorted;
   }, [filteredProducts, sortOption]);
 
   // Pick best reviews for the homepage carousel

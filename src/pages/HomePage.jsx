@@ -184,7 +184,21 @@ export default function HomePage() {
         return idB - idA;
       });
     }
-    return sorted;
+
+    // Always sort out-of-stock items to the bottom, preserving other sort orders
+    const inStockItems = [];
+    const outOfStockItems = [];
+    
+    sorted.forEach(item => {
+      const isItemInStock = item.available !== false && (item.qtyAvailable !== 'NA' || item.inStock);
+      if (isItemInStock) {
+        inStockItems.push(item);
+      } else {
+        outOfStockItems.push(item);
+      }
+    });
+
+    return [...inStockItems, ...outOfStockItems];
   }, [filteredProducts, sortOption]);
 
   // Pick best reviews for the homepage carousel

@@ -10,7 +10,8 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -35,8 +36,12 @@ export async function createOrder(orderData) {
   try {
     const orderId = generateOrderId();
     
+    const docRef = doc(collection(db, COLLECTION_NAME));
+    const orderUrl = getOrderUrl(docRef.id);
+    
     const order = {
       orderId,
+      orderUrl,
       items: orderData.items.map(item => ({
         productId: item.productId,
         name: item.name,
@@ -76,16 +81,10 @@ export async function createOrder(orderData) {
       updatedAt: serverTimestamp()
     };
     
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), order);
-
-    // Generate and store public order URL on the document
-    const orderUrl = getOrderUrl(docRef.id);
-    await updateDoc(docRef, { orderUrl });
+    await setDoc(docRef, order);
     
     return {
       id: docRef.id,
-      orderId,
-      orderUrl,
       ...order
     };
   } catch (error) {

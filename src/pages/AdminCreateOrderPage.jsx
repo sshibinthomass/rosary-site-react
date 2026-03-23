@@ -442,6 +442,15 @@ export default function AdminCreateOrderPage() {
 
           <div className="card p-4 space-y-3 text-sm">
             <h2 className="text-base font-medium text-[var(--text-primary)]">Summary</h2>
+            {(() => {
+              const totalPlants = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              return (
+                <div className="flex justify-between text-[var(--text-secondary)]">
+                  <span>Total Plants</span>
+                  <span className="font-semibold text-[var(--text-primary)]">{totalPlants}</span>
+                </div>
+              );
+            })()}
             <div className="flex justify-between text-[var(--text-secondary)]">
               <span>Subtotal</span>
               <span>{CURRENCY}{subtotal.toLocaleString('en-IN')}</span>

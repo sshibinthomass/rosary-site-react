@@ -8,6 +8,7 @@ import { CURRENCY } from '../config/constants';
 import { useToast } from '../context/ToastContext';
 import OrderItemEditor from '../components/OrderItemEditor';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
+import logoImg from '../assets/logo.png';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -181,48 +182,117 @@ export default function AdminOrdersPage() {
           contactDisplay = `User: ${customer.userId}`;
         }
 
+        const orderUrl = getOrderUrl(order.id);
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(orderUrl)}`;
+        const instaQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent('https://instagram.com/rosary_plant_house')}`;
+        
+        const logoUrl = logoImg.startsWith('http') ? logoImg : (logoImg.startsWith('/') ? window.location.origin + logoImg : window.location.origin + '/' + logoImg);
+
+        // Calculate item total excluding delivery & discounts
+        const itemsTotal = (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const totalItemsQuantity = (order.items || []).reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const isLargeOrder = itemsTotal > 1000;
+
         return `
-          <div class="label">
-            <div class="label-header">
-              <div class="label-title">Rosary Plant House</div>
-              <div class="label-order-id">
-                <span class="label-order-id-value">${order.orderId || order.id}</span>
-              </div>
-            </div>
-            <div class="label-body">
-              <div class="label-from">
-                <div class="section-title">From:</div>
-                <div class="section-content">
-                  <div>Rosary Plant House,</div>
-                  <div>Coonoor,</div>
-                  <div>The Nilgiris,</div>
-                  <div>Tamil Nadu</div>
-                  <br />
-                  <div><span class="field-label">Pincode :</span> 643101</div>
-                  <div><span class="field-label">Phone :</span> 7904050237</div>
+          <div class="page">
+            <!-- Original Address Label (Top) -->
+            <div class="label">
+              <div class="label-header">
+                <div class="label-title">Rosary Plant House</div>
+                <div class="label-order-id">
+                  <span class="label-order-id-value">${order.orderId || order.id}</span>
                 </div>
               </div>
-              <div class="label-to">
-                <div class="section-title">To:</div>
-                <div class="section-content">
-                  <div class="customer-name">${name}</div>
-                  ${addressLines ? `<div class="customer-address">${addressLines}</div>` : ''}
-                  <div>
-                    <span class="field-label">State :</span> ${customer.state || ''}
+              <div class="label-body">
+                <div class="label-from">
+                  <div class="section-title">From:</div>
+                  <div class="section-content">
+                    <div>Rosary Plant House,</div>
+                    <div>Coonoor,</div>
+                    <div>The Nilgiris,</div>
+                    <div>Tamil Nadu</div>
+                    <br />
+                    <div><span class="field-label">Pincode :</span> 643101</div>
+                    <div><span class="field-label">Phone :</span> 7904050237</div>
                   </div>
-                  <div style="font-weight: bold; font-size: 15px;">
-                    <span class="field-label">Pincode :</span> ${customer.pincode || ''}
+                </div>
+                <div class="label-to">
+                  <div class="section-title">To:</div>
+                  <div class="section-content">
+                    <div class="customer-name">${name}</div>
+                    ${addressLines ? `<div class="customer-address">${addressLines}</div>` : ''}
+                    <div>
+                      <span class="field-label">State :</span> ${customer.state || ''}
+                    </div>
+                    <div style="font-weight: bold; font-size: 15px;">
+                      <span class="field-label">Pincode :</span> ${customer.pincode || ''}
+                    </div>
+                    ${
+                      contactDisplay
+                        ? `<div class="customer-phone"><span class="field-label">Phone :</span> ${contactDisplay}</div>`
+                        : ''
+                    }
                   </div>
-                  ${
-                    contactDisplay
-                      ? `<div class="customer-phone"><span class="field-label">Phone :</span> ${contactDisplay}</div>`
-                      : ''
-                  }
                 </div>
               </div>
+              <div class="label-footer">
+                LIVE PLANTS INSIDE , HANDLE WITH CARE, PLEASE DON'T DELAY
+              </div>
             </div>
-            <div class="label-footer">
-              LIVE PLANTS INSIDE , HANDLE WITH CARE, PLEASE DON’T DELAY
+
+            <!-- Colorful Thank You & Info Section (Bottom) -->
+            <div class="thank-you-card">
+              <div class="thank-you-header">
+                <div class="header-logo-container">
+                  <img src="${logoUrl}" alt="Logo" class="header-logo" onerror="this.style.display='none'" />
+                  <div class="header-text-container">
+                    <h2>Dear Plant Parent, Thank You! 🌿</h2>
+                    <p class="tagline">Bringing Nature's Finest Succulents & Plants to You</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="thank-you-content">
+                <div class="thank-you-text">
+                  <h3>Order Details</h3>
+                  <div class="detail-row"><span>Order ID:</span> <strong>${order.orderId || order.id}</strong></div>
+                  <div class="detail-row"><span>Items:</span> <strong>${totalItemsQuantity} plants</strong></div>
+                  
+                  ${isLargeOrder ? `
+                    <div class="complimentary-msg">
+                      🪴 Hope you liked your complimentary plant! 
+                    </div>
+                  ` : ''}
+
+                  <h3 style="margin-top: 15px;">Plant Care Tips</h3>
+                  <ul class="care-list">
+                    <li>Unpack your plants immediately upon arrival.</li>
+                    <li>Keep them in a shaded, well-ventilated area for a few days to recover from transit shock before moving to bright light.</li>
+                  </ul>
+                  
+                  <div class="promo-box">
+                    <div class="promo-text">
+                      <strong>Post an insta story</strong>, tag us and get a <br/><strong>Complimentary Plant next time!</strong>
+                    </div>
+                    <img src="${instaQrUrl}" alt="Insta QR" class="promo-qr" />
+                  </div>
+                  
+                  <div class="contact-footer flex-contact">
+                    <div>🌐 rosaryplanthouse.com</div>
+                    <div>📞 +91 7904050237</div>
+                  </div>
+                </div>
+                
+                <div class="thank-you-qr-section border-left-divider">
+                  <div class="qr-container">
+                    <img src="${qrUrl}" alt="Order QR Code" />
+                  </div>
+                  <div class="qr-text">Scan for Plant Care Tips & Bill</div>
+                  <div class="qr-details">
+                    Includes: About, Origin, Temp & Humidity, Growth, Watering, Sunlight, Care Tips & Common Problems
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -253,8 +323,19 @@ export default function AdminOrdersPage() {
             .labels-wrapper {
               display: flex;
               flex-direction: column;
-              gap: 16px;
             }
+            .page {
+              page-break-after: always;
+              display: flex;
+              flex-direction: column;
+              gap: 24px;
+              padding: 16px 0;
+            }
+            .page:last-child {
+              page-break-after: auto;
+            }
+            
+            /* --- Original Label Styling --- */
             .label {
               background-color: #ffffff;
               border: 1px solid #000000;
@@ -264,14 +345,6 @@ export default function AdminOrdersPage() {
               flex-direction: column;
               font-size: 10px;
               min-height: 150px;
-              page-break-inside: avoid;
-            }
-            /* Force exactly 4 labels per page: every 5th label starts on new page */
-            .label:nth-of-type(4n + 1) {
-              page-break-before: always;
-            }
-            .label:first-of-type {
-              page-break-before: auto;
             }
             .label-header {
               display: flex;
@@ -289,10 +362,6 @@ export default function AdminOrdersPage() {
             }
             .label-order-id {
               text-align: right;
-            }
-            .label-order-id-text {
-              text-decoration: underline;
-              text-underline-offset: 2px;
             }
             .label-order-id-value {
               margin-left: 4px;
@@ -338,6 +407,187 @@ export default function AdminOrdersPage() {
               letter-spacing: 0.08em;
               border-top: 1px solid #000000;
               padding-top: 3px;
+            }
+
+            /* --- Colorful Thank You Card Styling --- */
+            .thank-you-card {
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+              border: 1px solid #e2e8f0;
+              font-family: 'Segoe UI', system-ui, sans-serif;
+              display: flex;
+              flex-direction: column;
+              background-color: #fafafa;
+            }
+            .thank-you-header {
+              background: linear-gradient(135deg, #528945 0%, #68a357 100%);
+              color: white;
+              padding: 16px 24px;
+            }
+            .header-logo-container {
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 16px;
+            }
+            .header-text-container {
+              text-align: left;
+            }
+            .header-logo {
+              width: 55px;
+              height: 55px;
+              object-fit: contain;
+              background: white;
+              border-radius: 50%;
+              padding: 3px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .thank-you-header h2 {
+              margin: 0 0 4px 0;
+              font-size: 22px;
+              font-weight: 700;
+            }
+            .thank-you-header .tagline {
+              margin: 0;
+              font-size: 14px;
+              opacity: 0.95;
+              font-weight: 500;
+              letter-spacing: 0.3px;
+            }
+            .thank-you-content {
+              padding: 24px;
+              display: grid;
+              grid-template-columns: 1.5fr 1fr;
+              gap: 30px;
+              align-items: flex-start;
+            }
+            .border-left-divider {
+              border-left: 2px dashed #cbd5e1;
+              padding-left: 30px;
+            }
+            .thank-you-text h3 {
+              color: #1e293b;
+              margin: 0 0 10px 0;
+              font-size: 16px;
+              font-weight: 700;
+            }
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 6px;
+              font-size: 14px;
+              color: #475569;
+              max-width: 250px;
+            }
+            .detail-row strong {
+              color: #0f172a;
+            }
+            .complimentary-msg {
+              background-color: #fdf6b2;
+              color: #8a4b08;
+              padding: 8px 12px;
+              border-radius: 6px;
+              font-weight: 600;
+              font-size: 14px;
+              margin-top: 12px;
+              display: inline-block;
+              border-left: 4px solid #faca15;
+            }
+            .care-list {
+              margin: 0;
+              padding-left: 18px;
+              color: #64748b;
+              font-size: 13px;
+              line-height: 1.5;
+            }
+            .care-list li {
+              margin-bottom: 4px;
+            }
+            .promo-box {
+              margin-top: 20px;
+              background-color: #f3e8ff;
+              padding: 12px 16px;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              border: 1px solid #e9d5ff;
+              gap: 12px;
+            }
+            .promo-text {
+              font-size: 13px;
+              line-height: 1.4;
+              color: #4338ca;
+            }
+            .promo-text strong {
+              color: #3730a3;
+            }
+            .promo-qr {
+              width: 50px;
+              height: 50px;
+              border-radius: 4px;
+              mix-blend-mode: multiply;
+            }
+            .thank-you-qr-section {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 12px;
+              height: 100%;
+            }
+            .qr-container {
+              background: white;
+              padding: 12px;
+              border-radius: 10px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+              border: 1px solid #f1f5f9;
+            }
+            .qr-container img {
+              width: 140px;
+              height: 140px;
+              display: block;
+            }
+            .qr-text {
+              font-weight: 700;
+              color: #3f6212;
+              font-size: 13px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              text-align: center;
+              line-height: 1.4;
+              max-width: 160px;
+            }
+            .qr-details {
+              font-size: 10.5px;
+              color: #475569;
+              text-align: center;
+              line-height: 1.3;
+              max-width: 170px;
+              margin-top: 2px;
+            }
+            .contact-footer {
+              font-size: 13px;
+              color: #475569;
+              margin-top: 15px;
+            }
+            .flex-contact {
+              display: flex;
+              gap: 20px;
+              font-weight: 600;
+              border-top: 1px dashed #e2e8f0;
+              padding-top: 15px;
+            }
+
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .thank-you-card {
+                break-inside: avoid;
+              }
             }
           </style>
         </head>
@@ -1257,6 +1507,30 @@ export default function AdminOrdersPage() {
                         {editingItemsFor === order.id ? '✕ Cancel' : '✏️ Edit'}
                       </button>
                     </div>
+
+                    {/* Copyable ID List */}
+                    {(() => {
+                      const idListString = order.items?.map(item => {
+                        const plantId = getItemPlantId(item);
+                        return `${plantId}-${item.quantity}`;
+                      }).join(',');
+                      return idListString ? (
+                        <div className="flex items-center gap-2 text-xs bg-[var(--bg-secondary)] px-2 py-1 rounded border border-[var(--border-color)] mb-3 max-w-full overflow-hidden">
+                          <span className="font-mono text-[var(--text-primary)] truncate flex-1">{idListString}</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(idListString);
+                              success('IDs copied!');
+                            }}
+                            className="text-[var(--color-forest)] font-medium hover:underline flex-shrink-0"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
+
                     {editingItemsFor === order.id ? (
                       <OrderItemEditor items={order.items} onSave={(items) => handleSaveOrderItems(order.id, items)} saving={savingItems} />
                     ) : (
@@ -1292,6 +1566,15 @@ export default function AdminOrdersPage() {
 
                   {/* Delivery & Total */}
                   <div className="mb-4 pt-3 border-t border-[var(--border-color)] space-y-2 text-sm">
+                    {(() => {
+                      const totalPlants = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+                      return (
+                        <div className="flex justify-between text-[var(--text-secondary)]">
+                          <span>Total Plants</span>
+                          <span className="font-semibold text-[var(--text-primary)]">{totalPlants}</span>
+                        </div>
+                      );
+                    })()}
                     <div className="flex justify-between text-[var(--text-secondary)]">
                       <span>Subtotal</span>
                       <span>{CURRENCY}{(order.originalAmount ?? order.totalAmount)?.toLocaleString('en-IN')}</span>

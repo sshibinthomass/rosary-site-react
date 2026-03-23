@@ -267,14 +267,14 @@ export default function HomePage() {
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
             {/* Text content */}
             <div className="flex-1 text-center md:text-left">
-              <p className="text-green-200 text-sm font-medium tracking-wide uppercase mb-2">From the Nilgiris, Coonoor</p>
+              <p className="text-green-200 text-sm font-medium tracking-wide uppercase mb-2">From the Queen of Hills... Nilgiris, Coonoor</p>
               <h2 className="text-2xl md:text-4xl font-bold leading-tight mb-3">
                 Bringing Nature's Finest <br className="hidden md:block" />
                 <span className="text-green-300">Succulents & Plants</span> to You
               </h2>
               <p className="text-green-100/80 text-sm md:text-base leading-relaxed max-w-lg mb-5">
-                Discover rare succulents, cacti, and beautiful indoor plants curated with love. 
-                Each plant is hand-picked and safely packed from our nursery in the Queen of Hills.
+                Discover rare succulents, cacti, and beautiful indoor plants curated with love, starting from just <span className="font-semibold text-green-300">₹39</span>. 
+                We love encouraging plant parents with our healthy <span className="font-semibold text-green-300">DIY bare-rooted plants</span>, hand-picked and safely packed from our nursery in the Queen of Hills.
               </p>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">

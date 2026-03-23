@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, NavLink } from 'react-router-dom';
+import logo from '../assets/logo.png';
+
 import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateManualDiscount, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
@@ -48,13 +51,36 @@ export default function OrderPage() {
   const [savingItems, setSavingItems] = useState(false);
 
   // PDF Exporting state
+  // PDF Exporting state
   const [exportingOrder, setExportingOrder] = useState(false);
+
+  // Thank You Popup State
+  const [showThanksPopup, setShowThanksPopup] = useState(false);
 
   useEffect(() => {
     if (orderId) {
       loadOrder();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    if (order && !isAdmin) { // Only show popup to customers
+      const isDismissed = sessionStorage.getItem(`thanksPopupDismissed_${orderId}`) === 'true';
+      if (!isDismissed) {
+        // Show after a short delay
+        const timer = setTimeout(() => {
+          setShowThanksPopup(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [order, orderId, isAdmin]);
+
+  const handleCloseThanksPopup = () => {
+    sessionStorage.setItem(`thanksPopupDismissed_${orderId}`, 'true');
+    setShowThanksPopup(false);
+  };
+
 
   const loadOrder = async () => {
     try {
@@ -326,7 +352,114 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
+    <div className="animate-fade-in max-w-2xl mx-auto relative">
+      {/* Thank You & Promo Popup */}
+      {showThanksPopup && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="bg-white dark:bg-[var(--bg-primary)] w-full max-w-sm rounded-[24px] shadow-2xl overflow-hidden relative animate-slide-up border-[3px] border-[var(--color-forest)] p-1"
+            role="dialog"
+          >
+            <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/40 dark:to-emerald-800/40 rounded-[20px] p-6 text-center relative overflow-hidden">
+                {/* Decorative background elements */}
+                <div className="absolute -top-12 -right-12 w-24 h-24 bg-green-300/40 dark:bg-green-600/30 rounded-full blur-xl pointer-events-none"></div>
+                <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-emerald-300/40 dark:bg-emerald-600/30 rounded-full blur-xl pointer-events-none"></div>
+                <button
+                  onClick={handleCloseThanksPopup}
+                  className="absolute top-3 right-3 p-1.5 text-green-700 bg-green-200/50 hover:bg-green-300/50 rounded-full transition-colors z-10"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <img src={logo} alt="Rosary Plant House" className="w-16 h-16 mx-auto mb-3 animate-bounce-slow object-contain" />
+                <h2 className="text-2xl font-black text-green-800 dark:text-green-300 mb-2 font-serif">
+                  Thank You{order?.customer?.name ? `, ${order.customer.name}` : "" }! 🌿
+                </h2>
+
+                <p className="text-green-700 dark:text-green-300/90 text-sm mb-5 font-medium">
+                  We're so glad you chose Rosary Plant House!
+                </p>
+                <div className="bg-white/60 dark:bg-black/20 rounded-xl p-4 border border-green-200 dark:border-green-800/50 mb-2 shadow-inner">
+                  <div className="text-3xl mb-2">🎁</div>
+                  <p className="text-xs text-green-800 dark:text-green-200 font-bold mb-1 tracking-wider uppercase">Claim Free Plant</p>
+                  <p className="text-[12px] text-green-700 dark:text-green-300/90 leading-relaxed font-medium">
+                      Post an Insta story with your beautiful plants bought from rosary plant house and tag <strong>@rosary_plant_house</strong> to get a <strong className="text-green-800 dark:text-green-200">Complimentary Plant</strong> on your next order! 📸
+                  </p>
+                </div>
+                {/* Social Links inside Popup */}
+                <div className="flex flex-wrap justify-center gap-3 mt-5 mb-2">
+                  <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" 
+                     className="flex items-center justify-center p-2.5 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white rounded-full hover:scale-110 shadow-md transition-transform">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  </a>
+                  <a href="https://facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer" 
+                     className="flex items-center justify-center p-2.5 bg-[#1877F2] text-white rounded-full hover:scale-110 shadow-md transition-transform">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </a>
+                  <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" 
+                     className="flex items-center justify-center p-2.5 bg-[#25D366] text-white rounded-full hover:scale-110 shadow-md transition-transform">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 0A12 12 0 000 12c0 2.115.553 4.103 1.528 5.819L.085 23.44l5.776-1.503A11.928 11.928 0 0011.996 24C18.625 24 24 18.625 24 12 24 5.375 18.625 0 11.996 0zm0 22a9.94 9.94 0 01-5.1-1.405l-.364-.216-3.8.989 1.01-3.666-.237-.37A9.957 9.957 0 012 12c0-5.514 4.486-10 10-10 5.513 0 9.996 4.486 9.996 10 0 5.514-4.483 10-9.996 10zm5.492-7.48c-.301-.15-1.782-.876-2.062-.976-.28-.1-.482-.15-.685.15-.203.3-.781.976-.957 1.176-.176.2-.353.226-.653.076-1.353-.679-2.4-1.99-2.883-2.827-.176-.3-.018-.466.132-.616.135-.135.301-.351.452-.527.15-.176.2-.301.3-.502.1-.201.05-.376-.025-.526-.075-.15-.685-1.652-.938-2.261-.247-.594-.497-.514-.685-.524-.176-.008-.378-.01-.58-.01a1.115 1.115 0 00-.803.376c-.276.3-1.053 1.026-1.053 2.503 0 1.477 1.078 2.903 1.228 3.103.15.2 2.112 3.221 5.115 4.516.716.309 1.275.494 1.71.632.72.23 1.373.197 1.888.119.578-.088 1.782-.728 2.033-1.43.25-.702.25-1.303.175-1.43-.075-.126-.276-.201-.577-.35z"/></svg>
+                  </a>
+                  <a href="https://rosaryplanthouse.com" target="_blank" rel="noopener noreferrer" 
+                     className="flex items-center justify-center p-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 rounded-full hover:scale-110 shadow-md transition-transform">
+                    <span className="text-sm leading-none">🌐</span>
+                  </a>
+                </div>
+                <button 
+                  onClick={handleCloseThanksPopup}
+                  className="mt-4 w-full bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-700 dark:to-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-900/20 hover:scale-[1.02] transition-transform"
+                >
+                  Awesome, got it! 💚
+                </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Promotional Ad Section */}
+      {!isAdmin && (
+      <div className="card p-6 mb-4 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 border-2 border-green-200 dark:border-green-800 shadow-sm relative overflow-hidden">
+        {/* Decorative background leaf/circle */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-200/50 dark:bg-green-700/30 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-200/50 dark:bg-emerald-700/30 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div className="text-center relative z-10">
+          <h2 className="text-2xl font-black text-green-800 dark:text-green-300 mb-2 font-serif">
+            Join Our Plant Family! 🌿
+          </h2>
+          <p className="text-sm md:text-base text-green-700 dark:text-green-300/90 mb-6 max-w-lg mx-auto leading-relaxed">
+            Follow us for daily plant care tips, exciting new arrivals, and exclusive offers. 
+            <br className="hidden md:block"/>
+            <span className="font-semibold text-green-800 dark:text-green-200 mt-2 block bg-white/50 dark:bg-black/20 py-2 px-3 rounded-lg">
+              📸 Tag us in your Instagram story with your beautiful new plants to get a Complimentary Plant on your next order!
+            </span>
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" 
+               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white rounded-full font-bold text-sm hover:scale-105 hover:shadow-lg transition-all duration-300 group">
+              <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+              Instagram
+            </a>
+            <a href="https://facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer" 
+               className="flex items-center gap-2 px-5 py-2.5 bg-[#1877F2] text-white rounded-full font-bold text-sm hover:scale-105 hover:bg-[#166fe5] hover:shadow-lg transition-all duration-300 group">
+              <svg className="w-5 h-5 group-hover:-rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              Facebook
+            </a>
+            <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" 
+               className="flex items-center gap-2 px-5 py-2.5 bg-[#25D366] text-white rounded-full font-bold text-sm hover:scale-105 hover:bg-[#20bd5a] hover:shadow-lg transition-all duration-300 group">
+              <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 0A12 12 0 000 12c0 2.115.553 4.103 1.528 5.819L.085 23.44l5.776-1.503A11.928 11.928 0 0011.996 24C18.625 24 24 18.625 24 12 24 5.375 18.625 0 11.996 0zm0 22a9.94 9.94 0 01-5.1-1.405l-.364-.216-3.8.989 1.01-3.666-.237-.37A9.957 9.957 0 012 12c0-5.514 4.486-10 10-10 5.513 0 9.996 4.486 9.996 10 0 5.514-4.483 10-9.996 10zm5.492-7.48c-.301-.15-1.782-.876-2.062-.976-.28-.1-.482-.15-.685.15-.203.3-.781.976-.957 1.176-.176.2-.353.226-.653.076-1.353-.679-2.4-1.99-2.883-2.827-.176-.3-.018-.466.132-.616.135-.135.301-.351.452-.527.15-.176.2-.301.3-.502.1-.201.05-.376-.025-.526-.075-.15-.685-1.652-.938-2.261-.247-.594-.497-.514-.685-.524-.176-.008-.378-.01-.58-.01a1.115 1.115 0 00-.803.376c-.276.3-1.053 1.026-1.053 2.503 0 1.477 1.078 2.903 1.228 3.103.15.2 2.112 3.221 5.115 4.516.716.309 1.275.494 1.71.632.72.23 1.373.197 1.888.119.578-.088 1.782-.728 2.033-1.43.25-.702.25-1.303.175-1.43-.075-.126-.276-.201-.577-.35z"/></svg>
+              WhatsApp
+            </a>
+            <a href="https://rosaryplanthouse.com" target="_blank" rel="noopener noreferrer" 
+               className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 rounded-full font-bold text-sm hover:scale-105 hover:bg-slate-700 dark:hover:bg-slate-300 hover:shadow-lg transition-all duration-300 group">
+              <span className="text-xl leading-none group-hover:scale-110 transition-transform">🌐</span> Website
+            </a>
+          </div>
+        </div>
+      </div>
+      )}
+
       {/* Header */}
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
@@ -369,6 +502,141 @@ export default function OrderPage() {
         </div>
       )}
 
+      {/* Customer Details */}
+      <div className="card p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-[var(--text-primary)]">Delivery Details</h2>
+          {canEditCustomer && !isEditingCustomer && (
+            <button
+              onClick={() => setIsEditingCustomer(true)}
+              className="text-sm text-[var(--color-forest)] hover:underline font-medium"
+            >
+              ✏️ Edit
+            </button>
+          )}
+        </div>
+
+        {isEditingCustomer ? (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Name</label>
+              <input
+                type="text"
+                value={editCustomer.name || ''}
+                onChange={(e) => setEditCustomer(prev => ({ ...prev, name: e.target.value }))}
+                className="input"
+                placeholder="Customer name"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Phone</label>
+                <input
+                  type="tel"
+                  value={editCustomer.phone || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                  className="input"
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={editCustomer.whatsapp || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, whatsapp: e.target.value }))}
+                  className="input"
+                  placeholder="WhatsApp number"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Address</label>
+              <textarea
+                value={editCustomer.address || ''}
+                onChange={(e) => setEditCustomer(prev => ({ ...prev, address: e.target.value }))}
+                className="input min-h-[70px] resize-none"
+                placeholder="Full address"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Pincode</label>
+                <input
+                  type="text"
+                  value={editCustomer.pincode || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, pincode: e.target.value }))}
+                  className="input"
+                  placeholder="Pincode"
+                  maxLength={6}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">District</label>
+                <input
+                  type="text"
+                  value={editCustomer.district || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, district: e.target.value }))}
+                  className="input"
+                  placeholder="District"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] mb-1 block">State</label>
+                <input
+                  type="text"
+                  value={editCustomer.state || ''}
+                  onChange={(e) => setEditCustomer(prev => ({ ...prev, state: e.target.value }))}
+                  className="input"
+                  placeholder="State"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleCancelEdit}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCustomer}
+                disabled={savingCustomer}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                {savingCustomer ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Name:</span> {order.customer.name || 'N/A'}
+            </p>
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Phone:</span> {order.customer.phone || 'N/A'}
+            </p>
+            {order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone && (
+              <p className="text-[var(--text-primary)]">
+                <span className="text-[var(--text-secondary)]">WhatsApp:</span> {order.customer.whatsapp}
+              </p>
+            )}
+            <p className="text-[var(--text-primary)]">
+              <span className="text-[var(--text-secondary)]">Address:</span> {order.customer.address || 'N/A'}
+            </p>
+            {(order.customer.district || order.customer.state || order.customer.pincode) && (
+              <p className="text-[var(--text-primary)]">
+                <span className="text-[var(--text-secondary)]">Location:</span>{' '}
+                {[order.customer.district, order.customer.state, order.customer.pincode].filter(Boolean).join(', ')}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
       {/* Items */}
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
@@ -627,141 +895,8 @@ export default function OrderPage() {
         </div>
       </div>
 
-      {/* Customer Details */}
-      <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-[var(--text-primary)]">Delivery Details</h2>
-          {canEditCustomer && !isEditingCustomer && (
-            <button
-              onClick={() => setIsEditingCustomer(true)}
-              className="text-sm text-[var(--color-forest)] hover:underline font-medium"
-            >
-              ✏️ Edit
-            </button>
-          )}
-        </div>
 
-        {isEditingCustomer ? (
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Name</label>
-              <input
-                type="text"
-                value={editCustomer.name || ''}
-                onChange={(e) => setEditCustomer(prev => ({ ...prev, name: e.target.value }))}
-                className="input"
-                placeholder="Customer name"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Phone</label>
-                <input
-                  type="tel"
-                  value={editCustomer.phone || ''}
-                  onChange={(e) => setEditCustomer(prev => ({ ...prev, phone: e.target.value }))}
-                  className="input"
-                  placeholder="Phone number"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">WhatsApp</label>
-                <input
-                  type="tel"
-                  value={editCustomer.whatsapp || ''}
-                  onChange={(e) => setEditCustomer(prev => ({ ...prev, whatsapp: e.target.value }))}
-                  className="input"
-                  placeholder="WhatsApp number"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Address</label>
-              <textarea
-                value={editCustomer.address || ''}
-                onChange={(e) => setEditCustomer(prev => ({ ...prev, address: e.target.value }))}
-                className="input min-h-[70px] resize-none"
-                placeholder="Full address"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Pincode</label>
-                <input
-                  type="text"
-                  value={editCustomer.pincode || ''}
-                  onChange={(e) => setEditCustomer(prev => ({ ...prev, pincode: e.target.value }))}
-                  className="input"
-                  placeholder="Pincode"
-                  maxLength={6}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">District</label>
-                <input
-                  type="text"
-                  value={editCustomer.district || ''}
-                  onChange={(e) => setEditCustomer(prev => ({ ...prev, district: e.target.value }))}
-                  className="input"
-                  placeholder="District"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">State</label>
-                <input
-                  type="text"
-                  value={editCustomer.state || ''}
-                  onChange={(e) => setEditCustomer(prev => ({ ...prev, state: e.target.value }))}
-                  className="input"
-                  placeholder="State"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleCancelEdit}
-                className="btn btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCustomer}
-                disabled={savingCustomer}
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
-              >
-                {savingCustomer ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2 text-sm">
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Name:</span> {order.customer.name || 'N/A'}
-            </p>
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Phone:</span> {order.customer.phone || 'N/A'}
-            </p>
-            {order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone && (
-              <p className="text-[var(--text-primary)]">
-                <span className="text-[var(--text-secondary)]">WhatsApp:</span> {order.customer.whatsapp}
-              </p>
-            )}
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Address:</span> {order.customer.address || 'N/A'}
-            </p>
-            {(order.customer.district || order.customer.state || order.customer.pincode) && (
-              <p className="text-[var(--text-primary)]">
-                <span className="text-[var(--text-secondary)]">Location:</span>{' '}
-                {[order.customer.district, order.customer.state, order.customer.pincode].filter(Boolean).join(', ')}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2">

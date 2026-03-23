@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export default function LoginPopup() {
   const { user, loading, signInWithGoogle } = useAuth();
   const { success, error } = useToast();
+  const { pathname } = useLocation();
   const [show, setShow] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
 
@@ -51,7 +53,7 @@ export default function LoginPopup() {
     setShow(false);
   };
 
-  if (!show || user) return null;
+  if (!show || user || pathname.startsWith('/order/')) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">

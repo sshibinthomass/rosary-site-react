@@ -524,7 +524,7 @@ export default function AdminDashboard() {
                   <span>
                     <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer">WhatsApp: 7904050237</a>
                   </span>
-                  <span>· <a href="https://www.instagram.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer">Instagram</a></span>
+                  <span>· <a href="https://www.instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer">Instagram</a></span>
                   <span>· <a href="https://www.facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer">Facebook</a></span>
                   <span>· <a href="https://www.rosaryplanthouse.com" target="_blank" rel="noopener noreferrer">www.rosaryplanthouse.com</a></span>
                 </div>
@@ -547,7 +547,7 @@ export default function AdminDashboard() {
                   <span>
                     <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer">WhatsApp: 7904050237</a>
                   </span>
-                  <span>· <a href="https://www.instagram.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer">Instagram</a></span>
+                  <span>· <a href="https://www.instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer">Instagram</a></span>
                   <span>· <a href="https://www.facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer">Facebook</a></span>
                   <span>· <a href="https://www.rosaryplanthouse.com" target="_blank" rel="noopener noreferrer">www.rosaryplanthouse.com</a></span>
                 </div>

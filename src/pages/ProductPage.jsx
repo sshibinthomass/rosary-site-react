@@ -10,6 +10,58 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 import { CURRENCY } from '../config/constants';
 import SEO from '../components/SEO';
 
+function DescriptionBlock({ text }) {
+  if (!text) return null;
+  const raw = text.replace(/Â/g, '');
+  const sections = raw.split(/^## /m);
+
+  const mdComponents = {
+    p: ({ children }) => <p style={{ margin: '0.35rem 0' }}>{children}</p>,
+    ul: ({ children }) => <ul style={{ margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'disc' }}>{children}</ul>,
+    ol: ({ children }) => <ol style={{ margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'decimal' }}>{children}</ol>,
+    li: ({ children }) => <li style={{ margin: '0.15rem 0' }}>{children}</li>,
+    strong: ({ children }) => <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{children}</strong>,
+    h1: ({ children }) => <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.5rem 0 0.25rem' }}>{children}</h4>,
+    h2: () => null,
+    h3: ({ children }) => <h5 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.4rem 0 0.2rem' }}>{children}</h5>,
+  };
+
+  return (
+    <div className="border-t border-[var(--border-color)] pt-4">
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
+        {sections.map((section, i) => {
+          if (i === 0) {
+            return section.trim() ? (
+              <div key={i} className="mb-2">
+                <ReactMarkdown components={mdComponents}>{section.trim()}</ReactMarkdown>
+              </div>
+            ) : null;
+          }
+
+          const newlineIdx = section.indexOf('\n');
+          const heading = newlineIdx !== -1 ? section.slice(0, newlineIdx).trim() : section.trim();
+          const body = newlineIdx !== -1 ? section.slice(newlineIdx + 1).trim() : '';
+
+          return (
+            <details key={i} className="group/section border-b border-[var(--border-color)] last:border-0" open={i === 1}>
+              <summary className="cursor-pointer list-none flex items-center justify-between select-none py-2 hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs uppercase tracking-wide">
+                {heading}
+                <span className="text-[8px] transition-transform duration-200 group-open/section:rotate-180 ml-2 flex-shrink-0">▼</span>
+              </summary>
+              {body && (
+                <div className="pb-2">
+                  <ReactMarkdown components={mdComponents}>{body}</ReactMarkdown>
+                </div>
+              )}
+            </details>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
@@ -275,12 +327,7 @@ export default function ProductPage() {
 
           {/* Description */}
           {settings.showPlantDescription && product.description && (
-            <div className="border-t border-[var(--border-color)] pt-4">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
-              <div className="text-sm text-[var(--text-secondary)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text-primary)] prose-headings:text-base prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-1.5 prose-h3:text-sm prose-h3:font-semibold prose-p:my-1 prose-li:my-0 prose-strong:text-[var(--text-primary)]">
-                <ReactMarkdown>{product.description}</ReactMarkdown>
-              </div>
-            </div>
+            <DescriptionBlock text={product.description} />
           )}
 
           {/* Actions */}

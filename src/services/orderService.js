@@ -207,6 +207,23 @@ export async function updateDeliveryCharge(orderId, deliveryCharge) {
 }
 
 /**
+ * Update manual discount on an order (admin)
+ */
+export async function updateManualDiscount(orderId, manualDiscount) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, orderId);
+    await updateDoc(docRef, {
+      manualDiscount: manualDiscount,
+      updatedAt: serverTimestamp()
+    });
+    return { id: orderId, manualDiscount };
+  } catch (error) {
+    console.error('Error updating manual discount:', error);
+    throw error;
+  }
+}
+
+/**
  * Update order items and recalculate totals (admin).
  * Re-applies any existing promo code discount after recalculating the raw total.
  * If the new total falls below the promo's minimum order amount the promo is removed.

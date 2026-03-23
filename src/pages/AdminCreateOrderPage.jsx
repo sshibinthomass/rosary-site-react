@@ -224,6 +224,27 @@ export default function AdminCreateOrderPage() {
     setCustomer(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePincodeChange = async (value) => {
+    handleCustomerChange('pincode', value);
+    if (value.length === 6 && /^\d+$/.test(value)) {
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${value}`);
+        const data = await response.json();
+        if (data && data[0].Status === 'Success') {
+          const postOffice = data[0].PostOffice[0];
+          setCustomer(prev => ({
+            ...prev,
+            district: postOffice.District,
+            state: postOffice.State
+          }));
+          success('District and State updated from Pincode');
+        }
+      } catch (err) {
+        console.error('Failed to fetch pincode details:', err);
+      }
+    }
+  };
+
   return (
     <div className="animate-fade-in pb-20">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -371,8 +392,9 @@ export default function AdminCreateOrderPage() {
               <input
                 type="text"
                 value={customer.pincode}
-                onChange={(e) => handleCustomerChange('pincode', e.target.value)}
+                onChange={(e) => handlePincodeChange(e.target.value)}
                 className="input text-sm w-full"
+                maxLength={6}
               />
             </div>
           </div>

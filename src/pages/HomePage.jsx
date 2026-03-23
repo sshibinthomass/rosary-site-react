@@ -30,6 +30,11 @@ export default function HomePage() {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
 
+  // Batch loading state
+  const BATCH_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const loadMoreRef = useRef(null);
+
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
 
@@ -49,6 +54,7 @@ export default function HomePage() {
   useEffect(() => {
     loadProducts();
     setSearchQuery('');
+    setVisibleCount(BATCH_SIZE);
   }, [selectedCategory]);
 
   const loadProducts = async () => {
@@ -192,6 +198,33 @@ export default function HomePage() {
 
     return sorted;
   }, [filteredProducts, sortOption]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [searchQuery, filterWatering, filterSunlight, filterTransit, filterPriceMin, filterPriceMax, sortOption]);
+
+  // Products to actually render (batched)
+  const visibleProducts = useMemo(() => sortedProducts.slice(0, visibleCount), [sortedProducts, visibleCount]);
+  const hasMore = visibleCount < sortedProducts.length;
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, sortedProducts.length));
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, sortedProducts.length]);
 
   // Pick best reviews for the homepage carousel
   let homeReviews = reviewsData.filter(r => r.featured).slice(0, 4);
@@ -666,7 +699,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="text-sm text-[var(--text-secondary)] font-medium">
-            <span>{selectedCategory === 'All' ? 'All Plants' : `${selectedCategory} Plants`} <span className="text-xs opacity-70">({sortedProducts.length})</span></span>
+            <span>{selectedCategory === 'All' ? 'All Plants' : `${selectedCategory} Plants`} <span className="text-xs opacity-70">({hasMore ? `${visibleCount} of ${sortedProducts.length}` : sortedProducts.length})</span></span>
           </div>
         )}
         
@@ -763,7 +796,7 @@ export default function HomePage() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 stagger-children">
-              {sortedProducts.map((product, index) => (
+              {visibleProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -771,6 +804,19 @@ export default function HomePage() {
                 />
               ))}
             </div>
+
+            {/* Infinite scroll sentinel */}
+            {hasMore && (
+              <div ref={loadMoreRef} className="flex justify-center py-8">
+                <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Loading more plants...
+                </div>
+              </div>
+            )}
           </>
         )}
       </section>

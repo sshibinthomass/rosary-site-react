@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
-import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateOrderItems } from '../services/orderService';
+import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateManualDiscount, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { resolveImageUrl } from '../utils/imageCompressor';
@@ -9,6 +9,8 @@ import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
 import OrderItemEditor from '../components/OrderItemEditor';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
+
+import ReactMarkdown from 'react-markdown';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -30,6 +32,11 @@ export default function OrderPage() {
   const [editingDelivery, setEditingDelivery] = useState(false);
   const [deliveryInput, setDeliveryInput] = useState('');
   const [savingDelivery, setSavingDelivery] = useState(false);
+
+  // Manual discount state
+  const [editingDiscount, setEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState('');
+  const [savingDiscount, setSavingDiscount] = useState(false);
 
   // Name toggle state (admin only)
   const [showTitle, setShowTitle] = useState(false);
@@ -56,6 +63,7 @@ export default function OrderPage() {
         setOrder(orderData);
         setEditCustomer(orderData.customer || {});
         setDeliveryInput(orderData.deliveryCharge?.toString() || '');
+        setDiscountInput(orderData.manualDiscount?.toString() || '');
 
         // Fetch product names for admin toggle
         fetchProductNames(orderData.items);
@@ -93,7 +101,15 @@ export default function OrderPage() {
           const title = product.title || item.name || product.name || product.commonName;
           const commonName = product.commonName || product.name || item.name || title;
           const plantId = product.id || item.productId;
-          names[item.productId] = { title, commonName, plantId };
+          names[item.productId] = { 
+            title, 
+            commonName, 
+            plantId,
+            description: product.description,
+            watering: product.watering,
+            sunlight: product.sunlight,
+            transit: product.transit
+          };
         } else {
           names[item.productId] = { title: item.name, commonName: item.name, plantId: item.productId };
         }
@@ -174,6 +190,21 @@ export default function OrderPage() {
     }
   };
 
+  const handleSaveDiscount = async () => {
+    setSavingDiscount(true);
+    try {
+      const discount = parseFloat(discountInput) || 0;
+      await updateManualDiscount(order.id, discount);
+      setOrder(prev => ({ ...prev, manualDiscount: discount }));
+      setEditingDiscount(false);
+      success('Discount updated!');
+    } catch (err) {
+      showError('Failed to update discount');
+    } finally {
+      setSavingDiscount(false);
+    }
+  };
+
   const handleSaveItems = async (newItems) => {
     setSavingItems(true);
     try {
@@ -219,7 +250,8 @@ export default function OrderPage() {
         promoCode: order.promoCode,
         discountAmount: order.discountAmount,
         discountType: order.discountType,
-        deliveryCharge: order.deliveryCharge || 0
+        deliveryCharge: order.deliveryCharge || 0,
+        manualDiscount: order.manualDiscount || 0
       };
 
       const doc = await generateInvoicePDF(orderData, order.items || [], getItemName);
@@ -383,16 +415,83 @@ export default function OrderPage() {
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-[var(--text-primary)] truncate">
-                  {index + 1}. {getItemName(item)}
+                  {index + 1}.{' '}
                   {getItemPlantId(item) && (
-                    <span className="text-[var(--text-secondary)] text-xs ml-1">
+                    <span className="text-[var(--text-secondary)] text-xs mr-1">
                       (ID: {getItemPlantId(item)})
                     </span>
                   )}
+                  {getItemName(item)}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
                 </p>
+                {!isAdmin && ['confirmed', 'shipped', 'delivered', 'completed'].includes(order.status?.toLowerCase()) && productNames[item.productId] && (
+                  <div className="mt-3 bg-[var(--bg-tertiary)] rounded-lg p-3">
+                    <h4 className="text-xs font-semibold text-[var(--text-primary)] mb-2 uppercase tracking-wide">Care Instructions</h4>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="flex flex-col items-center p-2 bg-[var(--bg-secondary)] rounded-md border border-[var(--border-color)] gap-1">
+                        <span className="text-lg">💧</span>
+                        <p className="text-[9px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">Water</p>
+                        <p className="text-[10px] font-bold text-[var(--text-primary)] text-center">{productNames[item.productId].watering || 'Moderate'}</p>
+                      </div>
+                      <div className="flex flex-col items-center p-2 bg-[var(--bg-secondary)] rounded-md border border-[var(--border-color)] gap-1">
+                        <span className="text-lg">☀️</span>
+                        <p className="text-[9px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">Sunlight</p>
+                        <p className="text-[10px] font-bold text-[var(--text-primary)] text-center">{productNames[item.productId].sunlight || 'Moderate'}</p>
+                      </div>
+                    </div>
+                    {productNames[item.productId].description && (
+                      <details open className="text-xs text-[var(--text-secondary)] pt-2 border-t border-[var(--border-color)] group">
+                        <summary className="text-[10px] font-semibold text-[var(--text-primary)] uppercase tracking-wide cursor-pointer list-none flex items-center justify-between select-none p-1 -m-1 rounded hover:bg-[var(--bg-secondary)]">
+                          Plant Description
+                          <span className="text-[8px] transition-transform duration-200 group-open:rotate-180">▼</span>
+                        </summary>
+                        <div className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+                          {(() => {
+                            const raw = productNames[item.productId].description.replace(/Â/g, '');
+                            const sections = raw.split(/^## /m);
+                            const mdComponents = {
+                              p: ({children}) => <p style={{margin: '0.35rem 0'}}>{children}</p>,
+                              ul: ({children}) => <ul style={{margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'disc'}}>{children}</ul>,
+                              ol: ({children}) => <ol style={{margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'decimal'}}>{children}</ol>,
+                              li: ({children}) => <li style={{margin: '0.15rem 0'}}>{children}</li>,
+                              strong: ({children}) => <strong style={{color: 'var(--text-primary)', fontWeight: 600}}>{children}</strong>,
+                              h1: ({children}) => <h3 style={{fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.5rem 0 0.25rem'}}>{children}</h3>,
+                              h2: () => null,
+                              h3: ({children}) => <h5 style={{fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.4rem 0 0.2rem'}}>{children}</h5>,
+                            };
+                            return sections.map((section, i) => {
+                              if (i === 0) {
+                                // Content before the first ## heading
+                                return section.trim() ? <ReactMarkdown key={i} components={mdComponents}>{section.trim()}</ReactMarkdown> : null;
+                              }
+                              const newlineIdx = section.indexOf('\n');
+                              const heading = newlineIdx !== -1 ? section.slice(0, newlineIdx).trim() : section.trim();
+                              const body = newlineIdx !== -1 ? section.slice(newlineIdx + 1).trim() : '';
+                              return (
+                                <details key={i} className="group/section border-b border-[var(--border-color)] last:border-0">
+                                  <summary
+                                    className="cursor-pointer list-none flex items-center justify-between select-none py-2 rounded hover:bg-[var(--bg-secondary)]"
+                                    style={{fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)'}}
+                                  >
+                                    {heading}
+                                    <span className="text-[8px] transition-transform duration-200 group-open/section:rotate-180 ml-2 flex-shrink-0">▼</span>
+                                  </summary>
+                                  {body && (
+                                    <div className="pb-2">
+                                      <ReactMarkdown components={mdComponents}>{body}</ReactMarkdown>
+                                    </div>
+                                  )}
+                                </details>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -422,6 +521,55 @@ export default function OrderPage() {
                 −{CURRENCY}{order.discountAmount.toLocaleString('en-IN')}
               </span>
             </div>
+          )}
+
+          {/* Manual Discount */}
+          {(isAdmin || order.manualDiscount > 0) && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-[var(--text-secondary)]">Discount</span>
+            {isAdmin && editingDiscount ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-[var(--text-secondary)]">{CURRENCY}</span>
+                  <input
+                    type="number"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="input w-24 py-1 px-2 text-right text-sm"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveDiscount}
+                  disabled={savingDiscount}
+                  className="text-[var(--color-forest)] text-xs font-medium hover:underline"
+                >
+                  {savingDiscount ? '...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => { setEditingDiscount(false); setDiscountInput(order.manualDiscount?.toString() || ''); }}
+                  className="text-[var(--text-secondary)] text-xs hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span className={order.manualDiscount ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-secondary)] italic'}>
+                  {order.manualDiscount ? `−${CURRENCY}${order.manualDiscount.toLocaleString('en-IN')}` : 'Not set'}
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingDiscount(true)}
+                    className="text-xs text-[var(--color-forest)] hover:underline"
+                  >
+                    {order.manualDiscount ? 'Edit' : 'Add'}
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
           )}
 
           {/* Delivery Charge */}
@@ -474,7 +622,7 @@ export default function OrderPage() {
           {/* Grand Total */}
           <div className="flex justify-between text-lg font-semibold text-[var(--text-primary)] pt-2 border-t border-[var(--border-color)]">
             <span>Total</span>
-            <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}</span>
+            <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0) - (order.manualDiscount || 0)).toLocaleString('en-IN')}</span>
           </div>
         </div>
       </div>

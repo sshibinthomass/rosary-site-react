@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { getAllOrders, updateOrderStatus, deleteOrder, updateDeliveryCharge, updateOrderItems, updateOrderCustomer, getOrderUrl } from '../services/orderService';
+import { getAllOrders, updateOrderStatus, deleteOrder, updateDeliveryCharge, updateManualDiscount, updateOrderItems, updateOrderCustomer, getOrderUrl } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { resolveImageUrl } from '../utils/imageCompressor';
@@ -21,6 +21,8 @@ export default function AdminOrdersPage() {
   const [productNames, setProductNames] = useState({});
   const [editingDelivery, setEditingDelivery] = useState(null); // orderId being edited
   const [deliveryInput, setDeliveryInput] = useState('');
+  const [editingDiscount, setEditingDiscount] = useState(null); // orderId being discounted
+  const [discountInput, setDiscountInput] = useState('');
   const [editingItemsFor, setEditingItemsFor] = useState(null); // orderId being item-edited
   const [savingItems, setSavingItems] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,9 +164,7 @@ export default function AdminOrdersPage() {
         const customer = order.customer || {};
         const name = customer.name || 'Customer';
         const addressLines = [
-          customer.address,
-          [customer.district, customer.state].filter(Boolean).join(', '),
-          customer.pincode,
+          customer.address
         ]
           .filter(Boolean)
           .join('<br />');
@@ -210,7 +210,7 @@ export default function AdminOrdersPage() {
                   <div>
                     <span class="field-label">State :</span> ${customer.state || ''}
                   </div>
-                  <div>
+                  <div style="font-weight: bold; font-size: 15px;">
                     <span class="field-label">Pincode :</span> ${customer.pincode || ''}
                   </div>
                   ${
@@ -317,12 +317,17 @@ export default function AdminOrdersPage() {
               font-weight: 600;
               text-decoration: underline;
             }
+            .label-to .section-content {
+              font-size: 14px;
+              line-height: 1.4;
+            }
             .customer-name {
-              font-weight: 600;
-              margin-bottom: 2px;
+              font-weight: 700;
+              font-size: 16px;
+              margin-bottom: 4px;
             }
             .customer-address {
-              margin-bottom: 2px;
+              margin-bottom: 4px;
             }
             .label-footer {
               margin-top: 4px;
@@ -590,6 +595,18 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleSaveDiscount = async (orderId) => {
+    try {
+      const discount = parseFloat(discountInput) || 0;
+      await updateManualDiscount(orderId, discount);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, manualDiscount: discount } : o));
+      setEditingDiscount(null);
+      success('Discount updated!');
+    } catch (err) {
+      error('Failed to update discount');
+    }
+  };
+
   const handleSaveCustomer = async (orderId) => {
     try {
       const order = orders.find(o => o.id === orderId);
@@ -654,7 +671,8 @@ export default function AdminOrdersPage() {
         promoCode: order.promoCode,
         discountAmount: order.discountAmount,
         discountType: order.discountType,
-        deliveryCharge: order.deliveryCharge || 0
+        deliveryCharge: order.deliveryCharge || 0,
+        manualDiscount: order.manualDiscount || 0
       };
 
       const doc = await generateInvoicePDF(orderData, order.items || [], getItemName);
@@ -1041,7 +1059,7 @@ export default function AdminOrdersPage() {
                       </p>
                     )}
                     <p className="font-semibold text-[var(--text-primary)] mt-1">
-                      {CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}
+                      {CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0) - (order.manualDiscount || 0)).toLocaleString('en-IN')}
                     </p>
                     <p className="text-xs text-[var(--text-secondary)]">
                       {order.totalItems} items{order.deliveryCharge ? ` · +${CURRENCY}${order.deliveryCharge} delivery` : ''}
@@ -1197,6 +1215,20 @@ export default function AdminOrdersPage() {
                         })()}
                       </div>
 
+                      {/* User Link */}
+                      {order.customer?.userId && (
+                        <div className="pt-2 mt-2 border-t border-[var(--border-color)] text-xs">
+                          <span className="text-[var(--text-secondary)]">User Link:</span>{' '}
+                          <NavLink
+                            to={`/admin/users?userId=${order.customer.userId}`}
+                            className="text-[var(--color-forest)] hover:underline font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View User Profile →
+                          </NavLink>
+                        </div>
+                      )}
+
                       {/* Export PDF Button */}
                       <div className="pt-4 mt-2 border-t border-[var(--border-color)]">
                         <button
@@ -1240,12 +1272,13 @@ export default function AdminOrdersPage() {
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="truncate text-[var(--text-primary)]">
-                              {index + 1}. {getItemName(item)}
+                              {index + 1}.{' '}
                               {getItemPlantId(item) && (
-                                <span className="text-[var(--text-secondary)] text-xs ml-1">
+                                <span className="text-[var(--text-secondary)] text-xs mr-1">
                                   (ID: {getItemPlantId(item)})
                                 </span>
                               )}
+                              {getItemName(item)}
                             </p>
                             <p className="text-xs text-[var(--text-secondary)]">
                               {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
@@ -1280,6 +1313,38 @@ export default function AdminOrdersPage() {
                       </div>
                     )}
                     <div className="flex justify-between items-center">
+                      <span className="text-[var(--text-secondary)]">Discount</span>
+                      {editingDiscount === order.id ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[var(--text-secondary)]">{CURRENCY}</span>
+                            <input
+                              type="number"
+                              value={discountInput}
+                              onChange={(e) => setDiscountInput(e.target.value)}
+                              className="input w-20 py-1 px-2 text-right text-sm"
+                              placeholder="0"
+                              min="0"
+                            />
+                          </div>
+                          <button onClick={() => handleSaveDiscount(order.id)} className="text-[var(--color-forest)] text-xs font-medium hover:underline">Save</button>
+                          <button onClick={() => setEditingDiscount(null)} className="text-[var(--text-secondary)] text-xs hover:underline">Cancel</button>
+                        </div>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <span className={order.manualDiscount ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-secondary)] italic'}>
+                            {order.manualDiscount ? `−${CURRENCY}${order.manualDiscount.toLocaleString('en-IN')}` : 'Not set'}
+                          </span>
+                          <button
+                            onClick={() => { setEditingDiscount(order.id); setDiscountInput(order.manualDiscount?.toString() || ''); }}
+                            className="text-xs text-[var(--color-forest)] hover:underline"
+                          >
+                            {order.manualDiscount ? 'Edit' : 'Add'}
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
                       <span className="text-[var(--text-secondary)]">Delivery</span>
                       {editingDelivery === order.id ? (
                         <div className="flex items-center gap-2">
@@ -1313,7 +1378,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className="flex justify-between font-semibold text-[var(--text-primary)] pt-2 border-t border-[var(--border-color)]">
                       <span>Total</span>
-                      <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0)).toLocaleString('en-IN')}</span>
+                      <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0) - (order.manualDiscount || 0)).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 

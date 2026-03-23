@@ -51,8 +51,9 @@ export const generateInvoicePDF = async (orderData, items, getDisplayName) => {
   const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
   const itemsSubtotal = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
   const discountAmount = orderData.promoCode && orderData.discountAmount > 0 ? orderData.discountAmount : 0;
+  const manualDiscount = orderData.manualDiscount || 0;
   const deliveryCharge = orderData.deliveryCharge || 0;
-  const grandTotal = (itemsSubtotal - discountAmount) + deliveryCharge;
+  const grandTotal = (itemsSubtotal - discountAmount - manualDiscount) + deliveryCharge;
 
   for (let pageInfo = 0; pageInfo < totalPages; pageInfo++) {
     const startIndex = pageInfo * ITEMS_PER_PAGE;
@@ -197,6 +198,19 @@ export const generateInvoicePDF = async (orderData, items, getDisplayName) => {
         `;
       }
 
+      if (manualDiscount > 0) {
+        footerHtml += `
+          <tr style="background-color: #f9fafb;">
+            <td colspan="5" style="padding: 8px 8px; text-align: right; font-size: 14px; color: #16a34a;">
+              Discount
+            </td>
+            <td style="padding: 8px 8px; text-align: right; font-size: 14px; color: #16a34a;">
+              -${CURRENCY.replace('₹', 'Rs. ')}${manualDiscount.toLocaleString('en-IN')}
+            </td>
+          </tr>
+        `;
+      }
+
       if (deliveryCharge > 0) {
         footerHtml += `
           <tr style="background-color: #f9fafb;">
@@ -210,7 +224,7 @@ export const generateInvoicePDF = async (orderData, items, getDisplayName) => {
         `;
       }
 
-      if (discountAmount > 0 || deliveryCharge > 0) {
+      if (discountAmount > 0 || manualDiscount > 0 || deliveryCharge > 0) {
         footerHtml += `
           <tr style="background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
             <td colspan="5" style="padding: 16px 8px; text-align: right; font-weight: bold; font-size: 16px; color: #2e7d32;">

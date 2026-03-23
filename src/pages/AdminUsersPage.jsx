@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { getAllUsers, getUserProfile } from '../services/userService';
 import { getCart } from '../services/cartService';
 import { resolveImageUrl } from '../utils/imageCompressor';
@@ -13,6 +13,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userData, setUserData] = useState({ cart: [], wishlist: [], orders: [], profile: null, loading: false });
+  const location = useLocation();
 
   useEffect(() => {
     loadUsers();
@@ -22,6 +23,18 @@ export default function AdminUsersPage() {
     try {
       const data = await getAllUsers();
       setUsers(data);
+      
+      // Auto-open user modal if userId is in URL
+      if (document.location.search) {
+        const params = new URLSearchParams(document.location.search);
+        const userId = params.get('userId');
+        if (userId) {
+          const user = data.find(u => u.uid === userId);
+          if (user) {
+            handleViewUser(user);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to load users', error);
     } finally {

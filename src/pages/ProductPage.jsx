@@ -151,12 +151,12 @@ export default function ProductPage() {
     );
   }
 
-  if (!product || !inStock) {
+  if (!product) {
     return (
       <div className="animate-fade-in text-center py-20">
         <span className="text-5xl">🌵</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Plant Not Available</h2>
-        <p className="text-[var(--text-secondary)] mt-2">This plant doesn't exist, has been removed, or is currently out of stock.</p>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Plant Not Found</h2>
+        <p className="text-[var(--text-secondary)] mt-2">This plant doesn't exist or has been removed.</p>
         <NavLink to="/" className="btn btn-primary mt-6 inline-block">Browse Plants</NavLink>
       </div>
     );
@@ -305,6 +305,17 @@ export default function ProductPage() {
             {product.combo && <span className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-800 font-medium">🎁 Combo</span>}
             {product.isRestocked && inStock && <span className="px-3 py-1 bg-green-500 text-white rounded-full font-medium">Back in Stock!</span>}
           </div>
+
+          {/* Out of Stock Banner */}
+          {!inStock && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <span className="text-lg">🚫</span>
+              <div>
+                <p className="text-sm font-bold text-red-700 dark:text-red-400">Out of Stock</p>
+                <p className="text-xs text-red-500 dark:text-red-500 mt-0.5">This plant is currently unavailable. Check back later!</p>
+              </div>
+            </div>
+          )}
 
           {/* Care Info */}
           <div className="grid grid-cols-3 gap-3">

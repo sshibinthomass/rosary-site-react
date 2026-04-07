@@ -991,29 +991,31 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="card p-3 text-center">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+        <button onClick={() => setFilterStatus('all')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-[var(--color-forest)] ${filterStatus === 'all' ? 'ring-2 ring-[var(--color-forest)]' : ''}`}>
           <p className="text-2xl font-bold text-[var(--color-forest)]">{orders.filter(o => o.status !== 'cancelled').length}</p>
-          <p className="text-xs text-[var(--text-secondary)]">Total Orders</p>
-        </div>
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-yellow-600">
-            {orders.filter(o => o.status === 'pending').length}
-          </p>
+          <p className="text-xs text-[var(--text-secondary)]">Total</p>
+        </button>
+        <button onClick={() => setFilterStatus('pending')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-yellow-600 ${filterStatus === 'pending' ? 'ring-2 ring-yellow-600' : ''}`}>
+          <p className="text-2xl font-bold text-yellow-600">{orders.filter(o => o.status === 'pending').length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Pending</p>
-        </div>
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-blue-600">
-            {orders.filter(o => o.status === 'confirmed').length}
-          </p>
+        </button>
+        <button onClick={() => setFilterStatus('confirmed')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-blue-600 ${filterStatus === 'confirmed' ? 'ring-2 ring-blue-600' : ''}`}>
+          <p className="text-2xl font-bold text-blue-600">{orders.filter(o => o.status === 'confirmed').length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Confirmed</p>
-        </div>
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-green-600">
-            {orders.filter(o => o.status === 'delivered').length}
-          </p>
+        </button>
+        <button onClick={() => setFilterStatus('shipped')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-purple-600 ${filterStatus === 'shipped' ? 'ring-2 ring-purple-600' : ''}`}>
+          <p className="text-2xl font-bold text-purple-600">{orders.filter(o => o.status === 'shipped').length}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Shipped</p>
+        </button>
+        <button onClick={() => setFilterStatus('delivered')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-green-600 ${filterStatus === 'delivered' ? 'ring-2 ring-green-600' : ''}`}>
+          <p className="text-2xl font-bold text-green-600">{orders.filter(o => o.status === 'delivered').length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Delivered</p>
-        </div>
+        </button>
+        <button onClick={() => setFilterStatus('cancelled')} className={`card p-3 text-center transition-all hover:ring-2 hover:ring-red-600 ${filterStatus === 'cancelled' ? 'ring-2 ring-red-600' : ''}`}>
+          <p className="text-2xl font-bold text-red-600">{orders.filter(o => o.status === 'cancelled').length}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Cancelled</p>
+        </button>
       </div>
 
       {/* Status Filter */}
@@ -1321,6 +1323,39 @@ export default function AdminOrdersPage() {
               {/* Expanded Details */}
               {expandedOrder === order.id && (
                 <div className="border-t border-[var(--border-color)] p-4 bg-[var(--bg-tertiary)] animate-fade-in">
+                  {/* Quick Update Status */}
+                  <div className="mb-4 pb-4 border-b border-[var(--border-color)]">
+                    <h4 className="font-medium text-[var(--text-primary)] mb-2">Update Status</h4>
+                    <div className="flex gap-2 flex-wrap">
+                      {ORDER_STATUSES.map((status) => (
+                        <button
+                          key={`top-${status}`}
+                          onClick={async () => {
+                            try {
+                              await updateOrderStatus(order.id, status);
+                              setOrders(prev => prev.map(o => 
+                                o.id === order.id ? { ...o, status } : o
+                              ));
+                              success(`Order status updated to ${status}`);
+                            } catch (err) {
+                              error('Failed to update status');
+                            }
+                          }}
+                          disabled={order.status === status}
+                          className={`
+                            px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all
+                            ${order.status === status
+                              ? 'bg-[var(--color-forest)] text-white cursor-default'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] hover:border-[var(--color-forest)]'
+                            }
+                          `}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Customer Details */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
@@ -1541,7 +1576,7 @@ export default function AdminOrdersPage() {
                             <img 
                               src={resolveImageUrl(item.imageUrl)} 
                               alt={item.name} 
-                              className="w-10 h-10 rounded object-cover"
+                              className="w-20 h-20 sm:w-14 sm:h-14 rounded object-cover flex-shrink-0"
                             />
                           )}
                           <div className="flex-1 min-w-0">

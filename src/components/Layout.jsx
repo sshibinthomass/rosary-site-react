@@ -440,8 +440,8 @@ export default function Layout({ children }) {
         </NavLink>
       )}
 
-      {/* Back to Top Button */}
-      <BackToTop />
+      {/* Back to Top Button (hidden on admin pages) */}
+      {!location.pathname.startsWith('/admin') && <BackToTop />}
     </div>
   );
 }

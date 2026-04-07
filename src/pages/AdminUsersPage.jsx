@@ -8,11 +8,14 @@ import { getWishlist } from '../services/wishlistService';
 import { getOrdersByUserId } from '../services/orderService';
 import { CURRENCY } from '../config/constants';
 
+const USERS_PER_PAGE = 10;
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userData, setUserData] = useState({ cart: [], wishlist: [], orders: [], profile: null, loading: false });
+  const [currentPage, setCurrentPage] = useState(1);
   const location = useLocation();
 
   useEffect(() => {
@@ -22,6 +25,11 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       const data = await getAllUsers();
+      data.sort((a, b) => {
+        const aTime = a.lastLogin?.seconds || 0;
+        const bTime = b.lastLogin?.seconds || 0;
+        return bTime - aTime;
+      });
       setUsers(data);
       
       // Auto-open user modal if userId is in URL
@@ -60,6 +68,9 @@ export default function AdminUsersPage() {
     }
   };
 
+  const totalPages = Math.ceil(users.length / USERS_PER_PAGE);
+  const paginatedUsers = users.slice((currentPage - 1) * USERS_PER_PAGE, currentPage * USERS_PER_PAGE);
+
   return (
     <div className="animate-fade-in pb-20">
       <div className="flex items-center justify-between mb-6">
@@ -79,14 +90,13 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-6 py-3 font-medium">User</th>
                 <th className="px-6 py-3 font-medium">Email</th>
-                <th className="px-6 py-3 font-medium">Last Login</th>
+                <th className="px-6 py-3 font-medium">Last Login ↓</th>
                 <th className="px-6 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
               {loading ? (
-                /* Skeleton Loading */
-                [...Array(3)].map((_, i) => (
+                [...Array(USERS_PER_PAGE)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="px-6 py-4"><div className="h-10 w-10 bg-[var(--bg-tertiary)] rounded-full" /></td>
                     <td className="px-6 py-4"><div className="h-4 w-32 bg-[var(--bg-tertiary)] rounded" /></td>
@@ -95,7 +105,7 @@ export default function AdminUsersPage() {
                   </tr>
                 ))
               ) : (
-                users.map(user => (
+                paginatedUsers.map(user => (
                   <tr key={user.uid} className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
                     <td className="px-6 py-4 flex items-center gap-3">
                       {user.photoURL ? (
@@ -128,6 +138,44 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Showing {(currentPage - 1) * USERS_PER_PAGE + 1}–{Math.min(currentPage * USERS_PER_PAGE, users.length)} of {users.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 text-sm rounded-lg transition-colors ${
+                    page === currentPage
+                      ? 'bg-[var(--color-forest)] text-white font-bold'
+                      : 'border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* User Details Modal */}

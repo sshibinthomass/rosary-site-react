@@ -36,6 +36,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/10</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/100</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

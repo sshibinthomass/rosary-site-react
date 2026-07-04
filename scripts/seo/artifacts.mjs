@@ -3,6 +3,7 @@ import {
   buildFaqStructuredData,
   buildProductCareSections,
   buildProductStructuredData,
+  DEFAULT_SEO_IMAGE_PATH,
   getAbsoluteImageUrl,
   getPrimaryProductImage,
   getProductCanonicalUrl,
@@ -16,6 +17,12 @@ import {
   isSeoIndexable,
   PRODUCT_SEO_SITE,
 } from '../../src/utils/productSeo.js';
+import {
+  SITE_POLICY,
+  buildOrganizationSchema,
+  buildPolicyFaqSchema,
+  buildWebsiteSchema,
+} from '../../src/utils/siteSeo.js';
 
 const DEFAULT_BASE_URL = PRODUCT_SEO_SITE.url;
 const SITE_NAME = PRODUCT_SEO_SITE.name;
@@ -312,6 +319,76 @@ function renderStaticBody(product, baseUrl) {
     ${renderFaqs(product)}
   </article>
 </main>`;
+}
+
+function renderStaticPolicyBody() {
+  return `<main class="seo-policy-page">
+  <article>
+    <h1>Shipping, Returns and Plant Delivery Policies</h1>
+    <p>Rosary Plant House ships live plants with clear dispatch, delivery, replacement, refund, payment, and support rules.</p>
+    <section>
+      <h2>Shipping and dispatch</h2>
+      <p>${escapeHtml(SITE_POLICY.shipping.dispatchTiming)}</p>
+      <p>${escapeHtml(SITE_POLICY.shipping.packaging)}</p>
+      <p>${escapeHtml(SITE_POLICY.shipping.courier)}</p>
+      <p><strong>Service area:</strong> ${escapeHtml(SITE_POLICY.shipping.serviceArea)}.</p>
+      <p><strong>Delivery charge:</strong> ${escapeHtml(SITE_POLICY.shipping.deliveryCharge)}</p>
+    </section>
+    <section>
+      <h2>Delivery ETA from dispatch</h2>
+      <dl>
+        ${SITE_POLICY.shipping.deliveryEtaFromDispatch.map((item) => `<div>
+          <dt>${escapeHtml(item.area)}</dt>
+          <dd>${escapeHtml(item.eta)}</dd>
+        </div>`).join('\n')}
+      </dl>
+    </section>
+    <section>
+      <h2>Damage, replacement and refund</h2>
+      <p>${escapeHtml(SITE_POLICY.damageSupport.replacement)}</p>
+      <p>Replacement is arranged with your next order.</p>
+      <p>${escapeHtml(SITE_POLICY.damageSupport.proof)}</p>
+      <p>${escapeHtml(SITE_POLICY.damageSupport.refund)}</p>
+      <p>${escapeHtml(SITE_POLICY.damageSupport.exclusions)}</p>
+    </section>
+    <section>
+      <h2>Payment and support</h2>
+      <p><strong>Payment methods:</strong> ${escapeHtml(SITE_POLICY.payment.methods.join(', '))}.</p>
+      <p>${escapeHtml(SITE_POLICY.payment.cod)}</p>
+      <p><strong>WhatsApp support:</strong> ${escapeHtml(SITE_POLICY.support.whatsAppHours)} at ${escapeHtml(SITE_POLICY.support.phone)}.</p>
+    </section>
+  </article>
+</main>`;
+}
+
+export function buildStaticPolicyHtml({ indexHtml, baseUrl = DEFAULT_BASE_URL }) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const canonicalUrl = `${publicBase}${SITE_POLICY.path}`;
+  const title = `Shipping, Returns and Plant Delivery Policies | ${SITE_NAME}`;
+  const description = 'Shipping, delivery ETA, replacement, refund, payment and WhatsApp support policies for Rosary Plant House live plant orders.';
+  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const schemaItems = [buildOrganizationSchema(), buildWebsiteSchema(), buildPolicyFaqSchema()];
+
+  const headTags = `
+    <title>${escapeHtml(title)}</title>
+    <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <script type="application/ld+json">${JSON.stringify(schemaItems)}</script>
+`;
+
+  const withoutManagedHead = removeManagedHeadTags(indexHtml);
+  const withHead = withoutManagedHead.replace('</head>', `${headTags}</head>`);
+  return withHead.replace('<div id="root"></div>', `<div id="root">${renderStaticPolicyBody()}</div>`);
 }
 
 export function buildStaticProductHtml({ indexHtml, product, baseUrl = DEFAULT_BASE_URL }) {

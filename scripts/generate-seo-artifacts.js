@@ -12,6 +12,7 @@ import {
   buildMerchantFeedTsv,
   buildRobotsTxt,
   buildSitemapXml,
+  buildStaticPolicyHtml,
   buildStaticProductHtml,
   hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
@@ -141,11 +142,15 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts }) {
   const indexPath = path.join(distDir, 'index.html');
   const indexHtml = await fs.readFile(indexPath, 'utf8');
   const plantRoot = path.join(distDir, 'plant');
+  const policyHtml = buildStaticPolicyHtml({ indexHtml, baseUrl: BASE_URL });
 
   await fs.writeFile(path.join(distDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(distDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
   await writeMerchantFeed(path.join(distDir, 'google-merchant-feed.tsv'), artifactProducts);
   await fs.writeFile(path.join(distDir, 'product-seo-index.json'), JSON.stringify(seoIndexProducts), 'utf8');
+  await fs.mkdir(path.join(distDir, 'policies'), { recursive: true });
+  await fs.writeFile(path.join(distDir, 'policies', 'index.html'), policyHtml, 'utf8');
+  await fs.writeFile(path.join(distDir, 'policies.html'), policyHtml, 'utf8');
 
   await fs.rm(plantRoot, { recursive: true, force: true });
 

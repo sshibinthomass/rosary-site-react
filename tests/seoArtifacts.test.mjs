@@ -4,6 +4,7 @@ import test from 'node:test';
 import { mergeEnrichmentRows } from '../scripts/seo/enrichment.mjs';
 import {
   buildMerchantFeedTsv,
+  buildStaticPolicyHtml,
   buildSitemapXml,
   buildStaticProductHtml,
   hasMerchantFeedProductRows,
@@ -283,6 +284,22 @@ test('SEO artifacts support local SEO-only products without Firebase storefront 
   assert.match(html, /<meta property="og:image" content="https:\/\/rosaryplanthouse\.com\/sale_plants\/1\.jpg" \/>/);
   assert.doesNotMatch(html, /<strong>Price:<\/strong>/);
   assert.doesNotMatch(html, /Rs\. 0/);
+});
+
+test('static policies page includes crawlable policy content and merchant schema', () => {
+  const html = buildStaticPolicyHtml({
+    indexHtml: '<!doctype html><html lang="en"><head><title>Rosary Plant House</title><meta property="og:image" content="/og-image.jpg" /></head><body><div id="root"></div></body></html>',
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<title>Shipping, Returns and Plant Delivery Policies \| Rosary Plant House<\/title>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/policies" \/>/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/rosaryplanthouse\.com\/og-image\.jpg" \/>/);
+  assert.match(html, /<main class="seo-policy-page"/);
+  assert.match(html, /Replacement is arranged with your next order/);
+  assert.match(html, /Bangalore<\/dt>\s*<dd>1-2 days from dispatch<\/dd>/);
+  assert.match(html, /ShippingService/);
+  assert.match(html, /MerchantReturnPolicy/);
 });
 
 test('SEO artifact generation merges Firebase identity without writing it to the SEO index', () => {

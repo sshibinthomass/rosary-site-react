@@ -13,10 +13,11 @@ import {
   buildRobotsTxt,
   buildSitemapXml,
   buildStaticProductHtml,
+  hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
   stripFirebaseOwnedFieldsForSeoIndex,
 } from './seo/artifacts.mjs';
-import { getProductPath } from '../src/utils/productSeo.js';
+import { getProductPath, isSeoIndexable } from '../src/utils/productSeo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,21 @@ dotenv.config({ path: path.join(rootDir, '.env.local'), quiet: true });
 async function readProducts() {
   const raw = await fs.readFile(productsPath, 'utf8');
   return JSON.parse(raw);
+}
+
+async function writeMerchantFeed(filePath, products) {
+  const feed = buildMerchantFeedTsv(products, { baseUrl: BASE_URL });
+  if (hasMerchantFeedProductRows(feed)) {
+    await fs.writeFile(filePath, feed, 'utf8');
+    return;
+  }
+
+  try {
+    await fs.access(filePath);
+    console.warn(`Preserving ${path.relative(rootDir, filePath)} because no priced products were available for Merchant feed generation.`);
+  } catch {
+    await fs.writeFile(filePath, feed, 'utf8');
+  }
 }
 
 function readServiceAccount() {
@@ -110,7 +126,7 @@ async function writePublicArtifacts({ artifactProducts, seoIndexProducts }) {
   await fs.mkdir(publicDir, { recursive: true });
   await fs.writeFile(path.join(publicDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(publicDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
-  await fs.writeFile(path.join(publicDir, 'google-merchant-feed.tsv'), buildMerchantFeedTsv(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
+  await writeMerchantFeed(path.join(publicDir, 'google-merchant-feed.tsv'), artifactProducts);
   await fs.writeFile(path.join(publicDir, 'product-seo-index.json'), JSON.stringify(seoIndexProducts), 'utf8');
 }
 
@@ -121,12 +137,12 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts }) {
 
   await fs.writeFile(path.join(distDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(distDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
-  await fs.writeFile(path.join(distDir, 'google-merchant-feed.tsv'), buildMerchantFeedTsv(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
+  await writeMerchantFeed(path.join(distDir, 'google-merchant-feed.tsv'), artifactProducts);
   await fs.writeFile(path.join(distDir, 'product-seo-index.json'), JSON.stringify(seoIndexProducts), 'utf8');
 
   await fs.rm(plantRoot, { recursive: true, force: true });
 
-  const publicProducts = artifactProducts.filter((product) => product?.id && product.available !== false);
+  const publicProducts = artifactProducts.filter(isSeoIndexable);
   for (const product of publicProducts) {
     const pageHtml = buildStaticProductHtml({ indexHtml, product, baseUrl: BASE_URL });
     const canonicalPath = getProductPath(product).replace(/^\//, '');

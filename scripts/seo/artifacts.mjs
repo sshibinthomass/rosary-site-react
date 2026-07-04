@@ -10,7 +10,9 @@ import {
   getProductMetaDescription,
   getProductMetaTitle,
   getProductPrice,
+  getProductRobots,
   isProductInStock,
+  isSeoIndexable,
   PRODUCT_SEO_SITE,
 } from '../../src/utils/productSeo.js';
 
@@ -69,11 +71,18 @@ function absoluteUrl(url, baseUrl) {
 }
 
 function productIsPublic(product) {
-  return product && product.id && product.available !== false;
+  return isSeoIndexable(product);
 }
 
 function productId(product) {
   return String(product?.id ?? '').trim();
+}
+
+export function hasMerchantFeedProductRows(feedTsv = '') {
+  return String(feedTsv)
+    .split(/\r?\n/)
+    .slice(1)
+    .some((line) => line.trim().length > 0);
 }
 
 function mergeNestedProductData(localProduct = {}, firebaseProduct = {}) {
@@ -312,6 +321,7 @@ export function buildStaticProductHtml({ indexHtml, product, baseUrl = DEFAULT_B
   const title = `${getProductMetaTitle(product)} | ${SITE_NAME}`;
   const description = getProductMetaDescription(product);
   const image = absoluteUrl(getPrimaryProductImage(product), publicBase);
+  const robots = getProductRobots(product);
   const productSchema = buildProductStructuredData(product, { baseUrl: publicBase });
   const breadcrumbSchema = buildBreadcrumbStructuredData(product, { baseUrl: publicBase });
   const faqSchema = buildFaqStructuredData(product);
@@ -320,6 +330,7 @@ export function buildStaticProductHtml({ indexHtml, product, baseUrl = DEFAULT_B
   const headTags = `
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="robots" content="${escapeHtml(robots)}" />
     <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />

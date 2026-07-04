@@ -3,7 +3,11 @@ import SEO from '../components/SEO';
 export default function AboutPage() {
   return (
     <div className="animate-fade-in max-w-4xl mx-auto space-y-12 pb-20 px-4 mt-8">
-      <SEO title="About Us" description="Learn about Rosary Plant House — a nursery in the Nilgiris, Coonoor, bringing beautiful succulents, cacti and indoor plants to your home." />
+      <SEO
+        title="About Us"
+        description="Learn about Rosary Plant House — a nursery in the Nilgiris, Coonoor, bringing beautiful succulents, cacti and indoor plants to your home."
+        canonicalUrl="https://rosaryplanthouse.com/about"
+      />
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <div className="inline-block p-4 rounded-full bg-[var(--bg-tertiary)] mb-2 hover:scale-110 transition-transform duration-300">

@@ -38,6 +38,7 @@ const AdminExportPage = lazy(() => import('./pages/AdminExportPage'));
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
 
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
 import ProductModalWrapper from './components/ProductModalWrapper';
@@ -272,7 +273,7 @@ function AppRoutes() {
             } 
           />
           {/* 404 Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
 

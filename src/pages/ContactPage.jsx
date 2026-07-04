@@ -68,6 +68,7 @@ export default function ContactPage() {
       <SEO 
         title="Contact Us" 
         description="Get in touch with Rosary Plant House. Reach us on WhatsApp at +91 79040 50237, Instagram, or visit our nursery in Coonoor, Nilgiris." 
+        canonicalUrl="https://rosaryplanthouse.com/contact"
         schemaData={contactSchema}
       />
       <div className="text-center">

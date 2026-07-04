@@ -39,6 +39,7 @@ export default function ReviewsPage() {
       <SEO 
         title="Customer Reviews" 
         description="Read what our plant lovers say about Rosary Plant House. 5-star rated nursery from Coonoor, Nilgiris packing rare succulents for safety." 
+        canonicalUrl="https://rosaryplanthouse.com/reviews"
         schemaData={reviewSchema}
       />
       <div className="flex flex-col items-center mb-10">

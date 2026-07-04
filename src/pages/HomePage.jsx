@@ -255,6 +255,7 @@ export default function HomePage() {
       <SEO 
         title="Home" 
         description="Buy rare succulents, cacti, and indoor plants online from Rosary Plant House, Coonoor, Nilgiris. Safe packaging, transit replacement, and shipping across India." 
+        canonicalUrl="https://rosaryplanthouse.com/"
         schemaData={homeSchema}
       />
       {/* Hero Section */}

@@ -73,6 +73,7 @@ export default function FAQPage() {
       <SEO 
         title="Help & FAQ" 
         description="Find answers to all your questions about ordering, shipping, and caring for succulents, cacti, and indoor plants from Rosary Plant House." 
+        canonicalUrl="https://rosaryplanthouse.com/faq"
         schemaData={faqSchema}
       />
       <div className="text-center">

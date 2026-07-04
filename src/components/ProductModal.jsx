@@ -12,6 +12,7 @@ import {
   getProductCanonicalUrl,
   getProductMetaDescription,
   getProductMetaTitle,
+  getProductRobots,
 } from '../utils/productSeo';
 
 export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart, inWishlist, onToggleWishlist }) {
@@ -110,6 +111,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         image={imageList[0]}
         type="product"
         canonicalUrl={canonicalUrl}
+        robots={getProductRobots(product)}
         productData={{...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price}}
         schemaData={schemaData}
       />

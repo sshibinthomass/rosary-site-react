@@ -6,6 +6,7 @@ import {
   buildMerchantFeedTsv,
   buildSitemapXml,
   buildStaticProductHtml,
+  hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
   stripFirebaseOwnedFieldsForSeoIndex,
 } from '../scripts/seo/artifacts.mjs';
@@ -14,6 +15,8 @@ const storefrontProduct = {
   id: '1',
   commonName: 'Red tip',
   available: true,
+  seoStatus: 'published',
+  identityVerified: true,
   salesPrice: 69,
   title: 'Sempervivum Tectorum',
   imageUrl: 'https://example.com/1.jpg',
@@ -200,6 +203,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
     baseUrl: 'https://rosaryplanthouse.com',
   });
   assert.match(html, /<title>Sempervivum tectorum Care Guide \| Rosary Plant House<\/title>/);
+  assert.match(html, /<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" \/>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/" \/>/);
   assert.match(html, /<script type="application\/ld\+json">/);
   assert.match(html, /<main class="seo-product-page"/);
@@ -209,6 +213,37 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.match(html, /<h3>Yellow leaves<\/h3>/);
   assert.match(html, /<strong>Reason:<\/strong> Overwatering or low light\./);
   assert.match(html, /<h2>Recovery tips<\/h2>/);
+});
+
+test('SEO artifacts omit unverified products from sitemap and merchant feed', () => {
+  const approvedProduct = {
+    ...storefrontProduct,
+    id: '1',
+    seoStatus: 'published',
+    identityVerified: true,
+    seo: { slug: 'approved-plant-1' },
+  };
+  const reviewProduct = {
+    ...storefrontProduct,
+    id: '2',
+    seoStatus: 'needs_review',
+    identityVerified: false,
+    seo: { slug: 'review-plant-2' },
+  };
+
+  const sitemap = buildSitemapXml([approvedProduct, reviewProduct], { baseUrl: 'https://rosaryplanthouse.com' });
+  assert.match(sitemap, /\/plant\/1-approved-plant\//);
+  assert.doesNotMatch(sitemap, /\/plant\/2-review-plant\//);
+
+  const feed = buildMerchantFeedTsv([approvedProduct, reviewProduct], { baseUrl: 'https://rosaryplanthouse.com' });
+  assert.match(feed, /RPH-1/);
+  assert.doesNotMatch(feed, /RPH-2/);
+});
+
+test('merchant feed row detection distinguishes empty feeds from product feeds', () => {
+  assert.equal(hasMerchantFeedProductRows('id\ttitle\n'), false);
+  assert.equal(hasMerchantFeedProductRows('id\ttitle\n\n'), false);
+  assert.equal(hasMerchantFeedProductRows('id\ttitle\nRPH-1\tSempervivum\n'), true);
 });
 
 test('SEO artifacts support local SEO-only products without Firebase storefront fields', () => {
@@ -252,6 +287,8 @@ test('SEO artifacts support local SEO-only products without Firebase storefront 
 test('SEO artifact generation merges Firebase identity without writing it to the SEO index', () => {
   const localProduct = {
     id: '1',
+    seoStatus: 'published',
+    identityVerified: true,
     seo: {
       slug: 'sempervivum-tectorum-1',
       metaTitle: 'Sempervivum tectorum Care Guide',

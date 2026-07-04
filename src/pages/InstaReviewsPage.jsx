@@ -101,7 +101,7 @@ export default function InstaReviewsPage() {
   if (images.length === 0) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white p-4">
-        <SEO title="Customer Stories" />
+        <SEO title="Customer Stories" canonicalUrl="https://rosaryplanthouse.com/insta-reviews" />
         <h2 className="text-xl mb-4">No stories available currently.</h2>
         <button 
           onClick={() => navigate(fromPath)}
@@ -115,7 +115,7 @@ export default function InstaReviewsPage() {
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex justify-center w-full h-full overflow-hidden">
-      <SEO title="Customer Stories" />
+      <SEO title="Customer Stories" canonicalUrl="https://rosaryplanthouse.com/insta-reviews" />
       
       {/* Container - constrained on desktop, full on mobile */}
       <div 

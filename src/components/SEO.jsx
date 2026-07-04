@@ -1,7 +1,18 @@
 import { Helmet } from 'react-helmet-async';
 import { buildProductStructuredData } from '../utils/productSeo';
 
-export default function SEO({ title, description, image, type = 'website', url, canonicalUrl, noindex = false, productData, schemaData }) {
+export default function SEO({
+  title,
+  description,
+  image,
+  type = 'website',
+  url,
+  canonicalUrl,
+  noindex = false,
+  robots,
+  productData,
+  schemaData,
+}) {
   const siteTitle = 'Rosary Plant House';
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const defaultDesc = 'Beautiful succulents, cacti & indoor plants from Nilgiris, Coonoor. Shop online and get plants delivered across India.';
@@ -9,9 +20,9 @@ export default function SEO({ title, description, image, type = 'website', url, 
   const defaultImage = '/og-image.jpg'; // fallback
   const finalImage = image || defaultImage;
   const finalUrl = canonicalUrl || url;
-  const robotsContent = noindex
-    ? 'noindex,nofollow'
-    : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+  const robotsContent = robots || (noindex
+    ? 'noindex,follow'
+    : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
   const productSchema = productData ? buildProductStructuredData(productData) : null;
 
   return (

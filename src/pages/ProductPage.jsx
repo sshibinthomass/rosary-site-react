@@ -17,6 +17,7 @@ import {
   getProductLongDescription,
   getProductMetaDescription,
   getProductMetaTitle,
+  getProductRobots,
 } from '../utils/productSeo';
 
 export default function ProductPage() {
@@ -139,6 +140,7 @@ export default function ProductPage() {
         image={imageList[0]}
         type="product"
         canonicalUrl={canonicalUrl}
+        robots={getProductRobots(product)}
         productData={{ ...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price }}
         schemaData={schemaData}
       />

@@ -18,6 +18,7 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Lazy-load page components so only the home page is fetched on first visit
 import HomePage from './pages/HomePage';
+const ShopPage = lazy(() => import('./pages/ShopPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
@@ -42,6 +43,8 @@ const AdminPlantTesterPage = lazy(() => import('./pages/AdminPlantTesterPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const ContentHubPage = lazy(() => import('./pages/ContentHubPage'));
 import ProductModalWrapper from './components/ProductModalWrapper';
 
 function PageLoader() {
@@ -63,7 +66,9 @@ function AppRoutes() {
           {/* Standard Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/index.html" element={<HomePage />} />
-          <Route path="/category/:categoryName" element={<HomePage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/shop.html" element={<ShopPage />} />
+          <Route path="/category/:categoryName" element={<ShopPage />} />
           <Route path="/plant/:productId" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/cart.html" element={<CartPage />} />
@@ -98,6 +103,9 @@ function AppRoutes() {
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/reviews.html" element={<ReviewsPage />} />
           <Route path="/insta-reviews" element={<InstaReviewsPage />} />
+          <Route path="/guides" element={<GuidesPage />} />
+          <Route path="/guides.html" element={<GuidesPage />} />
+          <Route path="/guides/:hubSlug" element={<ContentHubPage />} />
           <Route path="/order/:orderId" element={<OrderPage />} />
           <Route 
             path="/admin" 

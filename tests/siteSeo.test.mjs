@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   SITE_POLICY,
+  buildCustomerFaqSections,
   buildOrganizationSchema,
   buildWebsiteSchema,
 } from '../src/utils/siteSeo.js';
@@ -59,4 +60,15 @@ test('website schema points to the organization publisher', () => {
   assert.equal(schema.name, 'Rosary Plant House');
   assert.equal(schema.url, 'https://rosaryplanthouse.com');
   assert.equal(schema.publisher['@id'], 'https://rosaryplanthouse.com/#organization');
+});
+
+test('customer FAQ sections reuse the approved policy source of truth', () => {
+  const sections = buildCustomerFaqSections();
+  const text = JSON.stringify(sections);
+
+  assert.match(text, new RegExp(SITE_POLICY.shipping.serviceArea));
+  assert.match(text, new RegExp(SITE_POLICY.payment.cod));
+  assert.match(text, /Video is preferred; photos are also accepted/);
+  assert.match(text, /refund can be processed if the customer needs it/);
+  assert.doesNotMatch(text, /COD yet|all major part of the Country|customer's next order/);
 });

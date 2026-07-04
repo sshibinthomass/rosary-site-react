@@ -9,16 +9,27 @@ import { initializeApp as initializeAdminApp, cert, deleteApp as deleteAdminApp 
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
 import {
+  buildLlmsTxt,
   buildMerchantFeedTsv,
   buildRobotsTxt,
   buildSitemapXml,
+  buildStaticCategoryHtml,
+  buildStaticContentHubHtml,
+  buildStaticGuidesIndexHtml,
+  buildStaticNotFoundHtml,
   buildStaticPolicyHtml,
+  buildStaticPublicPageHtml,
   buildStaticProductHtml,
   hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
+  mergeMerchantFeedStorefrontData,
+  parseMerchantFeedTsv,
+  PUBLIC_STATIC_PAGE_KEYS,
   stripFirebaseOwnedFieldsForSeoIndex,
 } from './seo/artifacts.mjs';
 import { getProductPath, isSeoIndexable } from '../src/utils/productSeo.js';
+import { CATEGORIES } from '../src/config/constants.js';
+import { CONTENT_HUBS } from '../src/utils/contentHubs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,12 +37,18 @@ const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const distDir = path.join(rootDir, 'dist');
 const productsPath = path.join(rootDir, 'src', 'data', 'products.json');
+const reviewsPath = path.join(rootDir, 'src', 'data', 'reviews.json');
 const BASE_URL = process.env.SITE_URL || 'https://rosaryplanthouse.com';
 
 dotenv.config({ path: path.join(rootDir, '.env.local'), quiet: true });
 
 async function readProducts() {
   const raw = await fs.readFile(productsPath, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function readReviews() {
+  const raw = await fs.readFile(reviewsPath, 'utf8');
   return JSON.parse(raw);
 }
 
@@ -54,6 +71,16 @@ async function writeMerchantFeed(filePath, products) {
     console.warn(`Preserving ${path.relative(rootDir, filePath)} because no priced products were available for Merchant feed generation.`);
   } catch {
     await fs.writeFile(filePath, feed, 'utf8');
+  }
+}
+
+async function readExistingMerchantFeedProducts() {
+  const feedPath = path.join(publicDir, 'google-merchant-feed.tsv');
+  try {
+    const existingFeed = await fs.readFile(feedPath, 'utf8');
+    return parseMerchantFeedTsv(existingFeed);
+  } catch {
+    return [];
   }
 }
 
@@ -135,26 +162,88 @@ async function writePublicArtifacts({ artifactProducts, seoIndexProducts }) {
   await fs.writeFile(path.join(publicDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(publicDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
   await writeMerchantFeed(path.join(publicDir, 'google-merchant-feed.tsv'), artifactProducts);
+  await fs.writeFile(path.join(publicDir, 'llms.txt'), buildLlmsTxt(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(publicDir, 'product-seo-index.json'), JSON.stringify(seoIndexProducts), 'utf8');
 }
 
-async function writeDistArtifacts({ artifactProducts, seoIndexProducts }) {
+async function writeStaticPublicPage({ indexHtml, page, artifactProducts, reviews }) {
+  const pageHtml = buildStaticPublicPageHtml({
+    indexHtml,
+    page,
+    baseUrl: BASE_URL,
+    products: artifactProducts,
+    reviews,
+  });
+
+  if (page === 'home') {
+    await fs.writeFile(path.join(distDir, 'index.html'), pageHtml, 'utf8');
+    return;
+  }
+
+  await fs.mkdir(path.join(distDir, page), { recursive: true });
+  await fs.writeFile(path.join(distDir, page, 'index.html'), pageHtml, 'utf8');
+  await fs.writeFile(path.join(distDir, `${page}.html`), pageHtml, 'utf8');
+}
+
+async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews }) {
   const indexPath = path.join(distDir, 'index.html');
   const indexHtml = await fs.readFile(indexPath, 'utf8');
   const plantRoot = path.join(distDir, 'plant');
+  const categoryRoot = path.join(distDir, 'category');
+  const guideRoot = path.join(distDir, 'guides');
   const policyHtml = buildStaticPolicyHtml({ indexHtml, baseUrl: BASE_URL });
+  const notFoundHtml = buildStaticNotFoundHtml({ indexHtml, baseUrl: BASE_URL });
 
   await fs.writeFile(path.join(distDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(distDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
   await writeMerchantFeed(path.join(distDir, 'google-merchant-feed.tsv'), artifactProducts);
+  await fs.writeFile(path.join(distDir, 'llms.txt'), buildLlmsTxt(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
   await fs.writeFile(path.join(distDir, 'product-seo-index.json'), JSON.stringify(seoIndexProducts), 'utf8');
+  await fs.writeFile(path.join(distDir, '404.html'), notFoundHtml, 'utf8');
+  for (const page of PUBLIC_STATIC_PAGE_KEYS) {
+    await writeStaticPublicPage({ indexHtml, page, artifactProducts, reviews });
+  }
   await fs.mkdir(path.join(distDir, 'policies'), { recursive: true });
   await fs.writeFile(path.join(distDir, 'policies', 'index.html'), policyHtml, 'utf8');
   await fs.writeFile(path.join(distDir, 'policies.html'), policyHtml, 'utf8');
 
   await fs.rm(plantRoot, { recursive: true, force: true });
+  await fs.rm(categoryRoot, { recursive: true, force: true });
+  await fs.rm(guideRoot, { recursive: true, force: true });
 
   const publicProducts = artifactProducts.filter(isSeoIndexable);
+  const guidesIndexHtml = buildStaticGuidesIndexHtml({
+    indexHtml,
+    baseUrl: BASE_URL,
+  });
+  await fs.mkdir(guideRoot, { recursive: true });
+  await fs.writeFile(path.join(guideRoot, 'index.html'), guidesIndexHtml, 'utf8');
+  await fs.writeFile(path.join(distDir, 'guides.html'), guidesIndexHtml, 'utf8');
+
+  for (const hub of CONTENT_HUBS) {
+    const pageHtml = buildStaticContentHubHtml({
+      indexHtml,
+      hub,
+      products: artifactProducts,
+      baseUrl: BASE_URL,
+    });
+    const guideDir = path.join(guideRoot, hub.slug);
+    await fs.mkdir(guideDir, { recursive: true });
+    await fs.writeFile(path.join(guideDir, 'index.html'), pageHtml, 'utf8');
+  }
+
+  for (const category of CATEGORIES) {
+    const pageHtml = buildStaticCategoryHtml({
+      indexHtml,
+      category,
+      products: artifactProducts,
+      baseUrl: BASE_URL,
+    });
+    const categoryDir = path.join(categoryRoot, encodeURIComponent(category));
+    await fs.mkdir(categoryDir, { recursive: true });
+    await fs.writeFile(path.join(categoryDir, 'index.html'), pageHtml, 'utf8');
+  }
+
   for (const product of publicProducts) {
     const pageHtml = buildStaticProductHtml({ indexHtml, product, baseUrl: BASE_URL });
     const canonicalPath = getProductPath(product).replace(/^\//, '');
@@ -170,18 +259,24 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts }) {
     }
   }
 
-  console.log(`Generated ${publicProducts.length} static plant SEO pages in ${path.relative(rootDir, plantRoot)}`);
+  console.log(`Generated ${publicProducts.length} static plant SEO pages, ${CATEGORIES.length} category pages, and ${CONTENT_HUBS.length} guide pages in ${path.relative(rootDir, distDir)}`);
 }
 
 async function main() {
   const args = new Set(process.argv.slice(2));
   const localProducts = await readProducts();
+  const reviews = await readReviews();
+  const merchantFeedProducts = await readExistingMerchantFeedProducts();
   const firebaseProducts = await readFirebaseProducts();
-  const artifactProducts = mergeFirebaseStorefrontData(localProducts, firebaseProducts);
+  const mergedStorefrontProducts = mergeFirebaseStorefrontData(localProducts, firebaseProducts);
+  const artifactProducts = mergeMerchantFeedStorefrontData(mergedStorefrontProducts, merchantFeedProducts);
   const seoIndexProducts = stripFirebaseOwnedFieldsForSeoIndex(localProducts);
 
   if (firebaseProducts.length > 0) {
     console.log(`Merged Firebase storefront fields for ${firebaseProducts.length} products before SEO artifact generation`);
+  }
+  if (merchantFeedProducts.length > 0) {
+    console.log(`Loaded ${merchantFeedProducts.length} existing Merchant feed rows as storefront fallback data`);
   }
 
   await writePublicArtifacts({ artifactProducts, seoIndexProducts });
@@ -189,7 +284,7 @@ async function main() {
   if (!args.has('--public-only')) {
     try {
       await fs.access(path.join(distDir, 'index.html'));
-      await writeDistArtifacts({ artifactProducts, seoIndexProducts });
+      await writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews });
     } catch (error) {
       if (args.has('--dist')) throw error;
       console.warn('Skipping dist SEO pages because dist/index.html is not available yet.');

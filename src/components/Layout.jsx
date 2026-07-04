@@ -13,6 +13,13 @@ const HomeIcon = ({ active }) => (
   </svg>
 );
 
+const ShopIcon = ({ active }) => (
+  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16l-1.5 13h-13L4 7z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7a4 4 0 018 0" />
+  </svg>
+);
+
 const HeartIcon = ({ active }) => (
   <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -33,6 +40,7 @@ const UserIcon = ({ active }) => (
 
 const navItems = [
   { path: '/', label: 'Home', Icon: HomeIcon },
+  { path: '/shop', label: 'Shop', Icon: ShopIcon },
   { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
   { path: '/cart', label: 'Cart', Icon: CartIcon },
   { path: '/account', label: 'Account', Icon: UserIcon },
@@ -71,7 +79,7 @@ export default function Layout({ children }) {
   const handleCategoryClick = (cat) => {
     setSidebarOpen(false);
     if (cat === 'All') {
-      navigate('/');
+      navigate('/shop');
     } else {
       navigate(`/category/${encodeURIComponent(cat)}`);
     }
@@ -102,7 +110,9 @@ export default function Layout({ children }) {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {navItems.map(({ path, label, Icon }) => {
-              const isActive = location.pathname === path;
+              const isActive = path === '/shop'
+                ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
+                : location.pathname === path;
               const isCart = path === '/cart';
               const icon = Icon({ active: isActive });
               return (
@@ -205,6 +215,27 @@ export default function Layout({ children }) {
                   <HomeIcon active={isActive} />
                 </div>
                 <span className="font-medium">Home</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/shop"
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) => `
+              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              ${isActive || location.pathname.startsWith('/category/')
+                ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
+                : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+              }
+            `}
+          >
+            {({ isActive }) => (
+              <>
+                <div className="relative">
+                  <ShopIcon active={isActive || location.pathname.startsWith('/category/')} />
+                </div>
+                <span className="font-medium">Shop</span>
               </>
             )}
           </NavLink>
@@ -324,6 +355,7 @@ export default function Layout({ children }) {
           {/* Info Pages */}
           <div className="flex flex-col gap-1">
             {[
+              { path: '/guides', label: 'Care Guides', emoji: 'G' },
               { path: '/policies', label: 'Policies', emoji: 'P' },
               { path: '/reviews', label: 'Reviews', emoji: '⭐' },
               { path: '/insta-reviews', label: 'Instagram Stories', emoji: '📸' },
@@ -395,7 +427,9 @@ export default function Layout({ children }) {
         <div className="max-w-lg mx-auto px-4">
           <div className="flex items-center justify-around h-16">
             {navItems.map(({ path, label, Icon }) => {
-              const isActive = location.pathname === path;
+              const isActive = path === '/shop'
+                ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
+                : location.pathname === path;
               const isCart = path === '/cart';
               const icon = Icon({ active: isActive });
               

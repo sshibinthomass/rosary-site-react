@@ -1,0 +1,88 @@
+# Rosary Plant House
+
+Rosary Plant House is a Coonoor, Tamil Nadu nursery selling succulents, cacti, indoor plants, balcony plants and plant care guidance online.
+
+## Canonical Public Pages
+
+- Home: https://rosaryplanthouse.com/
+- Shop: https://rosaryplanthouse.com/shop
+- About: https://rosaryplanthouse.com/about
+- Contact: https://rosaryplanthouse.com/contact
+- FAQ: https://rosaryplanthouse.com/faq
+- Policies: https://rosaryplanthouse.com/policies
+- Reviews: https://rosaryplanthouse.com/reviews
+- Sitemap: https://rosaryplanthouse.com/sitemap.xml
+- Merchant feed: https://rosaryplanthouse.com/google-merchant-feed.tsv
+
+## Ordering, Shipping And Support
+
+- Service area: All over South India and major cities in North India.
+- Dispatch days: Monday and Wednesday.
+- Delivery ETA from dispatch: Bangalore 1-2 days from dispatch; Tamil Nadu 1-2 days from dispatch; South India 2-3 days from dispatch; Other serviceable major cities 4-5 days from dispatch.
+- Payment: GPay, PayTM, PhonePe, Net banking. Cash on delivery is not available.
+- Damage support: Transit-damaged plants are preferably replaced along with the customer next order when reported on the delivery day or the following day. Video is preferred; photos are also accepted. Replacement is preferred first, but a refund can be processed if the customer needs it.
+- Support: Every day, 9 AM to 9 PM on WhatsApp at +91 79040 50237.
+
+## Care Guides
+
+- Succulents in India: Care and Buying Guide: https://rosaryplanthouse.com/guides/succulents-in-india
+- Low Water Balcony Plants for Indian Homes: https://rosaryplanthouse.com/guides/low-water-balcony-plants
+- Monsoon Succulent Care in India: https://rosaryplanthouse.com/guides/monsoon-succulent-care
+- Indoor Succulent Care for Indian Apartments: https://rosaryplanthouse.com/guides/indoor-succulent-care
+- Cactus Care in India for Beginners: https://rosaryplanthouse.com/guides/cactus-care-india
+- Root Rot in Succulents: Signs and Recovery: https://rosaryplanthouse.com/guides/root-rot-succulent-care
+- Buy Succulents Online in India: https://rosaryplanthouse.com/guides/buy-succulents-online-india
+- Plant Delivery in Bangalore: https://rosaryplanthouse.com/guides/plant-delivery-bangalore
+- Plant Delivery in Chennai: https://rosaryplanthouse.com/guides/plant-delivery-chennai
+- Low Maintenance Balcony Plants in India: https://rosaryplanthouse.com/guides/low-maintenance-balcony-plants
+- Cactus Plants Online in India: https://rosaryplanthouse.com/guides/cactus-plants-online-india
+- Ceramic Pot Succulents: https://rosaryplanthouse.com/guides/ceramic-pot-succulents
+- Hanging Plants for Balcony Gardens: https://rosaryplanthouse.com/guides/hanging-plants-balcony
+- Coonoor Plant Nursery for Succulents and Cacti: https://rosaryplanthouse.com/guides/coonoor-plant-nursery
+
+## Product Page Samples
+
+- Sempervivum tectorum: https://rosaryplanthouse.com/plant/1-sempervivum-tectorum/
+- Bergeranthus species: https://rosaryplanthouse.com/plant/2-bergeranthus-species/
+- Sedum lineare 'Yellow': https://rosaryplanthouse.com/plant/3-sedum-lineare-yellow/
+- Haworthia cooperi variegated: https://rosaryplanthouse.com/plant/4-haworthia-cooperi-variegated/
+- Peanut Cactus: https://rosaryplanthouse.com/plant/5-peanut-cactus/
+- Lakshmi Kamal Sempervivum: https://rosaryplanthouse.com/plant/6-lakshmi-kamal-sempervivum/
+- Echeveria White Lotus: https://rosaryplanthouse.com/plant/7-echeveria-white-lotus/
+- Jade Plant: https://rosaryplanthouse.com/plant/8-jade-plant/
+- String of Necklaces: https://rosaryplanthouse.com/plant/9-string-of-necklaces/
+- Lifesaver Cactus: https://rosaryplanthouse.com/plant/10-lifesaver-cactus/
+- Hoodia species: https://rosaryplanthouse.com/plant/11-hoodia-species/
+- Callisia repens 'Pink Lady': https://rosaryplanthouse.com/plant/12-callisia-repens-pink-lady/
+- Finger Jade: https://rosaryplanthouse.com/plant/13-finger-jade/
+- Echeveria setosa: https://rosaryplanthouse.com/plant/14-echeveria-setosa/
+- Echeveria: https://rosaryplanthouse.com/plant/15-echeveria/
+- Donkey Tail: https://rosaryplanthouse.com/plant/16-donkey-tail/
+- Haworthiopsis reinwardtii: https://rosaryplanthouse.com/plant/17-haworthiopsis-reinwardtii/
+- Sinocrassula yunnanensis: https://rosaryplanthouse.com/plant/18-sinocrassula-yunnanensis/
+- Chocolate Soldier: https://rosaryplanthouse.com/plant/19-chocolate-soldier/
+- Bunny Ear Cactus: https://rosaryplanthouse.com/plant/20-bunny-ear-cactus/
+- Bunny Ear Cactus Yellow Form: https://rosaryplanthouse.com/plant/21-bunny-ear-cactus-yellow-form/
+- Graptopetalum amethystinum: https://rosaryplanthouse.com/plant/22-graptopetalum-amethystinum/
+- Fuzzy Echeveria: https://rosaryplanthouse.com/plant/23-fuzzy-echeveria/
+- Opuntia monacantha: https://rosaryplanthouse.com/plant/24-opuntia-monacantha/
+- Chocolate Soldier: https://rosaryplanthouse.com/plant/25-chocolate-soldier/
+- Dark Echeveria Hybrid: https://rosaryplanthouse.com/plant/26-dark-echeveria-hybrid/
+- Echeveria Akmalia: https://rosaryplanthouse.com/plant/27-echeveria-akmalia/
+- Mexican Snowball: https://rosaryplanthouse.com/plant/28-mexican-snowball/
+- Tiger Tooth Aloe: https://rosaryplanthouse.com/plant/29-tiger-tooth-aloe/
+- Blue Chalk Fingers: https://rosaryplanthouse.com/plant/30-blue-chalk-fingers/
+- Thimble Cactus: https://rosaryplanthouse.com/plant/31-thimble-cactus/
+- Short-Leaved Aloe: https://rosaryplanthouse.com/plant/32-short-leaved-aloe/
+- Spider Aloe: https://rosaryplanthouse.com/plant/33-spider-aloe/
+- Tiger Jaws: https://rosaryplanthouse.com/plant/34-tiger-jaws/
+- Haworthia resendeana: https://rosaryplanthouse.com/plant/35-haworthia-resendeana/
+- Blue Tears Sedum: https://rosaryplanthouse.com/plant/36-blue-tears-sedum/
+- Miniature Pine Tree Succulent: https://rosaryplanthouse.com/plant/37-miniature-pine-tree-succulent/
+- Golden Needle Stonecrop: https://rosaryplanthouse.com/plant/38-golden-needle-stonecrop/
+- Radiator Plant Peperomia: https://rosaryplanthouse.com/plant/39-radiator-plant-peperomia/
+- Aloe brevifolia Short Leaved Aloe: https://rosaryplanthouse.com/plant/40-aloe-brevifolia-short-leaved-aloe/
+
+## Crawler Notes
+
+OAI-SearchBot and ChatGPT-User are allowed in robots.txt so AI search and user-requested browsing can fetch public Rosary Plant House pages. GPTBot is also allowed.

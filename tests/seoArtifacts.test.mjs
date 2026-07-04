@@ -4,13 +4,22 @@ import test from 'node:test';
 import { mergeEnrichmentRows } from '../scripts/seo/enrichment.mjs';
 import {
   buildMerchantFeedTsv,
+  buildLlmsTxt,
+  buildStaticContentHubHtml,
+  buildStaticCategoryHtml,
+  buildStaticGuidesIndexHtml,
+  buildStaticNotFoundHtml,
   buildStaticPolicyHtml,
+  buildStaticPublicPageHtml,
   buildSitemapXml,
   buildStaticProductHtml,
   hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
+  mergeMerchantFeedStorefrontData,
+  parseMerchantFeedTsv,
   stripFirebaseOwnedFieldsForSeoIndex,
 } from '../scripts/seo/artifacts.mjs';
+import { getContentHubBySlug } from '../src/utils/contentHubs.js';
 
 const storefrontProduct = {
   id: '1',
@@ -37,6 +46,8 @@ const storefrontProduct = {
   demand: 'VeryHigh',
   description: 'Existing description stays exactly as-is.',
 };
+
+const appShellHtml = '<!doctype html><html lang="en"><head><title>Rosary Plant House</title><meta name="description" content="Generic" /><meta property="og:image" content="/og-image.jpg" /></head><body><div id="root"></div><script type="module" src="/assets/app.js"></script></body></html>';
 
 test('Excel enrichment never overwrites protected storefront fields', () => {
   const [merged] = mergeEnrichmentRows([storefrontProduct], [{
@@ -195,7 +206,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.doesNotMatch(sitemap, /\/cart/);
 
   const feed = buildMerchantFeedTsv([product], { baseUrl: 'https://rosaryplanthouse.com' });
-  assert.match(feed, /^id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tbrand\tcondition/m);
+  assert.match(feed, /^id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tbrand\tcondition\tproduct_type\tshipping_label\treturn_policy_label/m);
   assert.match(feed, /RPH-1\tSempervivum tectorum Plant\tGenerated merchant description\.\thttps:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
   assert.match(feed, /in_stock\t69\.00 INR/);
 
@@ -208,6 +219,11 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.match(html, /<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" \/>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/" \/>/);
   assert.match(html, /<script type="application\/ld\+json">/);
+  assert.match(html, /"offers":\{"@type":"Offer"/);
+  assert.match(html, /"price":69/);
+  assert.match(html, /"seller":\{"@id":"https:\/\/rosaryplanthouse\.com\/#organization"/);
+  assert.match(html, /"hasMerchantReturnPolicy":\{"@type":"MerchantReturnPolicy"/);
+  assert.match(html, /"shippingDetails":\{"@type":"OfferShippingDetails"/);
   assert.match(html, /<main class="seo-product-page"/);
   assert.match(html, /<h2>Placement and light<\/h2>/);
   assert.match(html, /<dt>Best placement<\/dt>\s*<dd>Covered balcony\.<\/dd>/);
@@ -246,6 +262,46 @@ test('merchant feed row detection distinguishes empty feeds from product feeds',
   assert.equal(hasMerchantFeedProductRows('id\ttitle\n'), false);
   assert.equal(hasMerchantFeedProductRows('id\ttitle\n\n'), false);
   assert.equal(hasMerchantFeedProductRows('id\ttitle\nRPH-1\tSempervivum\n'), true);
+});
+
+test('existing Merchant feed rows can supply storefront price data for static product schema', () => {
+  const feed = [
+    'id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tbrand\tcondition',
+    'RPH-1-SEMPERVIVUM\tSempervivum tectorum Plant\tGenerated merchant description.\thttps://rosaryplanthouse.com/plant/1-sempervivum-tectorum/\thttps://rosaryplanthouse.com/sale_plants/1.jpg\tin_stock\t59.00 INR\tRosary Plant House\tnew',
+  ].join('\n');
+  const [feedProduct] = parseMerchantFeedTsv(feed);
+  const [merged] = mergeMerchantFeedStorefrontData([{
+    id: '1',
+    seoStatus: 'published',
+    identityVerified: true,
+    seo: {
+      slug: 'sempervivum-tectorum-1',
+      metaTitle: 'Sempervivum tectorum Care Guide',
+      metaDescription: 'Generated meta description.',
+    },
+    schema: {
+      name: 'Sempervivum tectorum',
+      description: 'Generated schema description.',
+    },
+    careGuide: {
+      longDescription: 'Generated long description.',
+    },
+  }], [feedProduct]);
+
+  assert.equal(merged.salesPrice, 59);
+  assert.equal(merged.available, true);
+  assert.equal(merged.imageUrl, 'https://rosaryplanthouse.com/sale_plants/1.jpg');
+  assert.equal(merged.schema.sku, 'RPH-1-SEMPERVIVUM');
+  assert.equal(merged.merchant.title, 'Sempervivum tectorum Plant');
+
+  const html = buildStaticProductHtml({
+    indexHtml: appShellHtml,
+    product: merged,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+  assert.match(html, /"offers":\{"@type":"Offer"/);
+  assert.match(html, /"price":59/);
+  assert.match(html, /<strong>Price:<\/strong> Rs\. 59 in stock/);
 });
 
 test('SEO artifacts support local SEO-only products without Firebase storefront fields', () => {
@@ -288,7 +344,7 @@ test('SEO artifacts support local SEO-only products without Firebase storefront 
 
 test('static policies page includes crawlable policy content and merchant schema', () => {
   const html = buildStaticPolicyHtml({
-    indexHtml: '<!doctype html><html lang="en"><head><title>Rosary Plant House</title><meta property="og:image" content="/og-image.jpg" /></head><body><div id="root"></div></body></html>',
+    indexHtml: appShellHtml,
     baseUrl: 'https://rosaryplanthouse.com',
   });
 
@@ -300,6 +356,146 @@ test('static policies page includes crawlable policy content and merchant schema
   assert.match(html, /Bangalore<\/dt>\s*<dd>1-2 days from dispatch<\/dd>/);
   assert.match(html, /ShippingService/);
   assert.match(html, /MerchantReturnPolicy/);
+});
+
+test('static public pages replace the SPA shell with route-specific crawlable HTML', () => {
+  const pages = [
+    ['home', /<title>Buy Succulents, Cacti and Indoor Plants Online \| Rosary Plant House<\/title>/, /<img src="\/home\/hero-natural-nursery\.jpg"[\s\S]*<a href="\/shop"><img src="\/home\/browse-every-plant-natural\.jpg"[\s\S]*Shop all plants<\/a>/],
+    ['shop', /<title>Shop Succulents, Cacti and Indoor Plants \| Rosary Plant House<\/title>/, /<main class="seo-shop-page"/],
+    ['faq', /<title>Help &amp; FAQ \| Rosary Plant House<\/title>/, /All over South India and major cities in North India/],
+    ['contact', /<title>Contact Rosary Plant House \| Rosary Plant House<\/title>/, /WhatsApp support: Every day, 9 AM to 9 PM/],
+    ['about', /<title>About Rosary Plant House \| Rosary Plant House<\/title>/, /nursery in Coonoor, The Nilgiris/],
+    ['reviews', /<title>Customer Reviews \| Rosary Plant House<\/title>/, /healthy plants and careful packing/],
+    ['insta-reviews', /<title>Customer Stories \| Rosary Plant House<\/title>/, /Instagram story reviews/],
+  ];
+
+  for (const [page, titlePattern, bodyPattern] of pages) {
+    const html = buildStaticPublicPageHtml({
+      indexHtml: appShellHtml,
+      page,
+      baseUrl: 'https://rosaryplanthouse.com',
+      reviews: [{ author: 'Aindrila', rating: 5, text: 'All are healthy plants and careful packing.' }],
+    });
+
+    assert.match(html, titlePattern);
+    assert.match(html, bodyPattern);
+    assert.match(html, /<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" \/>/);
+    assert.doesNotMatch(html, /<title>Rosary Plant House<\/title>/);
+  }
+});
+
+test('static FAQ content reuses the verified policy facts', () => {
+  const html = buildStaticPublicPageHtml({
+    indexHtml: appShellHtml,
+    page: 'faq',
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /All over South India and major cities in North India/);
+  assert.match(html, /Cash on delivery is not available/);
+  assert.match(html, /Video is preferred; photos are also accepted/);
+  assert.match(html, /refund can be processed if the customer needs it/);
+  assert.doesNotMatch(html, /COD yet|all major part of the Country|customer's next order/);
+});
+
+test('static category pages expose category-specific titles, links, and ItemList schema', () => {
+  const product = {
+    ...storefrontProduct,
+    seo: { slug: 'sempervivum-tectorum-1', metaTitle: 'Sempervivum tectorum Care Guide' },
+    schema: { name: 'Sempervivum tectorum', description: 'Generated schema description.' },
+    merchant: { title: 'Sempervivum tectorum Plant', description: 'Generated merchant description.' },
+  };
+
+  const html = buildStaticCategoryHtml({
+    indexHtml: appShellHtml,
+    category: 'Succulent',
+    products: [product],
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<title>Buy Succulent Plants Online \| Rosary Plant House<\/title>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/category\/Succulent" \/>/);
+  assert.match(html, /<h1>Buy Succulent plants online<\/h1>/);
+  assert.match(html, /https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+  assert.match(html, /"@type":"ItemList"/);
+});
+
+test('static content hub pages expose article answers, FAQs, product links, and schema', () => {
+  const hub = getContentHubBySlug('succulents-in-india');
+  const product = {
+    ...storefrontProduct,
+    seo: { slug: 'sempervivum-tectorum-1', metaTitle: 'Sempervivum tectorum Care Guide' },
+    schema: { name: 'Sempervivum tectorum', description: 'Generated schema description.' },
+    merchant: { title: 'Sempervivum tectorum Plant', description: 'Generated merchant description.' },
+  };
+
+  const html = buildStaticContentHubHtml({
+    indexHtml: appShellHtml,
+    hub,
+    products: [product],
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<title>Succulents in India: Care and Buying Guide \| Rosary Plant House<\/title>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/guides\/succulents-in-india" \/>/);
+  assert.match(html, /<main class="seo-content-hub-page"/);
+  assert.match(html, /Succulents in India/);
+  assert.match(html, /\/plant\/1-sempervivum-tectorum\//);
+  assert.match(html, /"@type":"Article"/);
+  assert.match(html, /"@type":"FAQPage"/);
+  assert.match(html, /"@type":"ItemList"/);
+  assert.match(html, /"@type":"BreadcrumbList"/);
+});
+
+test('static guides index page lists every content hub with crawlable schema', () => {
+  const html = buildStaticGuidesIndexHtml({
+    indexHtml: appShellHtml,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<title>Plant Care Guides \| Rosary Plant House<\/title>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/guides" \/>/);
+  assert.match(html, /<main class="seo-guides-index-page"/);
+  assert.match(html, /\/guides\/succulents-in-india/);
+  assert.match(html, /\/guides\/low-water-balcony-plants/);
+  assert.match(html, /\/guides\/monsoon-succulent-care/);
+  assert.match(html, /"@type":"CollectionPage"/);
+  assert.match(html, /"@type":"ItemList"/);
+});
+
+test('sitemap includes static content hub URLs for informational search demand', () => {
+  const sitemap = buildSitemapXml([storefrontProduct], { baseUrl: 'https://rosaryplanthouse.com' });
+
+  assert.match(sitemap, /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/);
+  assert.match(sitemap, /<loc>https:\/\/rosaryplanthouse\.com\/shop<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/rosaryplanthouse\.com\/guides<\/loc>/);
+  assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/succulents-in-india/);
+  assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/low-water-balcony-plants/);
+  assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/monsoon-succulent-care/);
+  assert.match(sitemap, /<image:loc>https:\/\/example\.com\/1\.jpg<\/image:loc>/);
+  assert.match(sitemap, /<image:title>Sempervivum Tectorum from Rosary Plant House<\/image:title>/);
+});
+
+test('llms.txt summarizes canonical public pages, policies, guides, feed, and OpenAI crawler intent', () => {
+  const text = buildLlmsTxt([storefrontProduct], { baseUrl: 'https://rosaryplanthouse.com' });
+
+  assert.match(text, /^# Rosary Plant House/m);
+  assert.match(text, /https:\/\/rosaryplanthouse\.com\/policies/);
+  assert.match(text, /https:\/\/rosaryplanthouse\.com\/guides\/buy-succulents-online-india/);
+  assert.match(text, /https:\/\/rosaryplanthouse\.com\/google-merchant-feed\.tsv/);
+  assert.match(text, /OAI-SearchBot and ChatGPT-User are allowed/);
+  assert.match(text, /Sempervivum Tectorum: https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+});
+
+test('static not-found artifact is noindex for invalid product and route fallbacks', () => {
+  const html = buildStaticNotFoundHtml({
+    indexHtml: appShellHtml,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<title>Page Not Found \| Rosary Plant House<\/title>/);
+  assert.match(html, /<meta name="robots" content="noindex,follow" \/>/);
+  assert.match(html, /<main class="seo-not-found-page"/);
 });
 
 test('SEO artifact generation merges Firebase identity without writing it to the SEO index', () => {

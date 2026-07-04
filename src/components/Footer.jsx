@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom';
 
 const footerLinks = [
+  { label: 'Shop', path: '/shop' },
   { label: 'About', path: '/about' },
+  { label: 'Care Guides', path: '/guides' },
   { label: 'FAQ', path: '/faq' },
   { label: 'Policies', path: '/policies' },
   { label: 'Reviews', path: '/reviews' },

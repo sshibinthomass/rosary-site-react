@@ -1,1603 +1,3054 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://rosaryplanthouse.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/shop</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/about</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/contact</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/faq</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/policies</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/reviews</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/insta-reviews</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Succulent</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Cactus</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Echeveria</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Jade</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Crassula</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Peperomia</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Aloe</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Sedum</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Haworthia</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Creeper</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Sansevieria</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Indoor</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Hanging</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Mother</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Combo</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/category/Others</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/succulents-in-india</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/low-water-balcony-plants</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/monsoon-succulent-care</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/indoor-succulent-care</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/cactus-care-india</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/root-rot-succulent-care</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/buy-succulents-online-india</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/plant-delivery-bangalore</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/plant-delivery-chennai</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/low-maintenance-balcony-plants</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/cactus-plants-online-india</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/ceramic-pot-succulents</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/hanging-plants-balcony</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/guides/coonoor-plant-nursery</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.72</priority>
+
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/1-sempervivum-tectorum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/1.jpg</image:loc>
+      <image:title>Sempervivum tectorum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/2-bergeranthus-species/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/2.jpg</image:loc>
+      <image:title>Bergeranthus species from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/3-sedum-lineare-yellow/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/3.jpg</image:loc>
+      <image:title>Sedum lineare &#39;Yellow&#39; from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/4-haworthia-cooperi-variegated/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/4.jpg</image:loc>
+      <image:title>Haworthia cooperi variegated from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/5-peanut-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/5.jpg</image:loc>
+      <image:title>Peanut Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/6-lakshmi-kamal-sempervivum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/6.jpg</image:loc>
+      <image:title>Lakshmi Kamal Sempervivum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/7-echeveria-white-lotus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/7.jpg</image:loc>
+      <image:title>Echeveria White Lotus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/8-jade-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/8.jpg</image:loc>
+      <image:title>Jade Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/9-string-of-necklaces/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/9.jpg</image:loc>
+      <image:title>String of Necklaces from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/10-lifesaver-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/10.jpg</image:loc>
+      <image:title>Lifesaver Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/11-hoodia-species/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/11.jpg</image:loc>
+      <image:title>Hoodia species from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/12-callisia-repens-pink-lady/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/12.jpg</image:loc>
+      <image:title>Callisia repens &#39;Pink Lady&#39; from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/13-finger-jade/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/13.jpg</image:loc>
+      <image:title>Finger Jade from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/14-echeveria-setosa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/14.jpg</image:loc>
+      <image:title>Echeveria setosa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/15-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/15.jpg</image:loc>
+      <image:title>Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/16-donkey-tail/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/16.jpg</image:loc>
+      <image:title>Donkey Tail from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/17-haworthiopsis-reinwardtii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/17.jpg</image:loc>
+      <image:title>Haworthiopsis reinwardtii from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/18-sinocrassula-yunnanensis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/18.jpg</image:loc>
+      <image:title>Sinocrassula yunnanensis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/19-chocolate-soldier/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/19.jpg</image:loc>
+      <image:title>Chocolate Soldier from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/20-bunny-ear-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/20.jpg</image:loc>
+      <image:title>Bunny Ear Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/21-bunny-ear-cactus-yellow-form/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/21.jpg</image:loc>
+      <image:title>Bunny Ear Cactus Yellow Form from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/22-graptopetalum-amethystinum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/22.jpg</image:loc>
+      <image:title>Graptopetalum amethystinum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/23-fuzzy-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/23.jpg</image:loc>
+      <image:title>Fuzzy Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/24-opuntia-monacantha/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/24.jpg</image:loc>
+      <image:title>Opuntia monacantha from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/25-chocolate-soldier/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/25.jpg</image:loc>
+      <image:title>Chocolate Soldier from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/26-dark-echeveria-hybrid/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/26.jpg</image:loc>
+      <image:title>Dark Echeveria Hybrid from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/27-echeveria-akmalia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/27.jpg</image:loc>
+      <image:title>Echeveria Akmalia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/28-mexican-snowball/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/28.jpg</image:loc>
+      <image:title>Mexican Snowball from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/29-tiger-tooth-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/29.jpg</image:loc>
+      <image:title>Tiger Tooth Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/30-blue-chalk-fingers/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/30.jpg</image:loc>
+      <image:title>Blue Chalk Fingers from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/31-thimble-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/31.jpg</image:loc>
+      <image:title>Thimble Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/32-short-leaved-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/32.jpg</image:loc>
+      <image:title>Short-Leaved Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/33-spider-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/33.jpg</image:loc>
+      <image:title>Spider Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/34-tiger-jaws/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/34.jpg</image:loc>
+      <image:title>Tiger Jaws from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/35-haworthia-resendeana/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/35.jpg</image:loc>
+      <image:title>Haworthia resendeana from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/36-blue-tears-sedum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/36.jpg</image:loc>
+      <image:title>Blue Tears Sedum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/37-miniature-pine-tree-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/37.jpg</image:loc>
+      <image:title>Miniature Pine Tree Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/38-golden-needle-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/38.jpg</image:loc>
+      <image:title>Golden Needle Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/39-radiator-plant-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/39.jpg</image:loc>
+      <image:title>Radiator Plant Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/40-aloe-brevifolia-short-leaved-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/40.jpg</image:loc>
+      <image:title>Aloe brevifolia Short Leaved Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/41-senecio-cephalophorus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/41.jpg</image:loc>
+      <image:title>Senecio cephalophorus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/42-variegated-chlorophytum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/42.jpg</image:loc>
+      <image:title>Variegated Chlorophytum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/43-monstrose-columnar-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/43.jpg</image:loc>
+      <image:title>Monstrose Columnar Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/44-curled-blue-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/44.jpg</image:loc>
+      <image:title>Curled Blue Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/45-red-florist-kalanchoe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/45.jpg</image:loc>
+      <image:title>Red Florist Kalanchoe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/46-leaf-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/46.jpg</image:loc>
+      <image:title>Leaf Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/47-dianthus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/47.jpg</image:loc>
+      <image:title>Dianthus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/48-ripple-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/48.jpg</image:loc>
+      <image:title>Ripple Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/49-pink-hydrangea/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/49.jpg</image:loc>
+      <image:title>Pink Hydrangea from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/50-variegated-wax-ivy/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/50.jpg</image:loc>
+      <image:title>Variegated Wax Ivy from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/51-bird-s-nest-anthurium-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/51.jpg</image:loc>
+      <image:title>Bird&#39;s Nest Anthurium Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/52-elephant-bush/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/52.jpg</image:loc>
+      <image:title>Elephant Bush from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/53-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/53.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/54-cobweb-houseleek/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/54.jpg</image:loc>
+      <image:title>Cobweb Houseleek from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/55-crassula-capitella/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/55.jpg</image:loc>
+      <image:title>Crassula capitella from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/56-opuntioid-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/56.jpg</image:loc>
+      <image:title>Opuntioid Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/57-pink-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/57.jpg</image:loc>
+      <image:title>Pink Syngonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/58-scilla-siberica/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/58.jpg</image:loc>
+      <image:title>Scilla siberica from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/59-cheiridopsis-denticulata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/59.jpg</image:loc>
+      <image:title>Cheiridopsis denticulata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/60-watermelon-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/60.jpg</image:loc>
+      <image:title>Watermelon Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/61-acanthocalycium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/61.jpg</image:loc>
+      <image:title>Acanthocalycium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/62-aloe-brevifolia-short-leaved-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/62.jpg</image:loc>
+      <image:title>Aloe brevifolia Short Leaved Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/63-echinopsis-subdenudata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/63.jpg</image:loc>
+      <image:title>Echinopsis subdenudata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/64-echeveria-setosa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/64.jpg</image:loc>
+      <image:title>Echeveria setosa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/65-crassula-falcata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/65.jpg</image:loc>
+      <image:title>Crassula falcata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/66-window-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/66.jpg</image:loc>
+      <image:title>Window Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/67-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/67.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/68-haworthiopsis-coarctata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/68.jpg</image:loc>
+      <image:title>Haworthiopsis coarctata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/69-aeonium-haworthii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/69.jpg</image:loc>
+      <image:title>Aeonium haworthii from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/70-echeveria-agavoides/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/70.jpg</image:loc>
+      <image:title>Echeveria agavoides from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/71-pachyphytum-oviferum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/71.jpg</image:loc>
+      <image:title>Pachyphytum oviferum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/72-string-of-pearls/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/72.jpg</image:loc>
+      <image:title>String of Pearls from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/73-variegated-bird-s-nest-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/73.jpg</image:loc>
+      <image:title>Variegated Bird&#39;s Nest Snake Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/74-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/74.jpg</image:loc>
+      <image:title>Green Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/75-adromischus-cristatus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/75.jpg</image:loc>
+      <image:title>Adromischus cristatus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/76-fairy-washboard/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/76.jpg</image:loc>
+      <image:title>Fairy Washboard from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/77-anacampseros-baeseckei/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/77.jpg</image:loc>
+      <image:title>Anacampseros baeseckei from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/78-snake-plant-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/78.jpg</image:loc>
+      <image:title>Snake Plant Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/79-gasteria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/79.jpg</image:loc>
+      <image:title>Gasteria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/80-crassula-capitella-thyrsiflora/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/80.jpg</image:loc>
+      <image:title>Crassula capitella thyrsiflora from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/81-english-ivy/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/81.jpg</image:loc>
+      <image:title>English Ivy from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/82-variegated-periwinkle/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/82.jpg</image:loc>
+      <image:title>Variegated Periwinkle from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/83-variegated-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/83.jpg</image:loc>
+      <image:title>Variegated Syngonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/84-spotted-aloe-hybrid/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/84.jpg</image:loc>
+      <image:title>Spotted Aloe Hybrid from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/85-variegated-needle-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/85.jpg</image:loc>
+      <image:title>Variegated Needle Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/86-window-haworthia-cluster/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/86.jpg</image:loc>
+      <image:title>Window Haworthia Cluster from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/87-echeveria-glauca-cristata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/87.jpg</image:loc>
+      <image:title>Echeveria glauca cristata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/88-hechtia-glauca/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/88.jpg</image:loc>
+      <image:title>Hechtia glauca from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/89-echeveria-nuda/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/89.jpg</image:loc>
+      <image:title>Echeveria nuda from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/90-portulacaria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/90.jpg</image:loc>
+      <image:title>Portulacaria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/91-string-of-buttons/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/91.jpg</image:loc>
+      <image:title>String of Buttons from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/92-fishbone-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/92.jpg</image:loc>
+      <image:title>Fishbone Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/93-variegated-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/93.jpg</image:loc>
+      <image:title>Variegated Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/94-kiwi-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/94.jpg</image:loc>
+      <image:title>Kiwi Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/95-mexican-heather/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/95.jpg</image:loc>
+      <image:title>Mexican Heather from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/96-stapelia-lepida/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/96.jpg</image:loc>
+      <image:title>Stapelia lepida from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/97-medusa-head-euphorbia-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/97.jpg</image:loc>
+      <image:title>Medusa Head Euphorbia Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/98-euphorbia-ferox/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/98.jpg</image:loc>
+      <image:title>Euphorbia ferox from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/99-aeonium-arboreum-green/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/99.jpg</image:loc>
+      <image:title>Aeonium arboreum green from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/100-black-rose-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/100.jpg</image:loc>
+      <image:title>Black Rose Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/101-crassula-exilis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/101.jpg</image:loc>
+      <image:title>Crassula exilis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/102-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/102.jpg</image:loc>
+      <image:title>Snake Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/103-blue-chalksticks/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/103.jpg</image:loc>
+      <image:title>Blue Chalksticks from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/104-euphorbia-milii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/104.jpg</image:loc>
+      <image:title>Euphorbia milii from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/105-variegated-agave-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/105.jpg</image:loc>
+      <image:title>Variegated Agave Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/106-bird-s-nest-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/106.jpg</image:loc>
+      <image:title>Bird&#39;s Nest Snake Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/107-delosperma/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/107.jpg</image:loc>
+      <image:title>Delosperma from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/108-variegated-elephant-bush/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/108.jpg</image:loc>
+      <image:title>Variegated Elephant Bush from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/109-donkey-tail-sedum-morganianum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/109.jpg</image:loc>
+      <image:title>Donkey Tail Sedum morganianum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/110-sedeveria-super-donkey-tail/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/110.jpg</image:loc>
+      <image:title>Sedeveria Super Donkey Tail from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/111-string-of-bananas/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/111.jpg</image:loc>
+      <image:title>String of Bananas from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/112-watch-chain-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/112.jpg</image:loc>
+      <image:title>Watch Chain Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/113-golden-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/113.jpg</image:loc>
+      <image:title>Golden Syngonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/114-variegated-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/114.jpg</image:loc>
+      <image:title>Variegated Syngonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/115-peace-lily/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/115.jpg</image:loc>
+      <image:title>Peace Lily from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/116-aloe-x-spinosissima/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/116.jpg</image:loc>
+      <image:title>Aloe x spinosissima from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/117-jelly-bean-sedum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/117.jpg</image:loc>
+      <image:title>Jelly Bean Sedum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/118-lavandula-lanata-woolly-lavender/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/118.jpg</image:loc>
+      <image:title>Lavandula lanata Woolly Lavender from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/119-african-violet/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/119.jpg</image:loc>
+      <image:title>African Violet from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/120-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/120.jpg</image:loc>
+      <image:title>Variegated Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/121-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/121.jpg</image:loc>
+      <image:title>Variegated Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/122-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/122.jpg</image:loc>
+      <image:title>Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/123-tricolor-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/123.jpg</image:loc>
+      <image:title>Tricolor Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/124-portulaca-variegated/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/124.jpg</image:loc>
+      <image:title>Portulaca variegated from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/125-turtle-vine/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/125.jpg</image:loc>
+      <image:title>Turtle Vine from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/126-variegated-bird-s-nest-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/126.jpg</image:loc>
+      <image:title>Variegated Bird&#39;s Nest Snake Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/127-variegated-dwarf-umbrella-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/127.jpg</image:loc>
+      <image:title>Variegated Dwarf Umbrella Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/128-jellybean-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/128.jpg</image:loc>
+      <image:title>Jellybean Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/129-sedum-adolphii-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/129.jpg</image:loc>
+      <image:title>Sedum adolphii group from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/130-grey-sedum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/130.jpg</image:loc>
+      <image:title>Grey Sedum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/131-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/131.jpg</image:loc>
+      <image:title>Green Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/132-philodendron-heart-leaf/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/132.jpg</image:loc>
+      <image:title>Philodendron Heart Leaf from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/133-sedum-acre-yellow/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/133.jpg</image:loc>
+      <image:title>Sedum acre Yellow from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/134-sedum-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/134.jpg</image:loc>
+      <image:title>Sedum Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/135-sedum-pachyphyllum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/135.jpg</image:loc>
+      <image:title>Sedum pachyphyllum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/136-watermelon-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/136.jpg</image:loc>
+      <image:title>Watermelon Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/137-foxtail-fern-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/137.jpg</image:loc>
+      <image:title>Foxtail Fern Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/138-cotyledon-tomentosa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/138.jpg</image:loc>
+      <image:title>Cotyledon tomentosa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/139-string-of-hearts/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/139.jpg</image:loc>
+      <image:title>String of Hearts from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/140-jade-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/140.jpg</image:loc>
+      <image:title>Jade Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/141-graptopetalum-lo-thye-dr/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/141.jpg</image:loc>
+      <image:title>Graptopetalum Lo Thye Dr from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/142-golden-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/142.jpg</image:loc>
+      <image:title>Golden Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/143-graptopetalum-paraguayense/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/143.jpg</image:loc>
+      <image:title>Graptopetalum paraguayense from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/144-aloe-camperi-purple-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/144.jpg</image:loc>
+      <image:title>Aloe camperi Purple Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/145-aloe-castilloniae-liliputana/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/145.jpg</image:loc>
+      <image:title>Aloe castilloniae Liliputana from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/146-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/146.jpg</image:loc>
+      <image:title>Variegated Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/147-jade-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/147.jpg</image:loc>
+      <image:title>Jade Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/148-variegated-english-ivy/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/148.jpg</image:loc>
+      <image:title>Variegated English Ivy from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/149-variegated-english-ivy/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/149.jpg</image:loc>
+      <image:title>Variegated English Ivy from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/150-alligator-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/150.jpg</image:loc>
+      <image:title>Alligator Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/151-purple-waffle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/151.jpg</image:loc>
+      <image:title>Purple Waffle Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/152-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/152.jpg</image:loc>
+      <image:title>Green Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/153-aeonium-arboreum-variegated-irish-rose/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/153.jpg</image:loc>
+      <image:title>Aeonium arboreum variegated Irish Rose from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/154-string-of-buttons/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/154.jpg</image:loc>
+      <image:title>String of Buttons from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/155-yellow-flowering-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/155.jpg</image:loc>
+      <image:title>Yellow Flowering Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/156-echeveria-prolifica/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/156.jpg</image:loc>
+      <image:title>Echeveria prolifica from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/157-mother-of-millions/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/157.jpg</image:loc>
+      <image:title>Mother of Millions from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/158-aeonium-haworthii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/158.jpg</image:loc>
+      <image:title>Aeonium haworthii from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/159-houseleek/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/159.jpg</image:loc>
+      <image:title>Houseleek from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/160-echeveria-perle-von-nurnberg/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/160.jpg</image:loc>
+      <image:title>Echeveria &#39;Perle von Nurnberg&#39; from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/161-portulaca/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/161.jpg</image:loc>
+      <image:title>Portulaca from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/162-blue-tears-sedum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/162.jpg</image:loc>
+      <image:title>Blue Tears Sedum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/163-echeveria-shaviana/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/163.jpg</image:loc>
+      <image:title>Echeveria shaviana from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/164-ghost-plant-cluster/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/164.jpg</image:loc>
+      <image:title>Ghost Plant Cluster from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/165-trailing-cactus-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/165.jpg</image:loc>
+      <image:title>Trailing Cactus Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/166-black-rose-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/166.jpg</image:loc>
+      <image:title>Black Rose Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/167-cuban-oregano-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/167.jpg</image:loc>
+      <image:title>Cuban Oregano Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/168-paddle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/168.jpg</image:loc>
+      <image:title>Paddle Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/169-silver-shrubby-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/169.jpg</image:loc>
+      <image:title>Silver Shrubby Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/170-rose-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/170.jpg</image:loc>
+      <image:title>Rose Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/171-blue-sedum-cluster/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/171.jpg</image:loc>
+      <image:title>Blue Sedum Cluster from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/172-peperomia-ferreyrae-or-similar-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/172.jpg</image:loc>
+      <image:title>Peperomia ferreyrae or similar group from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/173-globose-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/173.jpg</image:loc>
+      <image:title>Globose Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/174-paddle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/174.jpg</image:loc>
+      <image:title>Paddle Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/175-tradescantia-sillamontana/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/175.jpg</image:loc>
+      <image:title>Tradescantia sillamontana from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/176-arrowhead-vine/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/176.jpg</image:loc>
+      <image:title>Arrowhead Vine from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/177-watch-chain-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/177.jpg</image:loc>
+      <image:title>Watch Chain Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/178-opuntia-elata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/178.jpg</image:loc>
+      <image:title>Opuntia elata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/179-crassula-ovata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/179.jpg</image:loc>
+      <image:title>Crassula ovata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/180-sedum-pachyphyllum-big/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/180.jpg</image:loc>
+      <image:title>Sedum pachyphyllum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/181-golden-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/181.jpg</image:loc>
+      <image:title>Golden Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/182-donkey-tail/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/182.jpg</image:loc>
+      <image:title>Donkey Tail from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/183-coppertone-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/183.jpg</image:loc>
+      <image:title>Coppertone Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/184-black-rose-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/184.jpg</image:loc>
+      <image:title>Black Rose Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/185-creeping-jade/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/185.jpg</image:loc>
+      <image:title>Creeping Jade from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/186-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/186.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/187-variegated-elephant-bush/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/187.jpg</image:loc>
+      <image:title>Variegated Elephant Bush from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/188-crassula-ovata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/188.jpg</image:loc>
+      <image:title>Crassula ovata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/189-green-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/189.jpg</image:loc>
+      <image:title>Green Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/190-ruby-necklace/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/190.jpg</image:loc>
+      <image:title>Ruby Necklace from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/191-bunny-ear-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/191.jpg</image:loc>
+      <image:title>Bunny Ear Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/192-bunny-ear-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/192.jpg</image:loc>
+      <image:title>Bunny Ear Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/193-gollum-jade/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/193.jpg</image:loc>
+      <image:title>Gollum Jade from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/194-haworthiopsis-attenuata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/194.jpg</image:loc>
+      <image:title>Haworthiopsis attenuata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/195-echeveria-akmalia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/195.jpg</image:loc>
+      <image:title>Echeveria akmalia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/196-haworthia-cymbiformis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/196.jpg</image:loc>
+      <image:title>Haworthia cymbiformis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/197-variegated-elephant-bush/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/197.jpg</image:loc>
+      <image:title>Variegated Elephant Bush from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/198-croton-type-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/198.jpg</image:loc>
+      <image:title>Croton Type Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/199-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/199.jpg</image:loc>
+      <image:title>Green Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/200-variegated-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/200.jpg</image:loc>
+      <image:title>Variegated Syngonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/201-window-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/201.jpg</image:loc>
+      <image:title>Window Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/202-variegated-shrub-foliage-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/202.jpg</image:loc>
+      <image:title>Variegated Shrub Foliage Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/203-spiky-rosette-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/203.jpg</image:loc>
+      <image:title>Spiky Rosette Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/204-watermelon-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/204.jpg</image:loc>
+      <image:title>Watermelon Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/205-chinese-money-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/205.jpg</image:loc>
+      <image:title>Chinese Money Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/206-spotted-gasteria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/206.jpg</image:loc>
+      <image:title>Spotted Gasteria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/207-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/207.jpg</image:loc>
+      <image:title>Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/208-wandering-jew-tradescantia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/208.jpg</image:loc>
+      <image:title>Wandering Jew Tradescantia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/209-monstrose-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/209.jpg</image:loc>
+      <image:title>Monstrose Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/210-aloe-aristata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/210.jpg</image:loc>
+      <image:title>Aloe aristata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/211-mammillaria-as-ng-bn/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/211.jpg</image:loc>
+      <image:title>Mammillaria As Ng Bn from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/212-echinopsis-peanut-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/212.jpg</image:loc>
+      <image:title>Echinopsis Peanut Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/213-mammillaria-bocasana/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/213.jpg</image:loc>
+      <image:title>Mammillaria bocasana from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/214-african-milk-tree/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/214.jpg</image:loc>
+      <image:title>African Milk Tree from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/215-opuntia-cylindrica/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/215.jpg</image:loc>
+      <image:title>Opuntia cylindrica from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/216-stapeliad-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/216.jpg</image:loc>
+      <image:title>Stapeliad Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/217-string-of-buttons/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/217.jpg</image:loc>
+      <image:title>String of Buttons from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/218-portulaca/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/218.jpg</image:loc>
+      <image:title>Portulaca from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/219-echeveria-snow-valley/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/219.jpg</image:loc>
+      <image:title>Echeveria Snow Valley from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/220-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/220.jpg</image:loc>
+      <image:title>Variegated Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/221-echeveria-fabia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/221.jpg</image:loc>
+      <image:title>Echeveria Fabia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/222-earth-star-bromeliad/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/222.jpg</image:loc>
+      <image:title>Earth Star Bromeliad from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/223-spotted-star-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/223.jpg</image:loc>
+      <image:title>Spotted Star Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/224-kalanchoe-millotii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/224.jpg</image:loc>
+      <image:title>Kalanchoe millotii from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/225-oyster-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/225.jpg</image:loc>
+      <image:title>Oyster Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/226-dracaena-reflexa-or-related-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/226.jpg</image:loc>
+      <image:title>Dracaena reflexa or related group from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/227-variegated-tradescantia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/227.jpg</image:loc>
+      <image:title>Variegated Tradescantia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/228-window-haworthia-cluster/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/228.jpg</image:loc>
+      <image:title>Window Haworthia Cluster from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/229-aloe-minnie-belle/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/229.jpg</image:loc>
+      <image:title>Aloe Minnie Belle from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/230-haworthia-retusa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/230.jpg</image:loc>
+      <image:title>Haworthia retusa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/231-silver-fuzzy-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/231.jpg</image:loc>
+      <image:title>Silver Fuzzy Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/232-variegated-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/232.jpg</image:loc>
+      <image:title>Variegated Aeonium from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/233-sedum-burrito/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/233.jpg</image:loc>
+      <image:title>Sedum burrito from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/234-string-of-bananas/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/234.jpg</image:loc>
+      <image:title>String of Bananas from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/235-peperomia-nivalis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/235.jpg</image:loc>
+      <image:title>Peperomia nivalis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/236-haworthia-asema/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/236.jpg</image:loc>
+      <image:title>Haworthia asema from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/237-echeveria-cubic-frost/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/237.jpg</image:loc>
+      <image:title>Echeveria Cubic Frost from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/238-echeveria-ben-badis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/238.jpg</image:loc>
+      <image:title>Echeveria Ben Badis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/239-paddle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/239.jpg</image:loc>
+      <image:title>Paddle Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/240-graptoveria-pink-rose/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/240.jpg</image:loc>
+      <image:title>Graptoveria Pink Rose from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/241-echeveria-secunda/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/241.jpg</image:loc>
+      <image:title>Echeveria secunda from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/242-echeveria-clara/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/242.jpg</image:loc>
+      <image:title>Echeveria Clara from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/243-graptoveria-debbie/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/243.jpg</image:loc>
+      <image:title>Graptoveria Debbie from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/244-peperomia-obtusifolia-variegata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/244.jpg</image:loc>
+      <image:title>Peperomia obtusifolia &#39;Variegata&#39; from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/245-ghost-plant-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/245.jpg</image:loc>
+      <image:title>Ghost Plant Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/246-mexican-snowball/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/246.jpg</image:loc>
+      <image:title>Mexican Snowball from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/247-echeveria-purple-pearl/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/247.jpg</image:loc>
+      <image:title>Echeveria Purple Pearl from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/248-pachyphytum-compactum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/248.jpg</image:loc>
+      <image:title>Pachyphytum compactum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/249-blue-ghosty-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/249.jpg</image:loc>
+      <image:title>Blue Ghosty Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/250-pachyveria-powder-puff/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/250.jpg</image:loc>
+      <image:title>Pachyveria Powder Puff from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/251-tradescantia-zebrina/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/251.jpg</image:loc>
+      <image:title>Tradescantia Zebrina from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/252-silver-narrow-leaf-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/252.jpg</image:loc>
+      <image:title>Silver Narrow-Leaf Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/253-variegated-succulent-shrub/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/253.jpg</image:loc>
+      <image:title>Variegated Succulent Shrub from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/254-alternanthera-ficoidea-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/254.jpg</image:loc>
+      <image:title>Alternanthera ficoidea group from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/255-window-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/255.jpg</image:loc>
+      <image:title>Window Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/256-variegated-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/256.jpg</image:loc>
+      <image:title>Variegated Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/257-mammillaria-sonqr-amr/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/257.jpg</image:loc>
+      <image:title>Mammillaria Sonqr Amr from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/258-spotted-star-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/258.jpg</image:loc>
+      <image:title>Spotted Star Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/259-spotted-aloe/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/259.jpg</image:loc>
+      <image:title>Spotted Aloe from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/260-cryptanthus-acaulis/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/260.jpg</image:loc>
+      <image:title>Cryptanthus acaulis from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/261-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/261.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/262-green-aloe-rosette/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/262.jpg</image:loc>
+      <image:title>Green Aloe Rosette from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/263-aloe-vera/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/263.jpg</image:loc>
+      <image:title>Aloe Vera from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/264-haworthiopsis-coarctata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/264.jpg</image:loc>
+      <image:title>Haworthiopsis coarctata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/265-bunny-ear-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/265.jpg</image:loc>
+      <image:title>Bunny Ear Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/266-ripple-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/266.jpg</image:loc>
+      <image:title>Ripple Peperomia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/267-peperomia-caperata-green-big/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/267.jpg</image:loc>
+      <image:title>Peperomia caperata from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/268-haworthia-retusa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/268.jpg</image:loc>
+      <image:title>Haworthia retusa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/269-window-haworthia-cluster/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/269.jpg</image:loc>
+      <image:title>Window Haworthia Cluster from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/270-spotted-gasteria-type/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/270.jpg</image:loc>
+      <image:title>Spotted Gasteria Type from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/271-aloe-vera/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/271.jpg</image:loc>
+      <image:title>Aloe Vera from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/272-yellow-bunny-ear-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/272.jpg</image:loc>
+      <image:title>Yellow Bunny Ear Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/273-tricolor-oyster-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/273.jpg</image:loc>
+      <image:title>Tricolor Oyster Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/274-aloe-vera/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/274.jpg</image:loc>
+      <image:title>Aloe Vera from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/275-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/275.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/276-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/276.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/277-jade-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/277.jpg</image:loc>
+      <image:title>Jade Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/278-variegated-dwarf-umbrella-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/278.jpg</image:loc>
+      <image:title>Variegated Dwarf Umbrella Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/279-delosperma-cooperi/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/279.jpg</image:loc>
+      <image:title>Delosperma cooperi from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/280-mistletoe-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/280.jpg</image:loc>
+      <image:title>Mistletoe Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/281-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/281.jpg</image:loc>
+      <image:title>Baby Rubber Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/282-variegated-string-of-buttons/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/282.jpg</image:loc>
+      <image:title>Variegated String of Buttons from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/283-stacked-necklace-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/283.jpg</image:loc>
+      <image:title>Stacked Necklace Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/284-dracaena-reflexa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/284.jpg</image:loc>
+      <image:title>Dracaena reflexa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/285-cylindrical-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/285.jpg</image:loc>
+      <image:title>Cylindrical Snake Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/286-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/286.jpg</image:loc>
+      <image:title>Green Spider Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/287-mexican-snowball/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/287.jpg</image:loc>
+      <image:title>Mexican Snowball from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/288-echeveria-runyonii-blue/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/288.jpg</image:loc>
+      <image:title>Echeveria runyonii Blue from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/289-clumping-columnar-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/289.jpg</image:loc>
+      <image:title>Clumping Columnar Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/290-paddle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/290.jpg</image:loc>
+      <image:title>Paddle Plant from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/291-golden-barrel-type-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/291.jpg</image:loc>
+      <image:title>Golden Barrel-Type Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/292-purple-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/292.jpg</image:loc>
+      <image:title>Purple Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/293-clustered-jelly-bean-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/293.jpg</image:loc>
+      <image:title>Clustered Jelly Bean Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/294-patterned-star-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/294.jpg</image:loc>
+      <image:title>Patterned Star Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/295-zebra-haworthia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/295.jpg</image:loc>
+      <image:title>Zebra Haworthia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/296-patterned-rosette-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/296.jpg</image:loc>
+      <image:title>Patterned Rosette Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/297-crassula-ovata-gollum-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/297.jpg</image:loc>
+      <image:title>Crassula ovata &#39;Gollum&#39; group from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/298-rose-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/298.jpg</image:loc>
+      <image:title>Rose Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/299-green-echeveria-rosette/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/299.jpg</image:loc>
+      <image:title>Green Echeveria Rosette from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/300-red-edged-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/300.jpg</image:loc>
+      <image:title>Red-Edged Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/301-green-echeveria-rosette/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/301.jpg</image:loc>
+      <image:title>Green Echeveria Rosette from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/302-red-edged-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/302.jpg</image:loc>
+      <image:title>Red-Edged Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/303-dark-red-rosette-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/303.jpg</image:loc>
+      <image:title>Dark Red Rosette Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/304-crassula-muscosa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/304.jpg</image:loc>
+      <image:title>Crassula muscosa from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/305-dark-sempervivum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/305.jpg</image:loc>
+      <image:title>Dark Sempervivum from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/306-houseleek/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/306.jpg</image:loc>
+      <image:title>Houseleek from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/307-red-tipped-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/307.jpg</image:loc>
+      <image:title>Red-Tipped Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/308-mounded-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/308.jpg</image:loc>
+      <image:title>Mounded Cactus from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/309-variegated-elephant-bush/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/309.jpg</image:loc>
+      <image:title>Variegated Elephant Bush from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/310-haworthiopsis-limifolia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/310.jpg</image:loc>
+      <image:title>Haworthiopsis limifolia from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/311-black-prince-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/311.jpg</image:loc>
+      <image:title>Black Prince Echeveria from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/312-patterned-star-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/312.jpg</image:loc>
+      <image:title>Patterned Star Succulent from Rosary Plant House</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/313-golden-needle-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://rosaryplanthouse.com/sale_plants/313.jpg</image:loc>
+      <image:title>Golden Needle Stonecrop from Rosary Plant House</image:title>
+    </image:image>
   </url>
 </urlset>

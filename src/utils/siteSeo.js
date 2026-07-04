@@ -1,53 +1,95 @@
-import { PRODUCT_SEO_SITE } from './productSeo.js';
+import {
+  SITE_NAME,
+  SITE_POLICY,
+  SITE_URL,
+  WEEK_DAYS,
+} from './sitePolicy.js';
 
-const SITE_URL = PRODUCT_SEO_SITE.url;
-const SITE_NAME = PRODUCT_SEO_SITE.name;
+export {
+  SITE_NAME,
+  SITE_POLICY,
+  SITE_URL,
+  WEEK_DAYS,
+} from './sitePolicy.js';
 
-export const SITE_POLICY = Object.freeze({
-  path: '/policies',
-  url: `${SITE_URL}/policies`,
-  shipping: {
-    serviceArea: 'All over South India and major cities in North India',
-    dispatchDays: 'Monday and Wednesday',
-    dispatchTiming: 'Plants are dispatched after payment on the nearest Monday or Wednesday when payment is completed by the previous day.',
-    packaging: 'Plants are sent bare-rooted and packed with tissue, cotton, and cocopeat depending on the plant.',
-    courier: 'DTDC is the default courier. Speed Post or Professional Courier can be considered on request, with delay risk handled by the customer.',
-    deliveryCharge: 'Delivery charges are extra and depend on the customer location.',
-    deliveryEtaFromDispatch: [
-      { area: 'Bangalore', eta: '1-2 days from dispatch' },
-      { area: 'Tamil Nadu', eta: '1-2 days from dispatch' },
-      { area: 'South India', eta: '2-3 days from dispatch' },
-      { area: 'Other serviceable major cities', eta: '4-5 days from dispatch' },
-    ],
-  },
-  payment: {
-    methods: ['GPay', 'PayTM', 'PhonePe', 'Net banking'],
-    cod: 'Cash on delivery is not available.',
-  },
-  damageSupport: {
-    proof: 'Video is preferred; photos are also accepted.',
-    replacement: 'Transit-damaged plants are preferably replaced along with the customer next order when reported on the delivery day or the following day.',
-    refund: 'Replacement is preferred first, but a refund can be processed if the customer needs it.',
-    exclusions: 'Damage after delivery because of customer care conditions is not covered. High transit risk plants are not replaceable.',
-  },
-  support: {
-    channel: 'WhatsApp',
-    phone: '+91 79040 50237',
-    whatsAppUrl: 'https://wa.me/917904050237',
-    whatsAppHours: 'Every day, 9 AM to 9 PM',
-    email: 'rosaryplanthouse@gmail.com',
-  },
-});
-
-const WEEK_DAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
+export function buildCustomerFaqSections() {
+  return [
+    {
+      category: 'Shipping and delivery',
+      items: [
+        {
+          q: 'Where does Rosary Plant House ship plants?',
+          a: SITE_POLICY.shipping.serviceArea,
+        },
+        {
+          q: 'When will my plants be dispatched?',
+          a: SITE_POLICY.shipping.dispatchTiming,
+        },
+        {
+          q: 'How long does delivery take after dispatch?',
+          a: SITE_POLICY.shipping.deliveryEtaFromDispatch
+            .map((item) => `${item.area}: ${item.eta}`)
+            .join('; '),
+        },
+        {
+          q: 'How are plants packed for shipping?',
+          a: SITE_POLICY.shipping.packaging,
+        },
+      ],
+    },
+    {
+      category: 'Damage, replacement and refund',
+      items: [
+        {
+          q: 'What if a plant is damaged in transit?',
+          a: `${SITE_POLICY.damageSupport.replacement} ${SITE_POLICY.damageSupport.proof}`,
+        },
+        {
+          q: 'Can I get a refund instead of replacement?',
+          a: SITE_POLICY.damageSupport.refund,
+        },
+        {
+          q: 'Is damage after delivery covered?',
+          a: SITE_POLICY.damageSupport.exclusions,
+        },
+      ],
+    },
+    {
+      category: 'Payment and support',
+      items: [
+        {
+          q: 'What payment methods are accepted?',
+          a: SITE_POLICY.payment.methods.join(', '),
+        },
+        {
+          q: 'Is cash on delivery available?',
+          a: SITE_POLICY.payment.cod,
+        },
+        {
+          q: 'When is WhatsApp support available?',
+          a: `${SITE_POLICY.support.whatsAppHours} on ${SITE_POLICY.support.phone}.`,
+        },
+      ],
+    },
+    {
+      category: 'Ordering and trust',
+      items: [
+        {
+          q: 'What is the recommended minimum order?',
+          a: 'A minimum of 5 plants is recommended because delivery charges apply by location.',
+        },
+        {
+          q: 'Where can I check customer feedback?',
+          a: 'You can review Rosary Plant House feedback on Instagram, Facebook, Google reviews, and the customer reviews page.',
+        },
+        {
+          q: 'Where can I find plant care guidance?',
+          a: 'Each plant page includes care, watering, light, placement, and common problem guidance for that plant.',
+        },
+      ],
+    },
+  ];
+}
 
 export function buildOrganizationSchema() {
   return {
@@ -128,24 +170,12 @@ export function buildWebsiteSchema() {
 }
 
 export function buildPolicyFaqSchema() {
-  const questions = [
-    {
-      name: 'Where does Rosary Plant House ship plants?',
-      text: SITE_POLICY.shipping.serviceArea,
-    },
-    {
-      name: 'When are plants dispatched?',
-      text: SITE_POLICY.shipping.dispatchTiming,
-    },
-    {
-      name: 'What if a plant is damaged in transit?',
-      text: `${SITE_POLICY.damageSupport.replacement} ${SITE_POLICY.damageSupport.proof}`,
-    },
-    {
-      name: 'Is cash on delivery available?',
-      text: SITE_POLICY.payment.cod,
-    },
-  ];
+  const questions = buildCustomerFaqSections()
+    .flatMap((section) => section.items)
+    .map((item) => ({
+      name: item.q,
+      text: item.a,
+    }));
 
   return {
     '@context': 'https://schema.org',

@@ -19,13 +19,28 @@ import {
 } from '../../src/utils/productSeo.js';
 import {
   SITE_POLICY,
+  buildCustomerFaqSections,
   buildOrganizationSchema,
   buildPolicyFaqSchema,
   buildWebsiteSchema,
 } from '../../src/utils/siteSeo.js';
+import {
+  CONTENT_HUBS,
+  GUIDES_INDEX_PATH,
+  buildContentHubSchemaItems,
+  getContentHubCanonicalUrl,
+  getContentHubPath,
+  getContentHubProducts,
+  getGuidesIndexCanonicalUrl,
+  getRelatedContentHubs,
+} from '../../src/utils/contentHubs.js';
+import { CATEGORIES } from '../../src/config/constants.js';
 
 const DEFAULT_BASE_URL = PRODUCT_SEO_SITE.url;
 const SITE_NAME = PRODUCT_SEO_SITE.name;
+const INDEX_ROBOTS = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+const NOINDEX_ROBOTS = 'noindex,follow';
+export const PUBLIC_STATIC_PAGE_KEYS = Object.freeze(['home', 'shop', 'faq', 'contact', 'about', 'reviews', 'insta-reviews']);
 
 const FIREBASE_OWNED_SEO_INDEX_FIELDS = new Set([
   'available',
@@ -91,6 +106,98 @@ export function hasMerchantFeedProductRows(feedTsv = '') {
     .some((line) => line.trim().length > 0);
 }
 
+function feedProductId(row = {}) {
+  const linkId = String(row.link || '').match(/\/plant\/([a-z]?\d+)(?:-|\/|$)/i);
+  if (linkId) return linkId[1];
+
+  const skuId = String(row.id || '').match(/^RPH-([a-z]?\d+)(?:-|$)/i);
+  return skuId ? skuId[1] : '';
+}
+
+function parseFeedPrice(value) {
+  const amount = Number(String(value || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+export function parseMerchantFeedTsv(feedTsv = '') {
+  const lines = String(feedTsv)
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split('\t').map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const values = line.split('\t');
+    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] || '']));
+    const id = feedProductId(row);
+    const price = parseFeedPrice(row.price);
+
+    return {
+      id,
+      available: String(row.availability || '').toLowerCase() !== 'out_of_stock',
+      salesPrice: price,
+      imageUrl: row.image_link || '',
+      category: row.product_type ? String(row.product_type).split('>').pop().trim() : undefined,
+      schema: {
+        sku: row.id || '',
+        brand: row.brand || SITE_NAME,
+      },
+      merchant: {
+        title: row.title || '',
+        description: row.description || '',
+      },
+    };
+  }).filter((product) => product.id && product.salesPrice !== null);
+}
+
+function mergeMerchantFeedProduct(product = {}, feedProduct = {}) {
+  const merged = { ...product };
+
+  if (getProductPrice(merged) === null && feedProduct.salesPrice !== null) {
+    merged.salesPrice = feedProduct.salesPrice;
+  }
+  if (merged.available === undefined && feedProduct.available !== undefined) {
+    merged.available = feedProduct.available;
+  }
+  if (!merged.imageUrl && feedProduct.imageUrl) {
+    merged.imageUrl = feedProduct.imageUrl;
+  }
+  if (!merged.category && feedProduct.category) {
+    merged.category = feedProduct.category;
+  }
+
+  merged.schema = {
+    ...(feedProduct.schema || {}),
+    ...(product.schema || {}),
+  };
+  if (!merged.schema.sku && feedProduct.schema?.sku) merged.schema.sku = feedProduct.schema.sku;
+  if (!merged.schema.brand && feedProduct.schema?.brand) merged.schema.brand = feedProduct.schema.brand;
+
+  merged.merchant = {
+    ...(feedProduct.merchant || {}),
+    ...(product.merchant || {}),
+  };
+  if (!merged.merchant.title && feedProduct.merchant?.title) merged.merchant.title = feedProduct.merchant.title;
+  if (!merged.merchant.description && feedProduct.merchant?.description) {
+    merged.merchant.description = feedProduct.merchant.description;
+  }
+
+  return merged;
+}
+
+export function mergeMerchantFeedStorefrontData(products = [], feedProducts = []) {
+  const feedById = new Map(
+    feedProducts
+      .filter((product) => productId(product))
+      .map((product) => [productId(product), product])
+  );
+
+  return products.map((product) => {
+    const feedProduct = feedById.get(productId(product));
+    return feedProduct ? mergeMerchantFeedProduct(product, feedProduct) : product;
+  });
+}
+
 function mergeNestedProductData(localProduct = {}, firebaseProduct = {}) {
   const merged = {
     ...localProduct,
@@ -151,12 +258,22 @@ export function stripFirebaseOwnedFieldsForSeoIndex(products = []) {
 
 export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
   const publicBase = baseUrl.replace(/\/$/, '');
-  const staticPaths = ['/', '/about', '/contact', '/faq', '/policies', '/reviews', '/insta-reviews'];
+  const staticPaths = ['/', '/shop', '/about', '/contact', '/faq', '/policies', '/reviews', '/insta-reviews', GUIDES_INDEX_PATH];
   const urls = [
     ...staticPaths.map((path) => ({
       loc: `${publicBase}${path}`,
       priority: path === '/' ? '1.0' : '0.7',
       changefreq: 'weekly',
+    })),
+    ...CATEGORIES.map((category) => ({
+      loc: `${publicBase}/category/${encodeURIComponent(category)}`,
+      priority: '0.75',
+      changefreq: 'weekly',
+    })),
+    ...CONTENT_HUBS.map((hub) => ({
+      loc: getContentHubCanonicalUrl(hub, publicBase),
+      priority: '0.72',
+      changefreq: 'monthly',
     })),
     ...products
       .filter(productIsPublic)
@@ -164,15 +281,21 @@ export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
         loc: getProductCanonicalUrl(product, publicBase),
         priority: '0.8',
         changefreq: 'weekly',
+        image: absoluteUrl(getPrimaryProductImage(product), publicBase),
+        imageTitle: `${getProductDisplayName(product)} from ${SITE_NAME}`,
       })),
   ];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls.map((url) => `  <url>
     <loc>${escapeXml(url.loc)}</loc>
     <changefreq>${url.changefreq}</changefreq>
     <priority>${url.priority}</priority>
+${url.image ? `    <image:image>
+      <image:loc>${escapeXml(url.image)}</image:loc>
+      <image:title>${escapeXml(url.imageTitle)}</image:title>
+    </image:image>` : ''}
   </url>`).join('\n')}
 </urlset>
 `;
@@ -207,6 +330,9 @@ export function buildMerchantFeedTsv(products, { baseUrl = DEFAULT_BASE_URL } = 
     'price',
     'brand',
     'condition',
+    'product_type',
+    'shipping_label',
+    'return_policy_label',
   ];
 
   const rows = products
@@ -224,10 +350,56 @@ export function buildMerchantFeedTsv(products, { baseUrl = DEFAULT_BASE_URL } = 
         `${price.toFixed(2)} INR`,
         product.schema?.brand || SITE_NAME,
         'new',
+        `Live plants > ${product.category || 'Plants'}`,
+        'Standard live plant shipping',
+        'Transit damage replacement or refund support',
       ].map(tsvCell).join('\t');
     });
 
   return `${headers.join('\t')}\n${rows.join('\n')}\n`;
+}
+
+export function buildLlmsTxt(products = [], { baseUrl = DEFAULT_BASE_URL } = {}) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const publicProducts = products.filter(productIsPublic).slice(0, 40);
+
+  return `# ${SITE_NAME}
+
+Rosary Plant House is a Coonoor, Tamil Nadu nursery selling succulents, cacti, indoor plants, balcony plants and plant care guidance online.
+
+## Canonical Public Pages
+
+- Home: ${publicBase}/
+- Shop: ${publicBase}/shop
+- About: ${publicBase}/about
+- Contact: ${publicBase}/contact
+- FAQ: ${publicBase}/faq
+- Policies: ${publicBase}${SITE_POLICY.path}
+- Reviews: ${publicBase}/reviews
+- Sitemap: ${publicBase}/sitemap.xml
+- Merchant feed: ${publicBase}/google-merchant-feed.tsv
+
+## Ordering, Shipping And Support
+
+- Service area: ${SITE_POLICY.shipping.serviceArea}.
+- Dispatch days: ${SITE_POLICY.shipping.dispatchDays}.
+- Delivery ETA from dispatch: ${SITE_POLICY.shipping.deliveryEtaFromDispatch.map((item) => `${item.area} ${item.eta}`).join('; ')}.
+- Payment: ${SITE_POLICY.payment.methods.join(', ')}. ${SITE_POLICY.payment.cod}
+- Damage support: ${SITE_POLICY.damageSupport.replacement} ${SITE_POLICY.damageSupport.proof} ${SITE_POLICY.damageSupport.refund}
+- Support: ${SITE_POLICY.support.whatsAppHours} on WhatsApp at ${SITE_POLICY.support.phone}.
+
+## Care Guides
+
+${CONTENT_HUBS.map((hub) => `- ${hub.title}: ${getContentHubCanonicalUrl(hub, publicBase)}`).join('\n')}
+
+## Product Page Samples
+
+${publicProducts.map((product) => `- ${getProductDisplayName(product)}: ${getProductCanonicalUrl(product, publicBase)}`).join('\n')}
+
+## Crawler Notes
+
+OAI-SearchBot and ChatGPT-User are allowed in robots.txt so AI search and user-requested browsing can fetch public Rosary Plant House pages. GPTBot is also allowed.
+`;
 }
 
 function removeManagedHeadTags(html) {
@@ -238,6 +410,39 @@ function removeManagedHeadTags(html) {
     .replace(/<meta\s+name="twitter:[^"]+"[^>]*>\s*/gi, '')
     .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')
     .replace(/<meta\s+name="robots"[^>]*>\s*/gi, '');
+}
+
+function injectStaticHtml({
+  indexHtml,
+  title,
+  description,
+  canonicalUrl,
+  image,
+  type = 'website',
+  robots = INDEX_ROBOTS,
+  schemaItems = [],
+  body,
+}) {
+  const headTags = `
+    <title>${escapeHtml(title)}</title>
+    <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="robots" content="${escapeHtml(robots)}" />
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta property="og:type" content="${escapeHtml(type)}" />
+    <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    ${schemaItems.length > 0 ? `<script type="application/ld+json">${JSON.stringify(schemaItems)}</script>` : ''}
+`;
+
+  const withoutManagedHead = removeManagedHeadTags(indexHtml);
+  const withHead = withoutManagedHead.replace('</head>', `${headTags}</head>`);
+  return withHead.replace('<div id="root"></div>', `<div id="root">${body}</div>`);
 }
 
 function renderParagraphs(text) {
@@ -359,6 +564,491 @@ function renderStaticPolicyBody() {
     </section>
   </article>
 </main>`;
+}
+
+function renderProductLinks(products, baseUrl, limit = 8) {
+  return products
+    .filter(productIsPublic)
+    .slice(0, limit)
+    .map((product) => {
+      const url = getProductCanonicalUrl(product, baseUrl);
+      return `<li><a href="${escapeHtml(url.replace(baseUrl, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`;
+    })
+    .join('\n');
+}
+
+function renderContentHubLinks(hubs = CONTENT_HUBS, limit = 6) {
+  return hubs
+    .slice(0, limit)
+    .map((hub) => `<li><a href="${escapeHtml(getContentHubPath(hub))}">${escapeHtml(hub.title)}</a></li>`)
+    .join('\n');
+}
+
+function renderHubSections(hub) {
+  return (hub.sections || [])
+    .map((section) => `<section>
+    <h2>${escapeHtml(section.heading)}</h2>
+    ${(section.body || []).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}
+    ${Array.isArray(section.bullets) && section.bullets.length > 0
+      ? `<ul>${section.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('\n')}</ul>`
+      : ''}
+  </section>`)
+    .join('\n');
+}
+
+function renderHubFaqs(hub) {
+  if (!Array.isArray(hub.faqs) || hub.faqs.length === 0) return '';
+
+  return `<section>
+    <h2>Common questions</h2>
+    ${hub.faqs.map((faq) => `<details open>
+      <summary>${escapeHtml(faq.question)}</summary>
+      <p>${escapeHtml(faq.answer)}</p>
+    </details>`).join('\n')}
+  </section>`;
+}
+
+function renderHubProducts(products, baseUrl) {
+  if (!Array.isArray(products) || products.length === 0) {
+    return '<p>Browse the full plant catalogue to find currently available plants for this guide.</p>';
+  }
+
+  return `<ul>
+      ${products.map((product) => {
+        const url = getProductCanonicalUrl(product, baseUrl);
+        return `<li><a href="${escapeHtml(url.replace(baseUrl, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`;
+      }).join('\n')}
+    </ul>`;
+}
+
+function renderRelatedHubLinks(hub) {
+  const relatedHubs = getRelatedContentHubs(hub);
+  if (relatedHubs.length === 0) return '';
+
+  return `<section>
+    <h2>Related plant care guides</h2>
+    <ul>${renderContentHubLinks(relatedHubs, relatedHubs.length)}</ul>
+  </section>`;
+}
+
+function buildGuidesIndexSchemaItems(baseUrl) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const canonicalUrl = getGuidesIndexCanonicalUrl(publicBase);
+
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Plant Care Guides',
+      description: 'Plant care guides for succulents, cactus, balcony plants, monsoon care and root rot recovery from Rosary Plant House.',
+      url: canonicalUrl,
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Rosary Plant House plant care guides',
+      itemListElement: CONTENT_HUBS.map((hub, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: hub.title,
+        url: getContentHubCanonicalUrl(hub, publicBase),
+      })),
+    },
+  ];
+}
+
+function buildReviewSchema(reviews = []) {
+  if (!Array.isArray(reviews) || reviews.length === 0) return null;
+  const ratedReviews = reviews.filter((review) => Number.isFinite(Number(review.rating)));
+  const averageRating = ratedReviews.length
+    ? ratedReviews.reduce((total, review) => total + Number(review.rating), 0) / ratedReviews.length
+    : 5;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: 'Rosary Plant House Shopping Experience',
+    image: `${DEFAULT_BASE_URL}${DEFAULT_SEO_IMAGE_PATH}`,
+    description: 'Customer reviews and feedback for Rosary Plant House, Coonoor.',
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: averageRating.toFixed(1),
+      reviewCount: reviews.length,
+    },
+    review: reviews.slice(0, 20).map((review) => ({
+      '@type': 'Review',
+      author: {
+        '@type': 'Person',
+        name: review.author || 'Rosary Plant House customer',
+      },
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: Number(review.rating) || 5,
+        bestRating: '5',
+      },
+      reviewBody: review.text || '',
+    })),
+  };
+}
+
+function renderFaqSections() {
+  return buildCustomerFaqSections()
+    .map((section) => `<section>
+  <h2>${escapeHtml(section.category)}</h2>
+  ${section.items.map((item) => `<details open>
+    <summary>${escapeHtml(item.q)}</summary>
+    <p>${escapeHtml(item.a)}</p>
+  </details>`).join('\n')}
+</section>`)
+    .join('\n');
+}
+
+function renderReviews(reviews = []) {
+  const visibleReviews = Array.isArray(reviews) ? reviews.slice(0, 8) : [];
+  if (visibleReviews.length === 0) {
+    return '<p>Customers regularly mention healthy plants and careful packing from Rosary Plant House.</p>';
+  }
+
+  return `<ul>
+  ${visibleReviews.map((review) => `<li>
+    <strong>${escapeHtml(review.author || 'Customer')}</strong>
+    <span>${escapeHtml(`${Number(review.rating) || 5}/5`)}</span>
+    <p>${escapeHtml(review.text || '')}</p>
+  </li>`).join('\n')}
+</ul>`;
+}
+
+function getPublicPageConfig(page, { baseUrl, products = [], reviews = [] }) {
+  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, baseUrl);
+  const commonSchema = [buildOrganizationSchema(), buildWebsiteSchema()];
+
+  const configs = {
+    home: {
+      path: '/',
+      title: `Buy Succulents, Cacti and Indoor Plants Online | ${SITE_NAME}`,
+      description: 'Buy rare succulents, cacti, and indoor plants online from Rosary Plant House, Coonoor. Safe packing, clear support, and India shipping.',
+      body: `<main class="seo-home-page">
+  <h1>Buy succulents, cacti and indoor plants online from Coonoor</h1>
+  <img src="/home/hero-natural-nursery.jpg" alt="Rosary Plant House natural nursery collection" />
+  <p>Rosary Plant House grows and ships rare succulents, cacti, foliage plants, and balcony plants from Coonoor, The Nilgiris.</p>
+  <p><a href="/shop"><img src="/home/browse-every-plant-natural.jpg" alt="Browse all plants at Rosary Plant House" />Shop all plants</a> or start with categories, care guides, reviews and support details.</p>
+  <section>
+    <h2>Popular plant categories</h2>
+    <ul>${CATEGORIES.slice(0, 10).map((category) => `<li><a href="/category/${encodeURIComponent(category)}">${escapeHtml(category)} plants</a></li>`).join('')}</ul>
+  </section>
+  <section>
+    <h2>Plant care guides</h2>
+    <ul>${renderContentHubLinks()}</ul>
+  </section>
+  <section>
+    <h2>Featured plant pages</h2>
+    <ul>${renderProductLinks(products, baseUrl)}</ul>
+  </section>
+  <section>
+    <h2>Shipping and support</h2>
+    <p>${escapeHtml(SITE_POLICY.shipping.serviceArea)}. ${escapeHtml(SITE_POLICY.support.whatsAppHours)}.</p>
+  </section>
+</main>`,
+      schemaItems: commonSchema,
+      image: getAbsoluteImageUrl('/home/hero-natural-nursery.jpg', baseUrl),
+    },
+    shop: {
+      path: '/shop',
+      title: `Shop Succulents, Cacti and Indoor Plants | ${SITE_NAME}`,
+      description: 'Shop succulents, cacti, indoor plants and balcony plants from Rosary Plant House, Coonoor, with category links, care support and safe packing details.',
+      body: `<main class="seo-shop-page">
+  <h1>Shop succulents, cacti and indoor plants</h1>
+  <p>Browse the Rosary Plant House plant catalogue by category, then open product pages for plant identity, price, care and availability.</p>
+  <section>
+    <h2>Shop by plant category</h2>
+    <ul>${CATEGORIES.map((category) => `<li><a href="/category/${encodeURIComponent(category)}">${escapeHtml(category)} plants</a></li>`).join('')}</ul>
+  </section>
+  <section>
+    <h2>Available plant pages</h2>
+    <ul>${renderProductLinks(products, baseUrl, 30)}</ul>
+  </section>
+  <section>
+    <h2>Care before buying</h2>
+    <ul>${renderContentHubLinks(CONTENT_HUBS, 6)}</ul>
+  </section>
+  <section>
+    <h2>Shopping support</h2>
+    <p>${escapeHtml(SITE_POLICY.shipping.serviceArea)}. ${escapeHtml(SITE_POLICY.support.whatsAppHours)} on WhatsApp.</p>
+  </section>
+</main>`,
+      schemaItems: [
+        ...commonSchema,
+        {
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'Shop Succulents, Cacti and Indoor Plants',
+          description: 'Rosary Plant House plant catalogue with succulents, cactus plants, indoor plants and balcony plants.',
+          url: `${baseUrl}/shop`,
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: 'Rosary Plant House plant catalogue',
+          itemListElement: products
+            .filter(productIsPublic)
+            .slice(0, 50)
+            .map((product, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              name: getProductDisplayName(product),
+              url: getProductCanonicalUrl(product, baseUrl),
+            })),
+        },
+      ],
+      image,
+    },
+    faq: {
+      path: '/faq',
+      title: `Help & FAQ | ${SITE_NAME}`,
+      description: 'Answers about ordering, delivery, payment, replacement, refund, and plant care support from Rosary Plant House.',
+      body: `<main class="seo-faq-page">
+  <h1>Help & FAQ</h1>
+  <p>Common answers about ordering, shipping, payment, care, and support from Rosary Plant House.</p>
+  ${renderFaqSections()}
+</main>`,
+      schemaItems: [buildPolicyFaqSchema()],
+      image,
+    },
+    contact: {
+      path: '/contact',
+      title: `Contact ${SITE_NAME} | ${SITE_NAME}`,
+      description: 'Contact Rosary Plant House on WhatsApp, Instagram, email, or visit the nursery in Coonoor, The Nilgiris.',
+      body: `<main class="seo-contact-page">
+  <h1>Contact Rosary Plant House</h1>
+  <p>WhatsApp support: ${escapeHtml(SITE_POLICY.support.whatsAppHours)}.</p>
+  <p>Phone: <a href="${escapeHtml(SITE_POLICY.support.whatsAppUrl)}">${escapeHtml(SITE_POLICY.support.phone)}</a></p>
+  <p>Email: <a href="mailto:${escapeHtml(SITE_POLICY.support.email)}">${escapeHtml(SITE_POLICY.support.email)}</a></p>
+  <p>Nursery: Samayapuram, Alwarpet, Coonoor, The Nilgiris, Tamil Nadu.</p>
+</main>`,
+      schemaItems: [buildOrganizationSchema()],
+      image,
+    },
+    about: {
+      path: '/about',
+      title: `About ${SITE_NAME} | ${SITE_NAME}`,
+      description: 'Learn about Rosary Plant House, a Coonoor nursery in The Nilgiris offering succulents, cacti, and indoor plants online.',
+      body: `<main class="seo-about-page">
+  <h1>About Rosary Plant House</h1>
+  <p>Rosary Plant House is a nursery in Coonoor, The Nilgiris, focused on succulents, cacti, indoor plants, and practical plant care guidance.</p>
+  <section>
+    <h2>Our roots</h2>
+    <p>We help plant lovers choose healthy plants, understand care needs, and receive safely packed live plants.</p>
+  </section>
+  <section>
+    <h2>Coonoor nursery location</h2>
+    <p>Rosary Plant House is located at Samayapuram, Alwarpet, Coonoor, The Nilgiris, Tamil Nadu.</p>
+  </section>
+</main>`,
+      schemaItems: commonSchema,
+      image,
+    },
+    reviews: {
+      path: '/reviews',
+      title: `Customer Reviews | ${SITE_NAME}`,
+      description: 'Read customer reviews for Rosary Plant House, including feedback about healthy plants, careful packing, and delivery support.',
+      body: `<main class="seo-reviews-page">
+  <h1>Customer Reviews</h1>
+  <p>Plant lovers often mention healthy plants and careful packing from Rosary Plant House.</p>
+  ${renderReviews(reviews)}
+</main>`,
+      schemaItems: [buildReviewSchema(reviews)].filter(Boolean),
+      image,
+    },
+    'insta-reviews': {
+      path: '/insta-reviews',
+      title: `Customer Stories | ${SITE_NAME}`,
+      description: 'Watch Instagram story reviews and customer plant delivery feedback for Rosary Plant House.',
+      body: `<main class="seo-insta-reviews-page">
+  <h1>Customer Stories</h1>
+  <p>Browse Instagram story reviews from customers who received Rosary Plant House plants.</p>
+  <p>Instagram story reviews show real delivery and packing feedback from plant buyers.</p>
+</main>`,
+      schemaItems: commonSchema,
+      image,
+    },
+  };
+
+  return configs[page] || null;
+}
+
+export function buildStaticPublicPageHtml({
+  indexHtml,
+  page,
+  baseUrl = DEFAULT_BASE_URL,
+  products = [],
+  reviews = [],
+}) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const config = getPublicPageConfig(page, { baseUrl: publicBase, products, reviews });
+  if (!config) {
+    throw new Error(`Unknown static public page: ${page}`);
+  }
+
+  const canonicalUrl = `${publicBase}${config.path}`;
+  return injectStaticHtml({
+    indexHtml,
+    title: config.title,
+    description: config.description,
+    canonicalUrl,
+    image: config.image,
+    schemaItems: config.schemaItems,
+    body: config.body,
+  });
+}
+
+export function buildStaticCategoryHtml({
+  indexHtml,
+  category,
+  products = [],
+  baseUrl = DEFAULT_BASE_URL,
+}) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const categoryProducts = products
+    .filter(productIsPublic)
+    .filter((product) => String(product.category || '').toLowerCase() === String(category || '').toLowerCase());
+  const canonicalPath = `/category/${encodeURIComponent(category)}`;
+  const canonicalUrl = `${publicBase}${canonicalPath}`;
+  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const title = `Buy ${category} Plants Online | ${SITE_NAME}`;
+  const description = `Shop ${category} plants from Rosary Plant House, Coonoor, with plant-specific care guidance, safe packing, and WhatsApp support.`;
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: categoryProducts.slice(0, 50).map((product, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: getProductDisplayName(product),
+      url: getProductCanonicalUrl(product, publicBase),
+    })),
+  };
+  const body = `<main class="seo-category-page">
+  <h1>Buy ${escapeHtml(category)} plants online</h1>
+  <p>Browse ${escapeHtml(category)} plants from Rosary Plant House with care details, safe packing, and support from Coonoor.</p>
+  <section>
+    <h2>${escapeHtml(category)} plant pages</h2>
+    <ul>
+      ${categoryProducts.slice(0, 50).map((product) => `<li><a href="${escapeHtml(getProductCanonicalUrl(product, publicBase).replace(publicBase, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`).join('\n')}
+    </ul>
+  </section>
+</main>`;
+
+  return injectStaticHtml({
+    indexHtml,
+    title,
+    description,
+    canonicalUrl,
+    image,
+    schemaItems: [itemList],
+    body,
+  });
+}
+
+export function buildStaticGuidesIndexHtml({
+  indexHtml,
+  baseUrl = DEFAULT_BASE_URL,
+}) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const canonicalUrl = getGuidesIndexCanonicalUrl(publicBase);
+  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const body = `<main class="seo-guides-index-page">
+  <h1>Plant Care Guides</h1>
+  <p>Browse Rosary Plant House guides for succulent care, cactus care, low water balcony plants, monsoon protection and root rot recovery.</p>
+  <section>
+    <h2>Care guide library</h2>
+    <ul>
+      ${CONTENT_HUBS.map((hub) => `<li>
+        <a href="${escapeHtml(getContentHubPath(hub))}">${escapeHtml(hub.title)}</a>
+        <p>${escapeHtml(hub.metaDescription)}</p>
+      </li>`).join('\n')}
+    </ul>
+  </section>
+</main>`;
+
+  return injectStaticHtml({
+    indexHtml,
+    title: `Plant Care Guides | ${SITE_NAME}`,
+    description: 'Browse plant care guides from Rosary Plant House for succulents, cactus, balcony plants, monsoon care and root rot recovery in India.',
+    canonicalUrl,
+    image,
+    schemaItems: buildGuidesIndexSchemaItems(publicBase),
+    body,
+  });
+}
+
+export function buildStaticContentHubHtml({
+  indexHtml,
+  hub,
+  products = [],
+  baseUrl = DEFAULT_BASE_URL,
+}) {
+  if (!hub?.slug) {
+    throw new Error('Static content hub generation requires a hub with a slug');
+  }
+
+  const publicBase = baseUrl.replace(/\/$/, '');
+  const matchedProducts = getContentHubProducts(hub, products);
+  const canonicalUrl = getContentHubCanonicalUrl(hub, publicBase);
+  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const schemaItems = buildContentHubSchemaItems(hub, {
+    baseUrl: publicBase,
+    products: matchedProducts,
+  });
+  const body = `<main class="seo-content-hub-page" data-hub-slug="${escapeHtml(hub.slug)}">
+  <nav aria-label="Breadcrumb">
+    <a href="/">Home</a> / <a href="${escapeHtml(GUIDES_INDEX_PATH)}">Guides</a> / <span>${escapeHtml(hub.title)}</span>
+  </nav>
+  <article>
+    <h1>${escapeHtml(hub.title)}</h1>
+    <p>${escapeHtml(hub.intro)}</p>
+    <section>
+      <h2>Quick answer</h2>
+      <p>${escapeHtml(hub.answer)}</p>
+    </section>
+    ${renderHubSections(hub)}
+    ${renderHubFaqs(hub)}
+  </article>
+  <section>
+    <h2>Recommended plants for this guide</h2>
+    ${renderHubProducts(matchedProducts, publicBase)}
+  </section>
+  ${renderRelatedHubLinks(hub)}
+</main>`;
+
+  return injectStaticHtml({
+    indexHtml,
+    title: `${hub.title} | ${SITE_NAME}`,
+    description: hub.metaDescription,
+    canonicalUrl,
+    image,
+    schemaItems,
+    body,
+  });
+}
+
+export function buildStaticNotFoundHtml({ indexHtml, baseUrl = DEFAULT_BASE_URL }) {
+  const publicBase = baseUrl.replace(/\/$/, '');
+  return injectStaticHtml({
+    indexHtml,
+    title: `Page Not Found | ${SITE_NAME}`,
+    description: 'The requested Rosary Plant House page was not found.',
+    canonicalUrl: `${publicBase}/404`,
+    image: getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase),
+    robots: NOINDEX_ROBOTS,
+    body: `<main class="seo-not-found-page">
+  <h1>Page not found</h1>
+  <p>This page does not exist or may have moved. Browse the plant catalogue from the home page.</p>
+  <p><a href="/">Browse plants</a></p>
+</main>`,
+  });
 }
 
 export function buildStaticPolicyHtml({ indexHtml, baseUrl = DEFAULT_BASE_URL }) {

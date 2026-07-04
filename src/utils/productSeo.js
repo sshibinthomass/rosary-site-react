@@ -1,5 +1,9 @@
-const SITE_URL = 'https://rosaryplanthouse.com';
-const SITE_NAME = 'Rosary Plant House';
+import {
+  SITE_NAME,
+  SITE_POLICY,
+  SITE_URL,
+} from './sitePolicy.js';
+
 export const DEFAULT_SEO_IMAGE_PATH = '/og-image.jpg';
 export const HERO_SEO_IMAGE_PATH = '/hero-bg.jpg';
 export const PLACEHOLDER_PLANT_IMAGE_PATH = '/placeholder-plant.jpg';
@@ -111,6 +115,57 @@ export function getProductDisplayName(product = {}) {
 export function getProductPrice(product = {}) {
   const price = Number(product.salesPrice ?? product.price);
   return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function buildMerchantReturnPolicySchema() {
+  return {
+    '@type': 'MerchantReturnPolicy',
+    '@id': `${SITE_POLICY.url}#transit-damage-policy`,
+    name: 'Transit damage replacement and refund policy',
+    applicableCountry: 'IN',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 2,
+    description: [
+      SITE_POLICY.damageSupport.replacement,
+      SITE_POLICY.damageSupport.proof,
+      SITE_POLICY.damageSupport.refund,
+      SITE_POLICY.damageSupport.exclusions,
+    ].join(' '),
+  };
+}
+
+function buildOfferShippingDetailsSchema() {
+  return {
+    '@type': 'OfferShippingDetails',
+    name: 'Standard live plant shipping',
+    shippingLabel: 'Standard live plant shipping',
+    description: [
+      `Dispatch days: ${SITE_POLICY.shipping.dispatchDays}.`,
+      SITE_POLICY.shipping.dispatchTiming,
+      `Service area: ${SITE_POLICY.shipping.serviceArea}.`,
+      SITE_POLICY.shipping.deliveryCharge,
+      SITE_POLICY.shipping.courier,
+    ].join(' '),
+    shippingDestination: [
+      { '@type': 'DefinedRegion', addressCountry: 'IN', addressRegion: 'South India' },
+      { '@type': 'DefinedRegion', addressCountry: 'IN', name: 'Major cities in North India' },
+    ],
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      transitTime: {
+        '@type': 'QuantitativeValue',
+        minValue: 1,
+        maxValue: 5,
+        unitCode: 'DAY',
+      },
+      handlingTime: {
+        '@type': 'QuantitativeValue',
+        minValue: 0,
+        maxValue: 7,
+        unitCode: 'DAY',
+      },
+    },
+  };
 }
 
 export function getProductMetaTitle(product = {}) {
@@ -325,9 +380,12 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
         : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
+        '@id': `${baseUrl.replace(/\/$/, '')}/#organization`,
         '@type': 'Organization',
         name: SITE_NAME,
       },
+      hasMerchantReturnPolicy: buildMerchantReturnPolicySchema(),
+      shippingDetails: buildOfferShippingDetailsSchema(),
     };
   }
 

@@ -171,7 +171,7 @@ export default function WishlistPage() {
 
   return (
     <div className="animate-fade-in">
-      <SEO title="Your Wishlist" description="Plants you've saved for later. Browse and add to cart from your wishlist." />
+      <SEO title="Your Wishlist" description="Plants you've saved for later. Browse and add to cart from your wishlist." noindex />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Your Wishlist ({wishlist.length})

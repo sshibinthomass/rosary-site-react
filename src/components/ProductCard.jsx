@@ -4,6 +4,7 @@ import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
+import { getProductPath } from '../utils/productSeo';
 
 export default function ProductCard({ product, index }) {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function ProductCard({ product, index }) {
     e.stopPropagation();
     try {
       await addToCart({ ...product, id: product.id, name, price }, quantity);
-    } catch (err) {
+    } catch {
       error('Failed to add to cart');
     }
   };
@@ -40,7 +41,7 @@ export default function ProductCard({ product, index }) {
       } else {
         await addToWishlist({ ...product, id: product.id, name, price });
       }
-    } catch (err) {
+    } catch {
       error('Failed to update wishlist');
     }
   };
@@ -54,13 +55,10 @@ export default function ProductCard({ product, index }) {
       : product.imageUrl
   );
 
-  const generateSlug = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const productSlug = generateSlug(name);
-
   return (
     <div 
       className="card cursor-pointer group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col relative"
-      onClick={() => navigate(`/plant/${product.id}-${productSlug}`, { state: { backgroundLocation: location, product } })}
+      onClick={() => navigate(getProductPath({ ...product, title: name }), { state: { backgroundLocation: location, product } })}
     >
       {/* Image */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--bg-tertiary)]">

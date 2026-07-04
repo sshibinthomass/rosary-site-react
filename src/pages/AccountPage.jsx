@@ -157,7 +157,7 @@ export default function AccountPage() {
 
   return (
     <div className="animate-fade-in">
-      <SEO title="My Account" description="Manage your profile, view orders, and update delivery details." />
+      <SEO title="My Account" description="Manage your profile, view orders, and update delivery details." noindex />
       {user ? (
         /* Profile Card for Logged In User */
         <div className="card p-5">

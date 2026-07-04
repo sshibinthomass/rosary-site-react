@@ -77,7 +77,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -379,7 +379,7 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 md:py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-6 md:py-8 flex-1 min-h-[calc(100dvh-4rem)]">
         {children}
       </main>
 

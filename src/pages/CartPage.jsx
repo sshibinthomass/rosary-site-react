@@ -306,7 +306,7 @@ export default function CartPage() {
 
   return (
     <div className="animate-fade-in">
-      <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." />
+      <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Your Cart ({inStockItems.length})

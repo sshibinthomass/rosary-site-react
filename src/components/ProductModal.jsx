@@ -1,62 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import ReactMarkdown from 'react-markdown';
 import { CURRENCY } from '../config/constants';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { useSettings } from '../context/SettingsContext';
 import SEO from './SEO';
-
-function DescriptionBlock({ text }) {
-  if (!text) return null;
-  const raw = text.replace(/Â/g, '');
-  const sections = raw.split(/^## /m);
-
-  const mdComponents = {
-    p: ({children}) => <p style={{margin: '0.35rem 0'}}>{children}</p>,
-    ul: ({children}) => <ul style={{margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'disc'}}>{children}</ul>,
-    ol: ({children}) => <ol style={{margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'decimal'}}>{children}</ol>,
-    li: ({children}) => <li style={{margin: '0.15rem 0'}}>{children}</li>,
-    strong: ({children}) => <strong style={{color: 'var(--text-primary)', fontWeight: 600}}>{children}</strong>,
-    h1: ({children}) => <h4 style={{fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.5rem 0 0.25rem'}}>{children}</h4>,
-    h2: () => null,
-    h3: ({children}) => <h5 style={{fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.4rem 0 0.2rem'}}>{children}</h5>,
-  };
-
-  return (
-    <div className="border-t border-[var(--border-color)] pt-4">
-      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
-      <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
-        {sections.map((section, i) => {
-          if (i === 0) {
-            // Content before the first ## heading
-            return section.trim() ? (
-              <div key={i} className="mb-2">
-                <ReactMarkdown components={mdComponents}>{section.trim()}</ReactMarkdown>
-              </div>
-            ) : null;
-          }
-          const newlineIdx = section.indexOf('\n');
-          const heading = newlineIdx !== -1 ? section.slice(0, newlineIdx).trim() : section.trim();
-          const body = newlineIdx !== -1 ? section.slice(newlineIdx + 1).trim() : '';
-
-          return (
-            <details key={i} className="group/section border-b border-[var(--border-color)] last:border-0" open={i === 1}>
-              <summary className="cursor-pointer list-none flex items-center justify-between select-none py-2 hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs uppercase tracking-wide">
-                {heading}
-                <span className="text-[8px] transition-transform duration-200 group-open/section:rotate-180 ml-2 flex-shrink-0">▼</span>
-              </summary>
-              {body && (
-                <div className="pb-2">
-                  <ReactMarkdown components={mdComponents}>{body}</ReactMarkdown>
-                </div>
-              )}
-            </details>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import ProductCareSignals from './ProductCareSignals';
+import ProductCareDetails from './ProductCareDetails';
+import {
+  buildBreadcrumbStructuredData,
+  buildFaqStructuredData,
+  getProductCanonicalUrl,
+  getProductMetaDescription,
+  getProductMetaTitle,
+} from '../utils/productSeo';
 
 export default function ProductModal({ product, isOpen, onClose, onAddToCart, inCart, inWishlist, onToggleWishlist }) {
   const modalRef = useRef(null);
@@ -77,9 +33,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
   // Reset quantity when product changes
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- reset modal-local controls when a different product opens. */
     setQuantity(1);
     setAddedFeedback(false);
     setActiveImageIndex(0);
+    /* eslint-enable react-hooks/set-state-in-effect */
     // Ensure we always start viewing from the top of the modal content
     if (modalRef.current) {
       modalRef.current.scrollTop = 0;
@@ -134,6 +92,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   };
 
   const totalPrice = (price * quantity).toLocaleString('en-IN');
+  const canonicalUrl = getProductCanonicalUrl(product);
+  const schemaData = [
+    buildBreadcrumbStructuredData(product),
+    buildFaqStructuredData(product),
+  ].filter(Boolean);
 
   // Use createPortal to render modal at document.body level
   return createPortal(
@@ -141,11 +104,14 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
       className="fixed inset-0 z-[9999] flex md:items-center md:justify-center md:p-4"
       onClick={onClose}
     >
-      <SEO 
-        title={title} 
-        description={product?.description || `Buy ${title} online from Rosary Plant House. Quality plants delivered across India.`}
+      <SEO
+        title={getProductMetaTitle(product)}
+        description={getProductMetaDescription(product)}
         image={imageList[0]}
-        productData={{...product, name: title, price}}
+        type="product"
+        canonicalUrl={canonicalUrl}
+        productData={{...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price}}
+        schemaData={schemaData}
       />
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in hidden md:block" />
@@ -153,21 +119,21 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
       {/* Modal Container */}
       <div 
         ref={modalRef}
-        className="relative w-full h-full md:h-auto max-w-none md:max-w-5xl bg-[var(--bg-primary)] rounded-none md:rounded-2xl md:max-h-[85vh] flex flex-col lg:flex-row overflow-hidden animate-slide-up shadow-2xl"
+        className="relative w-full h-full md:h-[88vh] md:max-h-[820px] max-w-none md:max-w-5xl bg-[var(--bg-primary)] rounded-none md:rounded-2xl flex flex-col lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] overflow-hidden animate-slide-up shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button (Absolute to Container) */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-30 w-9 h-9 md:w-8 md:h-8 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/40 transition-colors backdrop-blur-sm md:bg-white/10 md:text-white md:hover:bg-white/20"
+          className="absolute top-3 right-3 z-30 w-9 h-9 md:w-8 md:h-8 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/40 transition-colors backdrop-blur-sm md:bg-[var(--bg-secondary)] md:text-[var(--text-primary)] md:hover:bg-[var(--bg-tertiary)] md:border md:border-[var(--border-color)]"
         >
           ✕
         </button>
 
         {/* LEFT: Image Section */}
-        <div className="relative w-full h-[40vh] lg:w-5/12 lg:h-auto bg-[var(--bg-tertiary)] shrink-0 flex flex-col overflow-hidden">
+        <div className="relative w-full h-[38vh] lg:h-auto lg:self-start lg:w-auto bg-[var(--bg-secondary)] shrink-0 flex flex-col overflow-hidden lg:p-4 lg:gap-3">
           {/* Main image area */}
-          <div className="relative flex-1 group">
+          <div className="relative flex-1 lg:flex-none lg:aspect-square lg:w-full lg:rounded-2xl lg:overflow-hidden lg:border lg:border-[var(--border-color)] group">
             <img
               src={imageList[activeImageIndex]}
               alt={`${title} - ${product.category || 'Plant'} from Rosary Plant House`}
@@ -194,7 +160,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
             {/* Category Badge */}
             {product.category && (
-              <div className="absolute bottom-10 right-3 lg:bottom-4 lg:left-4 lg:right-auto px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-30">
+              <div className="absolute bottom-10 right-3 lg:bottom-3 lg:left-3 lg:right-auto px-2.5 py-1.5 bg-[var(--color-forest)] text-white text-xs font-semibold rounded-lg shadow-md z-30">
                 {product.category}
               </div>
             )}
@@ -242,7 +208,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             </button>
 
             {hasDiscount && (
-              <div className="absolute top-3 left-3 md:top-4 md:right-4 md:left-auto px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg shadow-sm z-10 w-auto h-auto min-w-[max-content]">
+              <div className="absolute top-14 right-3 md:right-4 px-2 py-1 bg-[var(--color-terracotta)] text-white text-xs font-bold rounded-lg shadow-sm z-10 w-auto h-auto min-w-[max-content]">
                 -{discountPercent}% OFF
               </div>
             )}
@@ -264,7 +230,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
 
           {/* Thumbnails row — desktop only (inside image section on lg) */}
           {hasMultipleImages && (
-            <div className="hidden lg:flex px-3 py-2 bg-[var(--bg-primary)]/80 border-t border-[var(--border-color)] gap-2 overflow-x-auto no-scrollbar">
+            <div className="hidden lg:flex rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] p-2 gap-2 overflow-x-auto no-scrollbar">
               {imageList.map((src, idx) => (
                 <button
                   key={src + idx}
@@ -285,6 +251,19 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
               ))}
             </div>
           )}
+
+          <div className="hidden lg:block rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">Selected plant</p>
+            <p className="mt-1 text-sm font-semibold leading-snug text-[var(--text-primary)]">{title}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {product.size && (
+                <span className="badge bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs py-1 px-2">{product.size}</span>
+              )}
+              {product.isRestocked && inStock && (
+                <span className="badge bg-green-500 text-white text-xs py-1 px-2">Restocked</span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Thumbnails row — sits between image and content, always fully visible on mobile */}
@@ -317,7 +296,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         {/* RIGHT: Content Section */}
         <div className="flex flex-col flex-1 min-h-0 bg-[var(--bg-primary)]">
           {/* Top Bar with Breadcrumbs */}
-          <div className="shrink-0 px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-4 border-b border-[var(--border-color)]">
+          <div className="shrink-0 px-4 md:px-6 pt-4 md:pt-5 pb-3 border-b border-[var(--border-color)]">
             <div className="flex items-center text-[10px] md:text-xs text-[var(--text-secondary)] font-medium mb-1.5 md:mb-2">
                <span className="hover:text-[var(--color-forest)] cursor-pointer transition-colors" onClick={onClose}>Home</span>
                <span className="mx-2">/</span>
@@ -333,7 +312,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             </div>
             
             {/* Plant name — desktop only (on mobile it's the image overlay) */}
-            <h2 className="hidden lg:block text-2xl font-bold text-[var(--text-primary)] leading-snug break-words">
+            <h2 className="hidden lg:block text-xl md:text-2xl font-bold text-[var(--text-primary)] leading-snug break-words">
               {title}
               <span className="ml-3 text-sm font-normal text-[var(--text-secondary)]">#{plantId}</span>
             </h2>
@@ -342,18 +321,13 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
           {/* Scrollable Details */}
           <div
             ref={detailsRef}
-            className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
+            className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4"
           >
 
             {/* Size — hidden on mobile (shown in image overlay), visible on desktop */}
-            {product.size && (
-              <div className="hidden lg:flex flex-wrap gap-2">
-                <span className="badge bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs py-1.5 px-3">{product.size}</span>
-              </div>
-            )}
-
             {/* Care Info Grid */}
-            <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-3">
+            <ProductCareSignals product={product} variant="modal" />
+            <div className="hidden">
               <div className="flex flex-col md:flex-row md:items-center items-center justify-center md:justify-start p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--bg-tertiary)] gap-3">
                 <span className="text-xl">💧</span>
                 <div className="text-center md:text-left">
@@ -393,11 +367,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             </div>
 
             {/* Description */}
-            {settings.showPlantDescription && product.description && <DescriptionBlock text={product.description} />}
+            {settings.showPlantDescription && <ProductCareDetails product={product} />}
           </div>
 
           {/* Footer (Price, Quantity & Action) - Fixed at Bottom of Right Col */}
-          <div className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-primary)] z-20 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <div className="p-4 md:p-5 border-t border-[var(--border-color)] bg-[var(--bg-primary)] z-20 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             {/* Price row */}
             <div className="flex items-baseline gap-2 mb-3">
               <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">

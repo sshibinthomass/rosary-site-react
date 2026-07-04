@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { getAnalysisRoute } from './utils/adminAnalysisTabs';
 
 import Layout from './components/Layout';
 import Toast from './components/Toast';
@@ -23,7 +24,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AdminHome = lazy(() => import('./pages/AdminHome'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
-const AdminPlantAnalysis = lazy(() => import('./pages/AdminPlantAnalysis'));
+const AdminAnalysisPage = lazy(() => import('./pages/AdminAnalysisPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
@@ -198,32 +199,64 @@ function AppRoutes() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/admin/export.html" 
+          <Route
+            path="/admin/export.html"
             element={
               <ProtectedRoute requireAdmin>
                 <AdminExportPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/plant-analysis" 
+          <Route
+            path="/admin/analysis"
             element={
               <ProtectedRoute requireAdmin>
-                <AdminPlantAnalysis />
+                <AdminAnalysisPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/plant-analysis.html" 
+          <Route
+            path="/admin/analysis.html"
             element={
               <ProtectedRoute requireAdmin>
-                <AdminPlantAnalysis />
+                <AdminAnalysisPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/plant-tester" 
+          <Route
+            path="/admin/plant-analysis"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Navigate to={getAnalysisRoute('plants')} replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/plant-analysis.html"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Navigate to={getAnalysisRoute('plants')} replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/order-analysis"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Navigate to={getAnalysisRoute('orders')} replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/order-analysis.html"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Navigate to={getAnalysisRoute('orders')} replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/plant-tester"
             element={
               <ProtectedRoute requireAdmin>
                 <AdminPlantTesterPage />

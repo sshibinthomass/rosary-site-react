@@ -8,13 +8,39 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
+import { mergeProductWithLocalEnrichment } from '../utils/productSeo';
 
 const COLLECTION_NAME = 'products';
+let localProductsByIdPromise = null;
+
+async function getLocalProductsById() {
+  if (localProductsByIdPromise) return localProductsByIdPromise;
+
+  localProductsByIdPromise = (async () => {
+    if (typeof fetch !== 'function') return new Map();
+
+    try {
+      const response = await fetch('/product-seo-index.json', { cache: 'force-cache' });
+      if (!response.ok) return new Map();
+      const products = await response.json();
+      return new Map((products || []).map((product) => [String(product.id), product]));
+    } catch (error) {
+      console.warn('Could not load local product SEO enrichment:', error);
+      return new Map();
+    }
+  })();
+
+  return localProductsByIdPromise;
+}
+
+async function getLocalProductById(productId) {
+  const localProductsById = await getLocalProductsById();
+  return localProductsById.get(String(productId));
+}
 
 // Cache key prefix for localStorage persistence
 const CACHE_PREFIX = 'rosary_products_';
@@ -155,13 +181,14 @@ export async function getAllProducts() {
 // Get single product by ID
 export async function getProductById(productId) {
   try {
+    const localProduct = await getLocalProductById(productId);
     const docRef = doc(db, COLLECTION_NAME, productId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      return mergeProductWithLocalEnrichment({ id: docSnap.id, ...docSnap.data() }, localProduct);
     }
-    return null;
+    return localProduct || null;
   } catch (error) {
     console.error('Error getting product:', error);
     throw error;

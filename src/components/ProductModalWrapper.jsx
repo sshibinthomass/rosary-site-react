@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import ProductModal from './ProductModal';
+import { extractProductIdFromParam } from '../utils/productSeo';
 
 export default function ProductModalWrapper() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function ProductModalWrapper() {
     
     const fetchFullProduct = async () => {
       try {
-        const cleanId = typeof productId === 'string' ? productId.split('-')[0] : productId;
+        const cleanId = extractProductIdFromParam(productId);
         const isLimited = typeof cleanId === 'string' && /^L/i.test(cleanId);
         const fullData = isLimited
           ? await getLimitedById(cleanId)
@@ -37,7 +38,7 @@ export default function ProductModalWrapper() {
       }
     };
     fetchFullProduct();
-  }, [productId]);
+  }, [productId, settings.showPlantDescription]);
 
   const handleClose = () => {
     // If there's no previous history (e.g. opened in a new tab magically), go to home.
@@ -51,7 +52,7 @@ export default function ProductModalWrapper() {
       if (isInCart(product.id)) return;
       await addToCart(productData, quantity);
       success(`Added ${quantity} ${productData.name} to cart`);
-    } catch (err) {
+    } catch {
       error('Failed to add to cart');
     }
   };
@@ -69,7 +70,7 @@ export default function ProductModalWrapper() {
           price: product.salesPrice || product.price 
         });
       }
-    } catch (err) {
+    } catch {
       error('Failed to update wishlist');
     }
   };

@@ -1,25 +1,33 @@
 import { Helmet } from 'react-helmet-async';
+import { buildProductStructuredData } from '../utils/productSeo';
 
-export default function SEO({ title, description, image, type = 'website', url, productData, schemaData }) {
+export default function SEO({ title, description, image, type = 'website', url, canonicalUrl, noindex = false, productData, schemaData }) {
   const siteTitle = 'Rosary Plant House';
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const defaultDesc = 'Beautiful succulents, cacti & indoor plants from Nilgiris, Coonoor. Shop online and get plants delivered across India.';
   const finalDesc = description || defaultDesc;
   const defaultImage = '/og-image.jpg'; // fallback
   const finalImage = image || defaultImage;
+  const finalUrl = canonicalUrl || url;
+  const robotsContent = noindex
+    ? 'noindex,nofollow'
+    : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+  const productSchema = productData ? buildProductStructuredData(productData) : null;
 
   return (
     <Helmet>
       {/* Standard Meta */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDesc} />
+      <meta name="robots" content={robotsContent} />
+      {finalUrl && <link rel="canonical" href={finalUrl} />}
 
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDesc} />
       <meta property="og:image" content={finalImage} />
       <meta property="og:type" content={type} />
-      {url && <meta property="og:url" content={url} />}
+      {finalUrl && <meta property="og:url" content={finalUrl} />}
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -28,23 +36,9 @@ export default function SEO({ title, description, image, type = 'website', url, 
       <meta name="twitter:image" content={finalImage} />
 
       {/* Structured Data (JSON-LD) for Products */}
-      {productData && (
+      {productSchema && (
         <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: productData.name || productData.title,
-            image: finalImage,
-            description: finalDesc,
-            offers: {
-              '@type': 'Offer',
-              priceCurrency: 'INR',
-              price: productData.price,
-              availability: productData.available 
-                ? 'https://schema.org/InStock' 
-                : 'https://schema.org/OutOfStock'
-            }
-          })}
+          {JSON.stringify(productSchema)}
         </script>
       )}
 

@@ -4,7 +4,7 @@ import SEO from '../components/SEO';
 export default function NotFoundPage() {
   return (
     <div className="animate-fade-in text-center py-16 px-4">
-      <SEO title="Page Not Found" description="The page you're looking for doesn't exist." />
+      <SEO title="Page Not Found" description="The page you're looking for doesn't exist." noindex />
       
       {/* Illustration */}
       <div className="relative w-32 h-32 mx-auto mb-8">

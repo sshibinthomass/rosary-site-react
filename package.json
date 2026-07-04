@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-sitemap.js",
-    "build": "vite build",
+    "prebuild": "node scripts/generate-seo-artifacts.js --public-only",
+    "build": "vite build && node scripts/generate-seo-artifacts.js --dist",
     "lint": "eslint .",
+    "test": "node --test tests/*.test.mjs",
+    "import:seo": "node scripts/import-enriched-products.cjs",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist"
   },

@@ -1,13 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { getLimitedPlants } from '../services/limitedService';
+import { CURRENCY } from '../config/constants';
 import { getAllOrders } from '../services/orderService';
-import { getAllProducts } from '../services/productService';
-import { resolveImageUrl } from '../utils/imageCompressor';
-import {
-  buildPlantStats,
-  filterOrdersForPlantAnalysis,
-} from '../utils/plantAnalysis';
+import { filterOrdersForPlantAnalysis } from '../utils/plantAnalysis';
+import { buildStateOrderStats } from '../utils/orderAnalysis';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -23,51 +19,45 @@ const TIMEFRAME_OPTIONS = [
     value: 'overall',
     label: 'Overall',
     summary: 'All matching orders',
-    emptyState: 'No plants found for the selected statuses.',
+    emptyState: 'No orders found for the selected statuses.',
   },
   {
     value: 'monthly',
     label: 'Monthly',
     summary: 'Current month',
-    emptyState: 'No plants found for the selected statuses in the current month.',
+    emptyState: 'No orders found for the selected statuses in the current month.',
   },
   {
     value: 'weekly',
     label: 'Weekly',
     summary: 'Current week',
-    emptyState: 'No plants found for the selected statuses in the current week.',
+    emptyState: 'No orders found for the selected statuses in the current week.',
   },
   {
     value: 'daily',
     label: 'Daily',
     summary: 'Today',
-    emptyState: 'No plants found for the selected statuses today.',
+    emptyState: 'No orders found for the selected statuses today.',
   },
   {
     value: 'custom',
-    label: 'Custom range',
+    label: 'Datewise',
     summary: 'Choose a date range',
-    emptyState: 'Choose a start date or end date to see plant analysis.',
+    emptyState: 'Choose a start date or end date to see state-wise order analysis.',
   },
 ];
 
-const PURCHASE_FILTER_OPTIONS = [
+const INCOME_MODE_OPTIONS = [
   {
-    value: 'bought',
-    label: 'Bought',
-    emptyState: 'No bought plants found for the selected filters.',
+    value: 'final-paid',
+    label: 'Final paid amount',
+    summary: 'Total amount + delivery charge - manual discount',
   },
   {
-    value: 'unbought',
-    label: 'Unbought',
-    emptyState: 'No unbought plants found for the selected filters.',
+    value: 'total-only',
+    label: 'Total amount only',
+    summary: 'Only the stored order total amount',
   },
-];
-
-const AVAILABILITY_FILTER_OPTIONS = [
-  { value: 'all', label: 'All availability' },
-  { value: 'available', label: 'Available' },
-  { value: 'unavailable', label: 'Unavailable' },
 ];
 
 function formatSelectedDate(dateString) {
@@ -79,32 +69,12 @@ function formatSelectedDate(dateString) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'medium' });
 }
 
-function getAvailabilityLabel(plant) {
-  if (plant.available === false) return 'Unavailable';
-  if (plant.available === true) return 'Available';
-  return 'Unknown';
-}
-
-function getAvailabilityBadgeClass(plant) {
-  if (plant.available === false) {
-    return 'bg-red-500/10 text-red-500 border-red-500/20';
-  }
-
-  if (plant.available === true) {
-    return 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] border-[var(--color-forest)]/20';
-  }
-
-  return 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-color)]';
-}
-
-export default function AdminPlantAnalysis({ embedded = false }) {
+export default function AdminOrderAnalysis({ embedded = false }) {
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatuses, setSelectedStatuses] = useState(['all']);
-  const [selectedPurchaseFilter, setSelectedPurchaseFilter] = useState('bought');
-  const [selectedAvailabilityFilter, setSelectedAvailabilityFilter] = useState('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState('overall');
+  const [selectedIncomeMode, setSelectedIncomeMode] = useState('final-paid');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [error, setError] = useState(null);
@@ -112,17 +82,11 @@ export default function AdminPlantAnalysis({ embedded = false }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [orderData, productData, limitedPlantData] = await Promise.all([
-          getAllOrders(),
-          getAllProducts(),
-          getLimitedPlants({ availableOnly: false }),
-        ]);
-
-        setOrders(orderData);
-        setProducts([...productData, ...limitedPlantData]);
+        const data = await getAllOrders();
+        setOrders(data);
       } catch (err) {
-        console.error('Failed to load orders for plant analysis', err);
-        setError('Failed to load plant analysis. Please try again.');
+        console.error('Failed to load orders for order analysis', err);
+        setError('Failed to load orders. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -160,13 +124,9 @@ export default function AdminPlantAnalysis({ embedded = false }) {
     return TIMEFRAME_OPTIONS.find((option) => option.value === selectedTimeframe) || TIMEFRAME_OPTIONS[0];
   }, [selectedTimeframe]);
 
-  const selectedPurchaseFilterOption = useMemo(() => {
-    return PURCHASE_FILTER_OPTIONS.find((option) => option.value === selectedPurchaseFilter) || PURCHASE_FILTER_OPTIONS[0];
-  }, [selectedPurchaseFilter]);
-
-  const selectedAvailabilityFilterOption = useMemo(() => {
-    return AVAILABILITY_FILTER_OPTIONS.find((option) => option.value === selectedAvailabilityFilter) || AVAILABILITY_FILTER_OPTIONS[0];
-  }, [selectedAvailabilityFilter]);
+  const selectedIncomeModeOption = useMemo(() => {
+    return INCOME_MODE_OPTIONS.find((option) => option.value === selectedIncomeMode) || INCOME_MODE_OPTIONS[0];
+  }, [selectedIncomeMode]);
 
   const isInvalidCustomRange = useMemo(() => {
     return (
@@ -176,8 +136,6 @@ export default function AdminPlantAnalysis({ embedded = false }) {
       && customStartDate > customEndDate
     );
   }, [selectedTimeframe, customStartDate, customEndDate]);
-
-  const isMissingCustomRange = selectedTimeframe === 'custom' && !customStartDate && !customEndDate;
 
   const selectedRangeSummary = useMemo(() => {
     if (selectedTimeframe !== 'custom') {
@@ -205,11 +163,7 @@ export default function AdminPlantAnalysis({ embedded = false }) {
 
   const emptyStateMessage = useMemo(() => {
     if (selectedTimeframe !== 'custom') {
-      if (selectedAvailabilityFilter !== 'all') {
-        return `No ${selectedAvailabilityFilterOption.label.toLowerCase()} ${selectedPurchaseFilterOption.label.toLowerCase()} plants found for the selected filters.`;
-      }
-
-      return selectedPurchaseFilterOption.emptyState || selectedTimeframeOption.emptyState;
+      return selectedTimeframeOption.emptyState;
     }
 
     if (isInvalidCustomRange) {
@@ -220,21 +174,13 @@ export default function AdminPlantAnalysis({ embedded = false }) {
       return selectedTimeframeOption.emptyState;
     }
 
-    if (selectedAvailabilityFilter !== 'all') {
-      return `No ${selectedAvailabilityFilterOption.label.toLowerCase()} ${selectedPurchaseFilterOption.label.toLowerCase()} plants found for this date range.`;
-    }
-
-    return `No ${selectedPurchaseFilterOption.label.toLowerCase()} plants found for this date range.`;
+    return 'No orders found for the selected statuses in this date range.';
   }, [
     selectedTimeframe,
     selectedTimeframeOption.emptyState,
-    selectedPurchaseFilterOption.emptyState,
-    selectedPurchaseFilterOption.label,
-    selectedAvailabilityFilter,
-    selectedAvailabilityFilterOption.label,
+    isInvalidCustomRange,
     customStartDate,
     customEndDate,
-    isInvalidCustomRange,
   ]);
 
   const filteredOrders = useMemo(() => {
@@ -252,36 +198,29 @@ export default function AdminPlantAnalysis({ embedded = false }) {
         endDate: customEndDate,
       }
     );
-  }, [orders, activeStatuses, selectedTimeframe, customStartDate, customEndDate, isInvalidCustomRange]);
-
-  const plantStats = useMemo(() => {
-    if (isMissingCustomRange || isInvalidCustomRange) {
-      return [];
-    }
-
-    return buildPlantStats(filteredOrders, products, {
-      purchaseFilter: selectedPurchaseFilter,
-      availabilityFilter: selectedAvailabilityFilter,
-    });
   }, [
-    filteredOrders,
-    products,
-    selectedPurchaseFilter,
-    selectedAvailabilityFilter,
-    isMissingCustomRange,
+    orders,
+    activeStatuses,
+    selectedTimeframe,
+    customStartDate,
+    customEndDate,
     isInvalidCustomRange,
   ]);
 
-  const totalQuantityAll = plantStats.reduce((sum, plant) => sum + plant.totalQuantity, 0);
+  const stateStats = useMemo(() => {
+    return buildStateOrderStats(filteredOrders, selectedIncomeMode);
+  }, [filteredOrders, selectedIncomeMode]);
+
+  const totalGrossIncome = stateStats.reduce((sum, state) => sum + state.grossIncome, 0);
 
   return (
     <div className={embedded ? '' : 'animate-fade-in pb-20'}>
       {!embedded && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--color-forest)]">Plant analysis</h1>
+            <h1 className="text-xl font-semibold text-[var(--color-forest)]">Order analysis</h1>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              View how many of each plant has been sold, filtered by order status and timeframe.
+              View state-wise order counts and gross income, filtered by status and timeframe.
             </p>
           </div>
           <NavLink to="/admin" className="btn btn-secondary text-sm">
@@ -321,71 +260,11 @@ export default function AdminPlantAnalysis({ embedded = false }) {
       </div>
 
       <div className="card p-4 mb-4">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Purchase filter</h2>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Switch between bought plants and plants with no matching orders.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {PURCHASE_FILTER_OPTIONS.map((option) => {
-                const isActive = selectedPurchaseFilter === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSelectedPurchaseFilter(option.value)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                      isActive
-                        ? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)] shadow-sm'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Availability</h2>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Filter the current plant list by available or unavailable catalog status.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABILITY_FILTER_OPTIONS.map((option) => {
-                const isActive = selectedAvailabilityFilter === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSelectedAvailabilityFilter(option.value)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                      isActive
-                        ? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)] shadow-sm'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card p-4 mb-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">Timeframe</h2>
             <p className="text-xs text-[var(--text-secondary)]">
-              Switch between preset periods or choose a custom date range for any day, week, or month.
+              Switch between preset periods or use datewise filtering for a custom range.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -437,35 +316,63 @@ export default function AdminPlantAnalysis({ embedded = false }) {
         )}
       </div>
 
+      <div className="card p-4 mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Income mode</h2>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Default is final paid amount, but you can switch to the raw order total only.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {INCOME_MODE_OPTIONS.map((option) => {
+              const isActive = selectedIncomeMode === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedIncomeMode(option.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    isActive
+                      ? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)] shadow-sm'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <div className="card p-4 mb-4">
-        <div className="mb-3">
-          <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
-            Current period
-          </p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            {selectedRangeSummary}
-          </p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">
-            {selectedPurchaseFilterOption.label} plants
-            {selectedAvailabilityFilter !== 'all' ? ` / ${selectedAvailabilityFilterOption.label}` : ''}
-          </p>
+        <div className="grid gap-4 lg:grid-cols-2 mb-4">
+          <div>
+            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
+              Current period
+            </p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              {selectedRangeSummary}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
+              Income basis
+            </p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              {selectedIncomeModeOption.summary}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-4 text-sm">
           <div>
             <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
-              Plants counted
+              States counted
             </p>
             <p className="text-base font-semibold text-[var(--text-primary)]">
-              {plantStats.length}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
-              Total quantity
-            </p>
-            <p className="text-base font-semibold text-[var(--text-primary)]">
-              {totalQuantityAll}
+              {stateStats.length}
             </p>
           </div>
           <div>
@@ -476,17 +383,25 @@ export default function AdminPlantAnalysis({ embedded = false }) {
               {filteredOrders.length}
             </p>
           </div>
+          <div>
+            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
+              Gross income
+            </p>
+            <p className="text-base font-semibold text-[var(--text-primary)]">
+              {CURRENCY}{totalGrossIncome.toLocaleString('en-IN')}
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="card overflow-hidden">
         {loading ? (
           <div className="p-6 text-center text-[var(--text-secondary)] text-sm">
-            Loading plant analysis...
+            Loading order analysis...
           </div>
         ) : error ? (
           <div className="p-6 text-center text-red-500 text-sm">{error}</div>
-        ) : plantStats.length === 0 ? (
+        ) : stateStats.length === 0 ? (
           <div className="p-6 text-center text-[var(--text-secondary)] text-sm">
             {emptyStateMessage}
           </div>
@@ -495,44 +410,24 @@ export default function AdminPlantAnalysis({ embedded = false }) {
             <table className="w-full text-left text-sm">
               <thead className="bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Plant</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                  <th className="px-4 py-2 font-medium text-right">Total Qty</th>
+                  <th className="px-4 py-2 font-medium">State</th>
                   <th className="px-4 py-2 font-medium text-right">Orders</th>
+                  <th className="px-4 py-2 font-medium text-right">Gross income</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-color)]">
-                {plantStats.map((plant) => (
-                  <tr key={plant.productId || plant.name}>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={resolveImageUrl(plant.imageUrl) || '/placeholder-plant.jpg'}
-                          alt={plant.name}
-                          className="w-12 h-12 rounded-lg object-cover bg-[var(--bg-tertiary)] flex-shrink-0"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-[var(--text-primary)]">
-                            {plant.name}
-                          </span>
-                          {plant.productId && (
-                            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">
-                              ID: {plant.productId}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${getAvailabilityBadgeClass(plant)}`}>
-                        {getAvailabilityLabel(plant)}
+                {stateStats.map((state) => (
+                  <tr key={state.state}>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {state.state}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right text-[var(--text-primary)]">
-                      {plant.totalQuantity}
+                    <td className="px-4 py-3 text-right text-[var(--text-primary)]">
+                      {state.orderCount}
                     </td>
-                    <td className="px-4 py-2 text-right text-[var(--text-secondary)]">
-                      {plant.orderCount}
+                    <td className="px-4 py-3 text-right text-[var(--text-primary)]">
+                      {CURRENCY}{state.grossIncome.toLocaleString('en-IN')}
                     </td>
                   </tr>
                 ))}

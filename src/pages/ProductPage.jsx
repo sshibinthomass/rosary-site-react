@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, NavLink } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
+import { useParams, NavLink } from 'react-router-dom';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { useCart } from '../context/CartContext';
@@ -9,64 +8,21 @@ import { useSettings } from '../context/SettingsContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { CURRENCY } from '../config/constants';
 import SEO from '../components/SEO';
-
-function DescriptionBlock({ text }) {
-  if (!text) return null;
-  const raw = text.replace(/Â/g, '');
-  const sections = raw.split(/^## /m);
-
-  const mdComponents = {
-    p: ({ children }) => <p style={{ margin: '0.35rem 0' }}>{children}</p>,
-    ul: ({ children }) => <ul style={{ margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'disc' }}>{children}</ul>,
-    ol: ({ children }) => <ol style={{ margin: '0.35rem 0', paddingLeft: '1.25rem', listStyleType: 'decimal' }}>{children}</ol>,
-    li: ({ children }) => <li style={{ margin: '0.15rem 0' }}>{children}</li>,
-    strong: ({ children }) => <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{children}</strong>,
-    h1: ({ children }) => <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.5rem 0 0.25rem' }}>{children}</h4>,
-    h2: () => null,
-    h3: ({ children }) => <h5 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.4rem 0 0.2rem' }}>{children}</h5>,
-  };
-
-  return (
-    <div className="border-t border-[var(--border-color)] pt-4">
-      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About this plant</h3>
-      <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
-        {sections.map((section, i) => {
-          if (i === 0) {
-            return section.trim() ? (
-              <div key={i} className="mb-2">
-                <ReactMarkdown components={mdComponents}>{section.trim()}</ReactMarkdown>
-              </div>
-            ) : null;
-          }
-
-          const newlineIdx = section.indexOf('\n');
-          const heading = newlineIdx !== -1 ? section.slice(0, newlineIdx).trim() : section.trim();
-          const body = newlineIdx !== -1 ? section.slice(newlineIdx + 1).trim() : '';
-
-          return (
-            <details key={i} className="group/section border-b border-[var(--border-color)] last:border-0" open={i === 1}>
-              <summary className="cursor-pointer list-none flex items-center justify-between select-none py-2 hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs uppercase tracking-wide">
-                {heading}
-                <span className="text-[8px] transition-transform duration-200 group-open/section:rotate-180 ml-2 flex-shrink-0">▼</span>
-              </summary>
-              {body && (
-                <div className="pb-2">
-                  <ReactMarkdown components={mdComponents}>{body}</ReactMarkdown>
-                </div>
-              )}
-            </details>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import ProductCareDetails from '../components/ProductCareDetails';
+import {
+  buildBreadcrumbStructuredData,
+  buildFaqStructuredData,
+  extractProductIdFromParam,
+  getProductCanonicalUrl,
+  getProductLongDescription,
+  getProductMetaDescription,
+  getProductMetaTitle,
+} from '../utils/productSeo';
 
 export default function ProductPage() {
   const { productId } = useParams();
-  const navigate = useNavigate();
   const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
-  const { success, error } = useToast();
+  const { error } = useToast();
   const { settings } = useSettings();
 
   const [product, setProduct] = useState(null);
@@ -84,7 +40,7 @@ export default function ProductPage() {
     const fetchProduct = async () => {
       try {
         // Extract just the ID regardless of the trailing SEO slug (e.g "L12-rare-cactus" -> "L12", "55-aloe" -> "55")
-        const cleanId = typeof productId === 'string' ? productId.split('-')[0] : productId;
+        const cleanId = extractProductIdFromParam(productId);
         
         const isLimited = typeof cleanId === 'string' && /^L/i.test(cleanId);
         const data = isLimited
@@ -130,14 +86,14 @@ export default function ProductPage() {
       } else {
         await addToWishlist({ ...product, id: product.id, name: title, price });
       }
-    } catch (err) {
+    } catch {
       error('Failed to update wishlist');
     }
   }, [product, title, price, inWish, addToWishlist, removeFromWishlist, error]);
 
   if (loading) {
     return (
-      <div className="animate-fade-in max-w-5xl mx-auto">
+      <div className="animate-fade-in max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="aspect-square bg-[var(--bg-tertiary)] rounded-2xl skeleton-shimmer" />
           <div className="space-y-4">
@@ -165,17 +121,26 @@ export default function ProductPage() {
   const totalPrice = (price * quantity).toLocaleString('en-IN');
 
   // Strip markdown for plain-text description preview
-  const descPlain = product.description
-    ? product.description.replace(/#{1,6}\s*/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim()
+  const descriptionSource = getProductLongDescription(product) || product.careGuide?.quickAnswer || '';
+  const descPlain = descriptionSource
+    ? descriptionSource.replace(/#{1,6}\s*/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim()
     : '';
+  const canonicalUrl = getProductCanonicalUrl(product);
+  const schemaData = [
+    buildBreadcrumbStructuredData(product),
+    buildFaqStructuredData(product),
+  ].filter(Boolean);
 
   return (
-    <div className="animate-fade-in max-w-5xl mx-auto">
+    <div className="animate-fade-in max-w-7xl mx-auto">
       <SEO
-        title={title}
-        description={descPlain.slice(0, 160) || `Buy ${title} online from Rosary Plant House. Quality plants delivered across India.`}
+        title={getProductMetaTitle(product)}
+        description={getProductMetaDescription(product) || descPlain.slice(0, 160)}
         image={imageList[0]}
-        productData={{ ...product, name: title, price }}
+        type="product"
+        canonicalUrl={canonicalUrl}
+        productData={{ ...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price }}
+        schemaData={schemaData}
       />
 
       {/* Breadcrumbs */}
@@ -194,9 +159,9 @@ export default function ProductPage() {
       </div>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1fr)] gap-6 lg:gap-10">
         {/* LEFT: Images */}
-        <div className="space-y-3">
+        <div className="space-y-3 lg:sticky lg:top-24 lg:self-start">
           <div className="relative aspect-square bg-[var(--bg-tertiary)] rounded-2xl overflow-hidden group">
             <img
               src={imageList[activeImageIndex]}
@@ -317,8 +282,7 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Care Info */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="hidden">
             <div className="flex flex-col items-center p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--bg-tertiary)] gap-1">
               <span className="text-xl">💧</span>
               <p className="text-[10px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">Water</p>
@@ -335,11 +299,6 @@ export default function ProductPage() {
               <p className="text-xs font-bold text-[var(--text-primary)]">{product.transit || 'Safe'}</p>
             </div>
           </div>
-
-          {/* Description */}
-          {settings.showPlantDescription && product.description && (
-            <DescriptionBlock text={product.description} />
-          )}
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-[var(--border-color)]">
@@ -409,6 +368,12 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {settings.showPlantDescription && (
+        <section className="mt-8 lg:mt-10">
+          <ProductCareDetails product={product} variant="wide" />
+        </section>
+      )}
     </div>
   );
 }

@@ -52,8 +52,8 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[var(--bg-secondary)] border-t border-[var(--border-color)] mt-12">
-      <div className="max-w-7xl mx-auto px-4 py-10">
+    <footer className="bg-[var(--bg-secondary)] border-t border-[var(--border-color)]">
+      <div className="max-w-7xl mx-auto px-4 pt-10 pb-28 md:py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>

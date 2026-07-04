@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAnalysisRoute } from '../utils/adminAnalysisTabs';
 
 const cards = [
   {
@@ -24,11 +25,11 @@ const cards = [
     path: '/admin/products',
   },
   {
-    id: 'plant-analysis',
-    title: 'Plant analysis',
-    description: 'See how many of each plant is sold by status.',
+    id: 'analysis',
+    title: 'Analysis',
+    description: 'Switch between plant-wise and state-wise order insights.',
     icon: '📊',
-    path: '/admin/plant-analysis',
+    path: getAnalysisRoute('plants'),
   },
   {
     id: 'limited',
@@ -92,7 +93,7 @@ export default function AdminHome() {
                 </h2>
               </div>
               <span className="text-xs text-[var(--text-secondary)] group-hover:text-[var(--color-forest)]">
-                Open →
+                Open &rarr;
               </span>
             </div>
             <p className="text-xs text-[var(--text-secondary)]">
@@ -104,4 +105,3 @@ export default function AdminHome() {
     </div>
   );
 }
-

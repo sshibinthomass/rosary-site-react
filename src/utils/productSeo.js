@@ -1,6 +1,15 @@
 const SITE_URL = 'https://rosaryplanthouse.com';
 const SITE_NAME = 'Rosary Plant House';
 
+export {
+  getProductRobots,
+  getSeoReviewSeed,
+  getSeoStatus,
+  isAvailableForPublicSale,
+  isIdentityVerified,
+  isSeoIndexable,
+} from './seoPolicy.js';
+
 export function slugify(value) {
   return String(value || '')
     .toLowerCase()
@@ -66,11 +75,18 @@ export function getPrimaryProductImage(product = {}) {
   if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
     return product.imageUrls[0];
   }
+  if (product.imageUrl) return product.imageUrl;
+  if (product.id) return `/sale_plants/${product.id}.jpg`;
   return product.imageUrl || '/placeholder-plant.jpg';
 }
 
 export function getProductDisplayName(product = {}) {
   return product.title || product.name || product.commonName || product.schema?.name || 'Plant';
+}
+
+export function getProductPrice(product = {}) {
+  const price = Number(product.salesPrice ?? product.price);
+  return Number.isFinite(price) && price > 0 ? price : null;
 }
 
 export function getProductMetaTitle(product = {}) {
@@ -255,11 +271,11 @@ export function mergeProductWithLocalEnrichment(product, localProduct) {
 export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } = {}) {
   const url = product.seo?.canonicalUrl || getProductCanonicalUrl(product, baseUrl);
   const image = getPrimaryProductImage(product);
-  const price = Number(product.salesPrice ?? product.price ?? 0);
+  const price = getProductPrice(product);
   const name = product.schema?.name || product.seo?.productName || getProductDisplayName(product);
   const description = product.schema?.description || getProductMetaDescription(product);
 
-  return {
+  const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name,
@@ -272,7 +288,10 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
     },
     category: product.category,
     url,
-    offers: {
+  };
+
+  if (price !== null) {
+    structuredData.offers = {
       '@type': 'Offer',
       url,
       priceCurrency: 'INR',
@@ -285,8 +304,10 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
         '@type': 'Organization',
         name: SITE_NAME,
       },
-    },
-  };
+    };
+  }
+
+  return structuredData;
 }
 
 export function buildBreadcrumbStructuredData(product = {}, { baseUrl = SITE_URL } = {}) {

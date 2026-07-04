@@ -6,6 +6,8 @@ import {
   buildMerchantFeedTsv,
   buildSitemapXml,
   buildStaticProductHtml,
+  mergeFirebaseStorefrontData,
+  stripFirebaseOwnedFieldsForSeoIndex,
 } from '../scripts/seo/artifacts.mjs';
 
 const storefrontProduct = {
@@ -64,6 +66,64 @@ test('Excel enrichment never overwrites protected storefront fields', () => {
     question: 'Can Sempervivum grow indoors?',
     answer: 'Only in a very bright window.',
   }]);
+});
+
+test('Excel enrichment replaces prompt-leaked long descriptions with safe care copy', () => {
+  const leakedDescription = [
+    'Haworthia cooperi variegated has been merged into this full Plant Details sheet from the readable image text label.',
+    'The row keeps the same skill-column format as the original Plant Details sheet, but the product-facing fields are optimized around the label-derived plant name.',
+    'Care guidance is matched to the recognized plant group: succulent.',
+    'Use the source flag column to separate image-recognized rows from rows where the label text was used for human-review correction.',
+  ].join('\n\n');
+
+  const [merged] = mergeEnrichmentRows([storefrontProduct], [{
+    'Product ID': '1',
+    'Plant name': 'Haworthia cooperi variegated',
+    'Plant type': 'Succulent',
+    'Sunlight': 'Bright filtered light.',
+    'Watering': 'Water only after the mix dries well.',
+    'Soil': 'Fast-draining succulent mix with grit.',
+    'Best placement': 'Bright windowsill or covered balcony.',
+    'Monsoon care': 'Protect from long wet spells.',
+    'Long description': leakedDescription,
+  }]);
+
+  assert.doesNotMatch(merged.careGuide.longDescription, /full Plant Details sheet/);
+  assert.doesNotMatch(merged.careGuide.longDescription, /source flag column/);
+  assert.match(merged.careGuide.longDescription, /Haworthia cooperi variegated/);
+  assert.match(merged.careGuide.longDescription, /Bright filtered light/);
+  assert.match(merged.careGuide.longDescription, /Fast-draining succulent mix with grit/);
+});
+
+test('Excel enrichment strips workflow wording from public descriptions and uncertainty copy', () => {
+  const [merged] = mergeEnrichmentRows([storefrontProduct], [{
+    'Product ID': '1',
+    'Plant name': 'Echeveria Akma Lia',
+    'Plant type': 'Succulent',
+    'Sunlight': 'Bright filtered light.',
+    'Watering': 'Water only after the mix dries well.',
+    'Soil': 'Fast-draining succulent mix with grit.',
+    'Short description': 'Echeveria Akma Lia is listed from the plant name visible in the image label. It is best sold with final taxonomy checked before species-level publishing.',
+    'Long description': 'Grow this plant in bright light. If exact species  naming , broad succulent care remains the safer guidance.',
+    'Product schema description': 'Echeveria Akma Lia is listed from the plant name visible in the image label.',
+    'Merchant Center description': 'Echeveria Akma Lia needs final taxonomy checked before species-level publishing.',
+    'Scientific name': 'Echeveria Akma Lia - label-derived name, taxonomy',
+  }]);
+
+  const publicText = [
+    merged.careGuide.plantName,
+    merged.careGuide.scientificName,
+    merged.careGuide.shortDescription,
+    merged.careGuide.longDescription,
+    merged.schema.description,
+    merged.merchant.description,
+  ].join('\n');
+
+  assert.doesNotMatch(publicText, /visible in the image label|taxonomy checked|label-derived name|exact species\s+naming|Akma Lia/i);
+  assert.match(merged.careGuide.plantName, /Echeveria Akmalia/);
+  assert.match(merged.careGuide.shortDescription, /succulent/i);
+  assert.match(merged.careGuide.longDescription, /bright light, fast drainage/i);
+  assert.match(merged.merchant.description, /decorative potted succulent/i);
 });
 
 test('SEO artifacts use canonical plant URLs and omit private app pages from sitemap', () => {
@@ -149,4 +209,93 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.match(html, /<h3>Yellow leaves<\/h3>/);
   assert.match(html, /<strong>Reason:<\/strong> Overwatering or low light\./);
   assert.match(html, /<h2>Recovery tips<\/h2>/);
+});
+
+test('SEO artifacts support local SEO-only products without Firebase storefront fields', () => {
+  const product = {
+    id: '1',
+    title: 'Sempervivum tectorum',
+    seo: {
+      slug: 'sempervivum-tectorum-1',
+      metaTitle: 'Sempervivum tectorum Care Guide',
+      metaDescription: 'Generated meta description.',
+      h1: 'Sempervivum tectorum plant care',
+    },
+    schema: {
+      name: 'Sempervivum tectorum',
+      description: 'Generated schema description.',
+      brand: 'Rosary Plant House',
+      sku: 'RPH-1',
+    },
+    merchant: {
+      title: 'Sempervivum tectorum Plant',
+      description: 'Generated merchant description.',
+    },
+    careGuide: {
+      longDescription: 'Generated long description.',
+    },
+  };
+
+  const feed = buildMerchantFeedTsv([product], { baseUrl: 'https://rosaryplanthouse.com' });
+  assert.doesNotMatch(feed, /RPH-1/);
+
+  const html = buildStaticProductHtml({
+    indexHtml: '<!doctype html><html lang="en"><head><title>Rosary Plant House</title></head><body><div id="root"></div></body></html>',
+    product,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+  assert.match(html, /<meta property="og:image" content="https:\/\/rosaryplanthouse\.com\/sale_plants\/1\.jpg" \/>/);
+  assert.doesNotMatch(html, /<strong>Price:<\/strong>/);
+  assert.doesNotMatch(html, /Rs\. 0/);
+});
+
+test('SEO artifact generation merges Firebase identity without writing it to the SEO index', () => {
+  const localProduct = {
+    id: '1',
+    seo: {
+      slug: 'sempervivum-tectorum-1',
+      metaTitle: 'Sempervivum tectorum Care Guide',
+    },
+    schema: {
+      name: 'Sempervivum tectorum',
+      description: 'Generated schema description.',
+    },
+    merchant: {
+      title: 'Sempervivum tectorum Plant',
+      description: 'Generated merchant description.',
+    },
+    careGuide: {
+      longDescription: 'Generated long description.',
+    },
+  };
+  const firebaseProduct = {
+    id: '1',
+    title: 'Sempervivum tectorum',
+    commonName: 'Red tip',
+    name: 'Red tip',
+    available: true,
+    salesPrice: 69,
+    imageUrl: 'https://example.com/1.jpg',
+    category: 'Succulent',
+  };
+
+  const [artifactProduct] = mergeFirebaseStorefrontData([localProduct], [firebaseProduct]);
+  assert.equal(artifactProduct.title, 'Sempervivum tectorum');
+  assert.equal(artifactProduct.commonName, 'Red tip');
+  assert.equal(artifactProduct.salesPrice, 69);
+  assert.equal(artifactProduct.schema.name, 'Sempervivum tectorum');
+
+  const feed = buildMerchantFeedTsv([artifactProduct], { baseUrl: 'https://rosaryplanthouse.com' });
+  assert.match(feed, /RPH-1\tSempervivum tectorum Plant\tGenerated merchant description\./);
+  assert.match(feed, /in_stock\t69\.00 INR/);
+
+  const [seoIndexProduct] = stripFirebaseOwnedFieldsForSeoIndex([artifactProduct]);
+  assert.equal(seoIndexProduct.id, '1');
+  assert.equal(seoIndexProduct.schema.name, 'Sempervivum tectorum');
+  assert.equal(seoIndexProduct.title, undefined);
+  assert.equal(seoIndexProduct.name, undefined);
+  assert.equal(seoIndexProduct.commonName, undefined);
+  assert.equal(seoIndexProduct.salesPrice, undefined);
+  assert.equal(seoIndexProduct.available, undefined);
+  assert.equal(seoIndexProduct.imageUrl, undefined);
 });

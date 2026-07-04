@@ -18,8 +18,38 @@ function parseBool(value) {
   return false;
 }
 
+const FIREBASE_OWNED_PRODUCT_FIELDS = new Set([
+  'available',
+  'salesPrice',
+  'imageUrl',
+  'size',
+  'originalPrice',
+  'category',
+  'qtyAvailable',
+  'price',
+  'inStock',
+  'combo',
+  'demand',
+  'hanging',
+  'indoor',
+  'isRestocked',
+  'mother',
+  'placeAvailable',
+  'transit',
+  'commonName',
+  'name',
+  'title',
+]);
+
+function stripFirebaseOwnedFields(product) {
+  for (const field of FIREBASE_OWNED_PRODUCT_FIELDS) {
+    delete product[field];
+  }
+  return product;
+}
+
 // Map to our product schema - keeping data exactly as it is in Excel
-const products = data.map((row, index) => ({
+const products = data.map((row, index) => stripFirebaseOwnedFields({
   // ID and Basic Info
   id: String(row['Id'] || index + 1),
   commonName: row['Common Name'] || '',
@@ -60,25 +90,27 @@ const products = data.map((row, index) => ({
   name: row['Common Name'] || '',
   price: parseFloat(row['Sales Price']) || 0,
   inStock: (row['Available'] === '1' || row['Available'] === 1) && row['Qty Ava'] !== 'NA'
-})).filter(p => p.commonName); // Only include products with a name
+})).filter(p => p.id);
 
 console.log('Products with names:', products.length);
 
 // Count by availability
-const available = products.filter(p => p.available);
-const unavailable = products.filter(p => !p.available);
+const available = data.filter(p => parseBool(p['Available']));
+const unavailable = data.filter(p => !parseBool(p['Available']));
 console.log('Available:', available.length);
 console.log('Unavailable:', unavailable.length);
 
 // Count by category
 const categories = {};
-products.forEach(p => {
-  categories[p.category] = (categories[p.category] || 0) + 1;
+data.forEach(p => {
+  const category = p['category'] || 'Others';
+  categories[category] = (categories[category] || 0) + 1;
 });
 console.log('\nBy category:');
 Object.entries(categories).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
   console.log(`  ${cat}: ${count}`);
 });
+console.log('\nFirebase-owned fields are excluded from local JSON:', [...FIREBASE_OWNED_PRODUCT_FIELDS].join(', '));
 
 // Write to JSON files
 fs.writeFileSync('./scripts/products.json', JSON.stringify(products, null, 2));

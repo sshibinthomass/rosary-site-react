@@ -41,11 +41,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/3-sedum-lineare-yellow/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/4-haworthia-cooperi-variegated/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -72,11 +67,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/10-lifesaver-cactus/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/11-hoodia-species/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -131,11 +121,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/23-fuzzy-echeveria/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/24-opuntia-monacantha/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -146,7 +131,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/27-echeveria-akma-lia/</loc>
+    <loc>https://rosaryplanthouse.com/plant/27-echeveria-akmalia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -157,11 +142,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/29-tiger-tooth-aloe/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/30-blue-chalk-fingers/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -191,12 +171,17 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/37-miniature-pine-tree-succulent/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/38-golden-needle-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/39-radiator-plant-peperomia/</loc>
+    <loc>https://rosaryplanthouse.com/plant/43-monstrose-columnar-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -211,7 +196,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/46-leaf-cactus/</loc>
+    <loc>https://rosaryplanthouse.com/plant/47-dianthus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -261,7 +246,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/58-spotted-gasteria-type/</loc>
+    <loc>https://rosaryplanthouse.com/plant/58-scilla-siberica/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -311,7 +296,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/69-haworthiareonium-bl-aa/</loc>
+    <loc>https://rosaryplanthouse.com/plant/69-aeonium-haworthii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -351,7 +336,17 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/81-english-ivy/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/82-variegated-periwinkle/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/83-variegated-syngonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -367,11 +362,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/86-window-haworthia-cluster/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/87-echeveria-glauca-cristata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -406,7 +396,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/96-starfish-flower/</loc>
+    <loc>https://rosaryplanthouse.com/plant/94-kiwi-aeonium/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/96-stapelia-lepida/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -421,6 +416,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/101-crassula-exilis/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/102-snake-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -431,7 +431,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/104-crown-of-thorns/</loc>
+    <loc>https://rosaryplanthouse.com/plant/104-euphorbia-milii/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -486,7 +486,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/116-aloe-vera-type/</loc>
+    <loc>https://rosaryplanthouse.com/plant/116-aloe-x-spinosissima/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/117-jelly-bean-sedum/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -497,6 +502,16 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/120-variegated-baby-rubber-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/121-variegated-baby-rubber-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/122-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -521,17 +536,42 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/127-variegated-dwarf-umbrella-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/129-sedum-adolphii-group/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/130-grey-sedum/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/131-green-spider-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/132-philodendron-heart-leaf/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/134-sedum-stfyn-ecrops/</loc>
+    <loc>https://rosaryplanthouse.com/plant/134-sedum-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/137-foxtail-fern-type/</loc>
+    <loc>https://rosaryplanthouse.com/plant/135-sedum-pachyphyllum/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/136-watermelon-peperomia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -551,12 +591,32 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/141-graptopetalum-lo-thye-dr/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/142-golden-stonecrop/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/143-graptopetalum-paraguayense/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/144-aloe-camperi-purple-aloe/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/145-aloe-castilloniae-liliputana/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/146-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -591,17 +651,27 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/154-string-of-buttons/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/155-yellow-flowering-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/158-aeonium-haworthii/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/159-houseleek/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/160-echeveria-perle-von-nurnberg/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/161-portulaca/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -631,12 +701,32 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/167-cuban-oregano-type/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/168-paddle-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/170-rose-cactus/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/171-blue-sedum-cluster/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/172-peperomia-ferreyrae-or-similar-group/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/173-globose-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -651,6 +741,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/177-watch-chain-succulent/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/178-opuntia-elata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -661,7 +756,17 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/180-jelly-bean-sedum/</loc>
+    <loc>https://rosaryplanthouse.com/plant/180-sedum-pachyphyllum-big/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/181-golden-stonecrop/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/182-donkey-tail/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -687,6 +792,11 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/189-green-aeonium/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/190-ruby-necklace/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -726,7 +836,27 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/198-croton-type-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/199-green-spider-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/200-variegated-syngonium/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/201-window-haworthia/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/202-variegated-shrub-foliage-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -786,12 +916,22 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/214-african-milk-tree/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/217-string-of-buttons/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/219-echeveria-snow-valley/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/220-variegated-baby-rubber-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -811,7 +951,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/226-dracaena-type-plant/</loc>
+    <loc>https://rosaryplanthouse.com/plant/226-dracaena-reflexa-or-related-group/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/227-variegated-tradescantia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -831,12 +976,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/231-silver-fuzzy-succulent/</loc>
+    <loc>https://rosaryplanthouse.com/plant/232-variegated-aeonium/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/232-variegated-aeonium/</loc>
+    <loc>https://rosaryplanthouse.com/plant/233-sedum-burrito/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -856,6 +1001,21 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/237-echeveria-cubic-frost/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/240-graptoveria-pink-rose/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/241-echeveria-secunda/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/242-echeveria-clara/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -866,12 +1026,17 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/244-variegated-foliage-cutting/</loc>
+    <loc>https://rosaryplanthouse.com/plant/244-peperomia-obtusifolia-variegata/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/246-mexican-snowball/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/247-echeveria-purple-pearl/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -906,7 +1071,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/254-red-alternanthera-type/</loc>
+    <loc>https://rosaryplanthouse.com/plant/254-alternanthera-ficoidea-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -971,7 +1136,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/267-purple-waffle-plant/</loc>
+    <loc>https://rosaryplanthouse.com/plant/267-peperomia-caperata-green-big/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -996,6 +1161,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rosaryplanthouse.com/plant/272-yellow-bunny-ear-cactus/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rosaryplanthouse.com/plant/273-tricolor-oyster-plant/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rosaryplanthouse.com/plant/274-aloe-vera/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1007,11 +1182,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/276-zebra-haworthia/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/277-jade-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1031,17 +1201,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/284-dracaena-reflexa/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/285-cylindrical-snake-plant/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/286-green-spider-plant/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1056,22 +1216,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/290-paddle-plant/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rosaryplanthouse.com/plant/291-golden-barrel-type-cactus/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/292-purple-echeveria/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/294-patterned-star-succulent/</loc>
+    <loc>https://rosaryplanthouse.com/plant/293-clustered-jelly-bean-succulent/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1086,7 +1236,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/297-gollum-jade/</loc>
+    <loc>https://rosaryplanthouse.com/plant/297-crassula-ovata-gollum-group/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1097,11 +1247,6 @@
   </url>
   <url>
     <loc>https://rosaryplanthouse.com/plant/299-green-echeveria-rosette/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/300-red-edged-echeveria/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1121,12 +1266,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/304-watch-chain-succulent/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rosaryplanthouse.com/plant/305-dark-sempervivum/</loc>
+    <loc>https://rosaryplanthouse.com/plant/304-crassula-muscosa/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1136,7 +1276,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rosaryplanthouse.com/plant/310-fairy-washboard/</loc>
+    <loc>https://rosaryplanthouse.com/plant/310-haworthiopsis-limifolia/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

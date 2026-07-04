@@ -9,12 +9,37 @@ import {
   getProductLongDescription,
   getProductMetaDescription,
   getProductMetaTitle,
+  getProductPrice,
   isProductInStock,
   PRODUCT_SEO_SITE,
 } from '../../src/utils/productSeo.js';
 
 const DEFAULT_BASE_URL = PRODUCT_SEO_SITE.url;
 const SITE_NAME = PRODUCT_SEO_SITE.name;
+
+const FIREBASE_OWNED_SEO_INDEX_FIELDS = new Set([
+  'available',
+  'salesPrice',
+  'imageUrl',
+  'imageUrls',
+  'size',
+  'originalPrice',
+  'category',
+  'qtyAvailable',
+  'price',
+  'inStock',
+  'combo',
+  'demand',
+  'hanging',
+  'indoor',
+  'isRestocked',
+  'mother',
+  'placeAvailable',
+  'transit',
+  'commonName',
+  'name',
+  'title',
+]);
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -45,6 +70,68 @@ function absoluteUrl(url, baseUrl) {
 
 function productIsPublic(product) {
   return product && product.id && product.available !== false;
+}
+
+function productId(product) {
+  return String(product?.id ?? '').trim();
+}
+
+function mergeNestedProductData(localProduct = {}, firebaseProduct = {}) {
+  const merged = {
+    ...localProduct,
+    ...firebaseProduct,
+  };
+
+  for (const key of ['seo', 'careGuide', 'schema', 'merchant', 'troubleshooting', 'identity']) {
+    if (localProduct[key] || firebaseProduct[key]) {
+      merged[key] = {
+        ...(firebaseProduct[key] || {}),
+        ...(localProduct[key] || {}),
+      };
+    }
+  }
+
+  if (Array.isArray(localProduct.faqs)) {
+    merged.faqs = localProduct.faqs;
+  } else if (Array.isArray(firebaseProduct.faqs)) {
+    merged.faqs = firebaseProduct.faqs;
+  }
+
+  return merged;
+}
+
+export function mergeFirebaseStorefrontData(localProducts = [], firebaseProducts = []) {
+  const firebaseById = new Map(
+    firebaseProducts
+      .filter((product) => productId(product))
+      .map((product) => [productId(product), product])
+  );
+  const mergedIds = new Set();
+  const products = localProducts.map((localProduct) => {
+    const id = productId(localProduct);
+    const firebaseProduct = firebaseById.get(id);
+    mergedIds.add(id);
+    return firebaseProduct ? mergeNestedProductData(localProduct, firebaseProduct) : localProduct;
+  });
+
+  for (const firebaseProduct of firebaseProducts) {
+    const id = productId(firebaseProduct);
+    if (id && !mergedIds.has(id)) {
+      products.push(firebaseProduct);
+    }
+  }
+
+  return products;
+}
+
+export function stripFirebaseOwnedFieldsForSeoIndex(products = []) {
+  return products.map((product) => {
+    const stripped = { ...product };
+    for (const field of FIREBASE_OWNED_SEO_INDEX_FIELDS) {
+      delete stripped[field];
+    }
+    return stripped;
+  });
 }
 
 export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
@@ -109,8 +196,9 @@ export function buildMerchantFeedTsv(products, { baseUrl = DEFAULT_BASE_URL } = 
 
   const rows = products
     .filter(productIsPublic)
-    .map((product) => {
-      const price = Number(product.salesPrice ?? product.price ?? product.merchant?.salesPrice ?? 0);
+    .map((product) => ({ product, price: getProductPrice(product) }))
+    .filter(({ price }) => price !== null)
+    .map(({ product, price }) => {
       return [
         product.schema?.sku || `RPH-${product.id}`,
         product.merchant?.title || product.schema?.name || getProductDisplayName(product),
@@ -197,7 +285,10 @@ function renderStaticBody(product, baseUrl) {
   const image = absoluteUrl(getPrimaryProductImage(product), baseUrl);
   const longDescription = getProductLongDescription(product);
   const quickAnswer = product.careGuide?.quickAnswer;
-  const price = Number(product.salesPrice ?? product.price ?? 0);
+  const price = getProductPrice(product);
+  const priceMarkup = price !== null
+    ? `<p><strong>Price:</strong> Rs. ${price.toLocaleString('en-IN')} ${isProductInStock(product) ? 'in stock' : 'out of stock'}</p>`
+    : '';
 
   return `<main class="seo-product-page" data-product-id="${escapeHtml(product.id)}">
   <nav aria-label="Breadcrumb">
@@ -206,7 +297,7 @@ function renderStaticBody(product, baseUrl) {
   <article>
     <h1>${escapeHtml(title)}</h1>
     <img src="${escapeHtml(image)}" alt="${escapeHtml(`${getProductDisplayName(product)} from ${SITE_NAME}`)}" />
-    <p><strong>Price:</strong> Rs. ${price.toLocaleString('en-IN')} ${isProductInStock(product) ? 'in stock' : 'out of stock'}</p>
+    ${priceMarkup}
     ${quickAnswer ? `<section><h2>Quick answer</h2><p>${escapeHtml(quickAnswer)}</p></section>` : ''}
     ${longDescription ? `<section><h2>Plant details and care</h2>${renderParagraphs(longDescription)}</section>` : ''}
     ${renderCareSections(product)}

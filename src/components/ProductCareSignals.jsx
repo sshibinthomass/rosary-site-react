@@ -39,7 +39,7 @@ export default function ProductCareSignals({ product, variant = 'page' }) {
         >
           <ProductLineArt
             name={signal.icon}
-            className={`${iconClass} text-black transition-transform duration-200 group-hover/signal:scale-105 dark:text-white`}
+            className={`${iconClass} text-[var(--text-primary)] transition-transform duration-200 group-hover/signal:scale-105`}
           />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">

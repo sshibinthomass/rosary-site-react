@@ -101,7 +101,7 @@ function CareFocusExplorer({ product, wide }) {
   return (
     <section className={`rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] ${wide ? 'p-4' : 'p-3'}`}>
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-black bg-[var(--bg-primary)] text-black dark:border-white dark:text-white">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--text-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)]">
           <ProductLineArt name="rosette" className="h-7 w-7" />
         </div>
         <div>
@@ -128,7 +128,7 @@ function CareFocusExplorer({ product, wide }) {
                   : 'border-[var(--border-color)] bg-transparent text-[var(--text-secondary)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              <ProductLineArt name={item.icon} className="h-5 w-5 text-black dark:text-white" />
+              <ProductLineArt name={item.icon} className="h-5 w-5 text-[var(--text-primary)]" />
               <span className="mt-1 block text-xs font-bold">{item.label}</span>
             </button>
           );
@@ -137,7 +137,7 @@ function CareFocusExplorer({ product, wide }) {
 
       <article className="mt-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-3">
         <div className="flex items-start gap-3">
-          <ProductLineArt name={activeItem.icon} className="mt-0.5 h-7 w-7 shrink-0 text-black dark:text-white" />
+          <ProductLineArt name={activeItem.icon} className="mt-0.5 h-7 w-7 shrink-0 text-[var(--text-primary)]" />
           <div className="min-w-0">
             <h4 className="text-sm font-semibold text-[var(--text-primary)]">{activeItem.heading}</h4>
             {activeItem.value && (
@@ -255,7 +255,7 @@ function CareOptionButton({ selected, label, icon, onClick, wide }) {
           : 'border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)]'
       }`}
     >
-      <ProductLineArt name={icon} className="h-5 w-5 text-black dark:text-white" />
+      <ProductLineArt name={icon} className="h-5 w-5 text-[var(--text-primary)]" />
       <span className="mt-1.5 block text-xs font-bold leading-tight">{label}</span>
     </button>
   );
@@ -318,7 +318,7 @@ function InteractiveCareItems({ section, wide }) {
 
       <article className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-black bg-[var(--bg-primary)] text-black dark:border-white dark:text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--text-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)]">
             <ProductLineArt name={activeIcon} className="h-6 w-6" />
           </div>
           <div className="min-w-0">
@@ -396,7 +396,7 @@ function InteractiveProblemItems({ problems, wide }) {
 
       <article className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-black bg-[var(--bg-primary)] text-black dark:border-white dark:text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--text-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)]">
             <ProductLineArt name={activeIcon} className="h-7 w-7" />
           </div>
           <div className="min-w-0 flex-1">

@@ -190,6 +190,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
 
   const sitemap = buildSitemapXml([product], { baseUrl: 'https://rosaryplanthouse.com' });
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+  assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/policies/);
   assert.doesNotMatch(sitemap, /\/cart/);
 
   const feed = buildMerchantFeedTsv([product], { baseUrl: 'https://rosaryplanthouse.com' });

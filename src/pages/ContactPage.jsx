@@ -52,9 +52,21 @@ export default function ContactPage() {
     },
     "openingHoursSpecification": {
       "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      "opens": "10:00",
-      "closes": "17:00"
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "opens": "09:00",
+      "closes": "21:00"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "telephone": "+91 7904050237",
+      "availableLanguage": "English",
+      "hoursAvailable": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "09:00",
+        "closes": "21:00"
+      }
     },
     "sameAs": [
       "https://instagram.com/rosary_plant_house",
@@ -124,8 +136,8 @@ export default function ContactPage() {
        {/* Business Hours & Email */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card p-4">
-          <h3 className="font-semibold text-[var(--text-primary)] mb-2">🕒 Business Hours</h3>
-          <p className="text-[var(--text-secondary)]">Mon - Fri, 10:00 - 5:00</p>
+          <h3 className="font-semibold text-[var(--text-primary)] mb-2">WhatsApp Support</h3>
+          <p className="text-[var(--text-secondary)]">Every day, 9 AM - 9 PM</p>
         </div>
         <div className="card p-4">
           <h3 className="font-semibold text-[var(--text-primary)] mb-2">📧 Email</h3>

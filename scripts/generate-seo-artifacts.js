@@ -42,7 +42,14 @@ async function writeMerchantFeed(filePath, products) {
   }
 
   try {
-    await fs.access(filePath);
+    const existingFeed = await fs.readFile(filePath, 'utf8');
+    const normalizedFeed = existingFeed.replace(
+      /(https?:\/\/[^\s\t/]+)\/public\/sale_plants\//g,
+      '$1/sale_plants/'
+    );
+    if (normalizedFeed !== existingFeed) {
+      await fs.writeFile(filePath, normalizedFeed, 'utf8');
+    }
     console.warn(`Preserving ${path.relative(rootDir, filePath)} because no priced products were available for Merchant feed generation.`);
   } catch {
     await fs.writeFile(filePath, feed, 'utf8');

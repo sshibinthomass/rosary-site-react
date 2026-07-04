@@ -51,6 +51,7 @@ export default function Layout({ children }) {
 
   // Close sidebar on route change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSidebarOpen(false);
   }, [location.pathname]);
 
@@ -103,6 +104,7 @@ export default function Layout({ children }) {
             {navItems.map(({ path, label, Icon }) => {
               const isActive = location.pathname === path;
               const isCart = path === '/cart';
+              const icon = Icon({ active: isActive });
               return (
                 <NavLink 
                   key={path}
@@ -110,7 +112,7 @@ export default function Layout({ children }) {
                   className={`flex items-center gap-2 transition-colors ${isActive ? 'text-[var(--color-forest)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   <div className="relative">
-                    <Icon active={isActive} />
+                    {icon}
                     {isCart && cartCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                         {cartCount > 9 ? '9+' : cartCount}
@@ -290,6 +292,7 @@ export default function Layout({ children }) {
           ].map(({ path, label, Icon, currentCount }) => {
             const isActive = location.pathname === path;
             const isCart = path === '/cart';
+            const icon = Icon({ active: isActive });
             return (
               <NavLink
                 key={path}
@@ -304,7 +307,7 @@ export default function Layout({ children }) {
                 `}
               >
                 <div className="relative">
-                  <Icon active={isActive} />
+                  {icon}
                   {isCart && currentCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                       {currentCount > 9 ? '9+' : currentCount}
@@ -321,6 +324,7 @@ export default function Layout({ children }) {
           {/* Info Pages */}
           <div className="flex flex-col gap-1">
             {[
+              { path: '/policies', label: 'Policies', emoji: 'P' },
               { path: '/reviews', label: 'Reviews', emoji: '⭐' },
               { path: '/insta-reviews', label: 'Instagram Stories', emoji: '📸' },
               { path: '/faq', label: 'FAQ', emoji: '❓' },
@@ -393,6 +397,7 @@ export default function Layout({ children }) {
             {navItems.map(({ path, label, Icon }) => {
               const isActive = location.pathname === path;
               const isCart = path === '/cart';
+              const icon = Icon({ active: isActive });
               
               return (
                 <NavLink
@@ -407,7 +412,7 @@ export default function Layout({ children }) {
                   `}
                 >
                   <div className="relative">
-                    <Icon active={isActive} />
+                    {icon}
                     {isCart && cartCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                         {cartCount > 9 ? '9+' : cartCount}

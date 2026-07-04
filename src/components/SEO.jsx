@@ -1,5 +1,10 @@
 import { Helmet } from 'react-helmet-async';
-import { buildProductStructuredData } from '../utils/productSeo';
+import {
+  buildProductStructuredData,
+  DEFAULT_SEO_IMAGE_PATH,
+  PRODUCT_SEO_SITE,
+  getAbsoluteImageUrl,
+} from '../utils/productSeo';
 
 export default function SEO({
   title,
@@ -17,8 +22,8 @@ export default function SEO({
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const defaultDesc = 'Beautiful succulents, cacti & indoor plants from Nilgiris, Coonoor. Shop online and get plants delivered across India.';
   const finalDesc = description || defaultDesc;
-  const defaultImage = '/og-image.jpg'; // fallback
-  const finalImage = image || defaultImage;
+  const defaultImage = DEFAULT_SEO_IMAGE_PATH;
+  const finalImage = getAbsoluteImageUrl(image || defaultImage, PRODUCT_SEO_SITE.url);
   const finalUrl = canonicalUrl || url;
   const robotsContent = robots || (noindex
     ? 'noindex,follow'

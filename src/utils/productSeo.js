@@ -1,5 +1,8 @@
 const SITE_URL = 'https://rosaryplanthouse.com';
 const SITE_NAME = 'Rosary Plant House';
+export const DEFAULT_SEO_IMAGE_PATH = '/og-image.jpg';
+export const HERO_SEO_IMAGE_PATH = '/hero-bg.jpg';
+export const PLACEHOLDER_PLANT_IMAGE_PATH = '/placeholder-plant.jpg';
 
 export {
   getProductRobots,
@@ -71,13 +74,34 @@ export function isProductInStock(product = {}) {
   return product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock);
 }
 
+export function normalizePublicImagePath(value) {
+  if (!value) return '';
+  const imagePath = String(value).trim();
+  if (/^https?:\/\//i.test(imagePath)) return imagePath;
+  if (imagePath.startsWith('public/')) return `/${imagePath.slice('public/'.length)}`;
+  return imagePath;
+}
+
+export function getAbsoluteImageUrl(value, baseUrl = SITE_URL) {
+  const imagePath = normalizePublicImagePath(value);
+  if (!imagePath) return '';
+  if (/^https?:\/\//i.test(imagePath)) return imagePath;
+  return `${baseUrl.replace(/\/$/, '')}/${imagePath.replace(/^\//, '')}`;
+}
+
 export function getPrimaryProductImage(product = {}) {
+  let imagePath = '';
   if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
-    return product.imageUrls[0];
+    imagePath = product.imageUrls[0];
+  } else if (product.imageUrl) {
+    imagePath = product.imageUrl;
+  } else if (product.id) {
+    imagePath = `/sale_plants/${product.id}.jpg`;
+  } else {
+    imagePath = PLACEHOLDER_PLANT_IMAGE_PATH;
   }
-  if (product.imageUrl) return product.imageUrl;
-  if (product.id) return `/sale_plants/${product.id}.jpg`;
-  return product.imageUrl || '/placeholder-plant.jpg';
+
+  return normalizePublicImagePath(imagePath);
 }
 
 export function getProductDisplayName(product = {}) {
@@ -270,7 +294,7 @@ export function mergeProductWithLocalEnrichment(product, localProduct) {
 
 export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } = {}) {
   const url = product.seo?.canonicalUrl || getProductCanonicalUrl(product, baseUrl);
-  const image = getPrimaryProductImage(product);
+  const image = getAbsoluteImageUrl(getPrimaryProductImage(product), baseUrl);
   const price = getProductPrice(product);
   const name = product.schema?.name || product.seo?.productName || getProductDisplayName(product);
   const description = product.schema?.description || getProductMetaDescription(product);

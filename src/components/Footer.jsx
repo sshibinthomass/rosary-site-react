@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 const footerLinks = [
   { label: 'About', path: '/about' },
   { label: 'FAQ', path: '/faq' },
+  { label: 'Policies', path: '/policies' },
   { label: 'Reviews', path: '/reviews' },
   { label: 'Contact', path: '/contact' },
 ];
@@ -106,7 +107,7 @@ export default function Footer() {
             <div className="text-sm text-[var(--text-secondary)] space-y-1">
               <p>📞 +91 790 405 0237</p>
               <p>✉️ rosaryplanthouse@gmail.com</p>
-              <p>🕒 Mon – Fri, 10:00 – 5:00</p>
+              <p>WhatsApp support: every day, 9 AM - 9 PM</p>
             </div>
           </div>
         </div>

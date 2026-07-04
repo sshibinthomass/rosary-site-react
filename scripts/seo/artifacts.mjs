@@ -3,6 +3,7 @@ import {
   buildFaqStructuredData,
   buildProductCareSections,
   buildProductStructuredData,
+  getAbsoluteImageUrl,
   getPrimaryProductImage,
   getProductCanonicalUrl,
   getProductDisplayName,
@@ -65,9 +66,7 @@ function tsvCell(value) {
 }
 
 function absoluteUrl(url, baseUrl) {
-  if (!url) return '';
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${baseUrl.replace(/\/$/, '')}/${String(url).replace(/^\//, '')}`;
+  return getAbsoluteImageUrl(url, baseUrl);
 }
 
 function productIsPublic(product) {
@@ -145,7 +144,7 @@ export function stripFirebaseOwnedFieldsForSeoIndex(products = []) {
 
 export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
   const publicBase = baseUrl.replace(/\/$/, '');
-  const staticPaths = ['/', '/about', '/contact', '/faq', '/reviews', '/insta-reviews'];
+  const staticPaths = ['/', '/about', '/contact', '/faq', '/policies', '/reviews', '/insta-reviews'];
   const urls = [
     ...staticPaths.map((path) => ({
       loc: `${publicBase}${path}`,

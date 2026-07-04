@@ -63,7 +63,20 @@ test('public information pages declare their canonical URLs', () => {
   assertCanonical('src/pages/HomePage.jsx', 'https://rosaryplanthouse.com/');
   assertCanonical('src/pages/AboutPage.jsx', 'https://rosaryplanthouse.com/about');
   assertCanonical('src/pages/FAQPage.jsx', 'https://rosaryplanthouse.com/faq');
+  assertCanonical('src/pages/PoliciesPage.jsx', 'https://rosaryplanthouse.com/policies');
   assertCanonical('src/pages/ContactPage.jsx', 'https://rosaryplanthouse.com/contact');
   assertCanonical('src/pages/ReviewsPage.jsx', 'https://rosaryplanthouse.com/reviews');
   assertCanonical('src/pages/InstaReviewsPage.jsx', 'https://rosaryplanthouse.com/insta-reviews');
+});
+
+test('policies page is routed and discoverable from public navigation', () => {
+  const appSource = readText('src/App.jsx');
+  const footerSource = readText('src/components/Footer.jsx');
+  const layoutSource = readText('src/components/Layout.jsx');
+
+  assert.match(appSource, /const PoliciesPage = lazy\(\(\) => import\('\.\/pages\/PoliciesPage'\)\);/);
+  assert.match(appSource, /<Route path="\/policies" element={<PoliciesPage \/>} \/>/);
+  assert.match(appSource, /<Route path="\/policies\.html" element={<PoliciesPage \/>} \/>/);
+  assert.match(footerSource, /\{ label: 'Policies', path: '\/policies' \}/);
+  assert.match(layoutSource, /\{ path: '\/policies', label: 'Policies'/);
 });

@@ -26,6 +26,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 const AdminAnalysisPage = lazy(() => import('./pages/AdminAnalysisPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
+const PoliciesPage = lazy(() => import('./pages/PoliciesPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ReviewsPage = lazy(() => import('./pages/ReviewsPage'));
@@ -88,6 +89,8 @@ function AppRoutes() {
           />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/faq.html" element={<FAQPage />} />
+          <Route path="/policies" element={<PoliciesPage />} />
+          <Route path="/policies.html" element={<PoliciesPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/contact.html" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />

@@ -8,6 +8,10 @@ import {
   PLACEHOLDER_PLANT_IMAGE_PATH,
   getPrimaryProductImage,
 } from '../../src/utils/productSeo.js';
+import {
+  CONTENT_HUBS,
+  getContentHubImage,
+} from '../../src/utils/contentHubs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const defaultRootDir = path.resolve(path.dirname(__filename), '..', '..');
@@ -65,6 +69,21 @@ async function auditProductImages({ rootDir, errors }) {
   return checkedProducts;
 }
 
+async function auditGuideImages({ rootDir, errors, checkedAssets }) {
+  const guideImagePaths = new Set(CONTENT_HUBS.map(getContentHubImage).filter(Boolean));
+
+  for (const publicPath of guideImagePaths) {
+    const relativePath = publicRelativePath(publicPath);
+    checkedAssets.push(relativePath.replaceAll(path.sep, '/'));
+
+    if (!await fileExists(path.join(rootDir, relativePath))) {
+      errors.push(`Guide image ${relativePath.replaceAll(path.sep, '/')} is missing or empty.`);
+    }
+  }
+
+  return guideImagePaths.size;
+}
+
 async function auditMerchantFeed({ rootDir, errors }) {
   const feedPath = path.join(rootDir, 'public', 'google-merchant-feed.tsv');
 
@@ -83,12 +102,14 @@ export async function auditImageSeo({ rootDir = defaultRootDir } = {}) {
   const checkedAssets = [];
 
   await auditRequiredAssets({ rootDir, errors, checkedAssets });
+  const checkedGuideImages = await auditGuideImages({ rootDir, errors, checkedAssets });
   const checkedProducts = await auditProductImages({ rootDir, errors });
   await auditMerchantFeed({ rootDir, errors });
 
   return {
     errors,
     checkedAssets,
+    checkedGuideImages,
     checkedProducts,
   };
 }
@@ -104,7 +125,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Image SEO audit passed for ${report.checkedAssets.length} global assets and ${report.checkedProducts} local product images.`);
+  console.log(`Image SEO audit passed for ${report.checkedAssets.length} global/guide assets, ${report.checkedGuideImages} guide image groups, and ${report.checkedProducts} local product images.`);
 }
 
 if (process.argv[1] === __filename) {

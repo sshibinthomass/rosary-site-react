@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 
 import {
   CONTENT_HUBS,
+  GUIDE_IMAGE_ASSETS,
   getContentHubBySlug,
+  getContentHubImage,
+  getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
 } from '../src/utils/contentHubs.js';
+
+const rootDir = path.resolve('.');
 
 test('content hubs cover priority SEO and AI-answer themes', () => {
   const slugs = CONTENT_HUBS.map((hub) => hub.slug);
@@ -36,6 +43,23 @@ test('each content hub has crawlable answer sections, FAQs, and canonical path d
     assert.ok(Array.isArray(hub.sections) && hub.sections.length >= 3, `${hub.slug} needs useful sections`);
     assert.ok(Array.isArray(hub.faqs) && hub.faqs.length >= 3, `${hub.slug} needs FAQs for AEO`);
     assert.equal(getContentHubPath(hub), `/guides/${hub.slug}`);
+  }
+});
+
+test('each content hub has a crawlable guide image with useful alt text', () => {
+  assert.ok(Object.keys(GUIDE_IMAGE_ASSETS).length >= 5, 'guide image asset set should cover the major guide themes');
+
+  const images = CONTENT_HUBS.map(getContentHubImage);
+  assert.ok(new Set(images).size >= 5, 'content hubs should not all share the same generic image');
+
+  for (const hub of CONTENT_HUBS) {
+    const imagePath = getContentHubImage(hub);
+    const imageAlt = getContentHubImageAlt(hub);
+
+    assert.match(imagePath, /^\/guides\/guide-[a-z0-9-]+\.jpg$/, `${hub.slug} image should use a descriptive guide asset path`);
+    assert.equal(fs.existsSync(path.join(rootDir, 'public', imagePath.replace(/^\//, ''))), true, `${imagePath} should exist`);
+    assert.ok(imageAlt.length >= 45, `${hub.slug} image alt text should be descriptive`);
+    assert.match(imageAlt, /Rosary Plant House|succulent|cactus|plant|nursery/i);
   }
 });
 

@@ -3,6 +3,8 @@ import SEO from '../components/SEO';
 import {
   CONTENT_HUBS,
   getContentHubCanonicalUrl,
+  getContentHubImage,
+  getContentHubImageAlt,
   getContentHubPath,
   getGuidesIndexCanonicalUrl,
 } from '../utils/contentHubs';
@@ -34,6 +36,7 @@ export default function GuidesPage() {
       <SEO
         title="Plant Care Guides"
         description="Browse plant care guides from Rosary Plant House for succulents, cactus, balcony plants, monsoon care and root rot recovery in India."
+        image={getContentHubImage(CONTENT_HUBS[0])}
         canonicalUrl={getGuidesIndexCanonicalUrl()}
         schemaData={guidesIndexSchema}
       />
@@ -53,14 +56,24 @@ export default function GuidesPage() {
           <Link
             key={hub.slug}
             to={getContentHubPath(hub)}
-            className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 hover:border-[var(--color-forest)] transition-all"
+            className="group overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--color-forest)] transition-all"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-forest)]">Guide</p>
-            <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{hub.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{hub.metaDescription}</p>
-            <span className="mt-4 inline-flex text-sm font-semibold text-[var(--color-forest)]">
-              Read guide
-            </span>
+            <div className="aspect-[3/2] overflow-hidden bg-[var(--bg-tertiary)]">
+              <img
+                src={getContentHubImage(hub)}
+                alt={getContentHubImageAlt(hub)}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-forest)]">Guide</p>
+              <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{hub.title}</h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{hub.metaDescription}</p>
+              <span className="mt-4 inline-flex text-sm font-semibold text-[var(--color-forest)]">
+                Read guide
+              </span>
+            </div>
           </Link>
         ))}
       </section>

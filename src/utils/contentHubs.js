@@ -1,9 +1,18 @@
 import {
   PRODUCT_SEO_SITE,
+  getAbsoluteImageUrl,
   getProductCanonicalUrl,
   getProductDisplayName,
   isSeoIndexable,
 } from './productSeo.js';
+
+export const GUIDE_IMAGE_ASSETS = Object.freeze({
+  group: '/guides/guide-succulent-group-nursery.jpg',
+  ceramic: '/guides/guide-ceramic-pot-succulents.jpg',
+  hanging: '/guides/guide-hanging-balcony-plants.jpg',
+  flowering: '/guides/guide-flowering-cactus-plants.jpg',
+  delivery: '/guides/guide-plant-delivery-packing.jpg',
+});
 
 export const CONTENT_HUBS = Object.freeze([
   {
@@ -13,6 +22,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Learn how to choose and care for succulents in India, with light, watering, soil, delivery and plant recommendations from Rosary Plant House.',
     intro: 'Succulents can grow very well in Indian homes when the basics are right: bright light, fast drainage, careful watering and protection from long wet spells. Use this guide to choose beginner-friendly succulents, understand seasonal care, and find plants that suit balconies, windowsills and warm Indian weather.',
     answer: 'For most Indian homes, choose compact succulents such as Echeveria, Haworthia, Sedum, Crassula, Jade, Aloe and hardy mixed succulents. Keep them in bright filtered light, use a gritty soil mix, water only after the potting mix dries, and reduce watering during humid or rainy weather.',
+    image: GUIDE_IMAGE_ASSETS.group,
+    imageAlt: 'Succulent nursery collection for Rosary Plant House care guides',
     productFilters: {
       categories: ['Succulent', 'Echeveria', 'Sedum', 'Haworthia', 'Crassula', 'Jade', 'Aloe'],
       keywords: ['succulent', 'echeveria', 'haworthia', 'sedum', 'crassula', 'jade', 'aloe', 'sempervivum'],
@@ -69,6 +80,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Find low water balcony plants for Indian homes, including succulents, cacti and hardy picks that handle bright light with simple watering.',
     intro: 'Low water balcony plants are ideal when you want a green space without daily watering. For Indian balconies, the safest choices are usually succulents, cacti, jade plants, crassula, aloe, sedum and other drought-tolerant plants that prefer bright light and quick drainage.',
     answer: 'The best low water balcony plants are succulents, cactus, Jade, Crassula, Aloe, Sedum, Haworthia and Sansevieria. Place them where they get bright light, use pots with drainage holes, and water only when the soil is dry.',
+    image: GUIDE_IMAGE_ASSETS.hanging,
+    imageAlt: 'Hanging and low water balcony plants in a Rosary Plant House style nursery',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Jade', 'Crassula', 'Aloe', 'Sedum', 'Haworthia', 'Sansevieria'],
       keywords: ['low water', 'succulent', 'cactus', 'jade', 'crassula', 'aloe', 'sedum', 'haworthia', 'sansevieria'],
@@ -125,6 +138,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Monsoon succulent care guide for India: watering, drainage, airflow, fungal checks and recovery steps to keep succulents healthy in rainy weather.',
     intro: 'Monsoon is the season when many succulents struggle in India. The problem is usually not rain alone; it is the combination of wet soil, low airflow, lower light and high humidity. A few simple changes can prevent root rot, fungus and leaf drop.',
     answer: 'During monsoon, keep succulents under cover, increase airflow, water less often, remove dead leaves, and use a gritty mix that dries quickly. Do not let pots sit in rainwater or trays.',
+    image: GUIDE_IMAGE_ASSETS.group,
+    imageAlt: 'Airy succulent nursery bench for Rosary Plant House monsoon care guidance',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Echeveria', 'Sedum', 'Haworthia', 'Crassula', 'Jade', 'Aloe'],
       keywords: ['succulent', 'cactus', 'echeveria', 'haworthia', 'sedum', 'crassula', 'jade', 'aloe'],
@@ -176,6 +191,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Indoor succulent care for Indian apartments, covering window light, watering gaps, airflow, soil mix and signs that a plant needs more sun.',
     intro: 'Indoor succulent care is mostly about light discipline. Succulents can decorate apartments beautifully, but they still need a bright window, dry gaps between watering, and enough airflow to prevent weak growth and rot.',
     answer: 'To grow succulents indoors, keep them next to the brightest available window, avoid dark shelves, use a gritty soil mix, water only after the mix dries, and rotate the pot so growth stays even.',
+    image: GUIDE_IMAGE_ASSETS.ceramic,
+    imageAlt: 'Ceramic pot succulents for Rosary Plant House indoor plant care',
     productFilters: {
       categories: ['Succulent', 'Haworthia', 'Aloe', 'Sansevieria', 'Peperomia', 'Jade', 'Crassula'],
       keywords: ['indoor', 'haworthia', 'aloe', 'sansevieria', 'peperomia', 'jade', 'crassula', 'succulent'],
@@ -228,6 +245,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Cactus care in India explained with light, watering, soil, pot drainage, summer heat, monsoon protection and beginner-friendly cactus picks.',
     intro: 'Cactus plants are among the easiest choices for bright Indian balconies and sunny windows, but they still fail when kept wet or dark. The right cactus care routine is simple: strong light, gritty soil, drainage and patient watering.',
     answer: 'Give cactus plants bright light, a gritty cactus mix, a pot with drainage holes and deep but infrequent watering. Protect them from repeated monsoon rain and avoid keeping them in dark indoor corners.',
+    image: GUIDE_IMAGE_ASSETS.flowering,
+    imageAlt: 'Flowering cactus plants for Rosary Plant House cactus care guidance',
     productFilters: {
       categories: ['Cactus'],
       keywords: ['cactus', 'cacti', 'mammillaria', 'gymnocalycium', 'opuntia', 'cereus'],
@@ -278,6 +297,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Root rot in succulents: spot early symptoms, stop overwatering, repot safely and prevent wet roots in Indian weather and balcony conditions.',
     intro: 'Root rot is one of the most common reasons succulents fail. It often starts quietly below the soil when the pot stays wet for too long. Early action can save many plants, especially if the stem is still firm and there are healthy roots or leaves left.',
     answer: 'To handle succulent root rot, stop watering, remove the plant from wet soil, cut away black or mushy roots, let healthy sections dry, and repot into a fresh gritty mix. Restart watering slowly after the plant stabilizes.',
+    image: GUIDE_IMAGE_ASSETS.delivery,
+    imageAlt: 'Succulent care and packing table for Rosary Plant House root rot recovery support',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Echeveria', 'Sedum', 'Haworthia', 'Crassula', 'Jade', 'Aloe'],
       keywords: ['succulent', 'cactus', 'echeveria', 'haworthia', 'sedum', 'crassula', 'jade', 'aloe'],
@@ -327,6 +348,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Buy succulents online in India with care tips, packing guidance, delivery support and beginner-friendly picks from Rosary Plant House.',
     intro: 'Buying succulents online in India works best when the plant page clearly explains identity, light needs, watering, packing and after-delivery care. Rosary Plant House focuses on compact succulents, cactus plants and balcony-friendly varieties that can travel safely when ordered with realistic care expectations.',
     answer: 'To buy succulents online in India, choose verified plant pages with clear photos, care notes, price, availability, packing details and support. After delivery, keep the plant bright but shaded for recovery and water only after the mix is dry.',
+    image: GUIDE_IMAGE_ASSETS.group,
+    imageAlt: 'Mixed succulent collection for Rosary Plant House online plant buying guide',
     productFilters: {
       categories: ['Succulent', 'Echeveria', 'Sedum', 'Haworthia', 'Crassula', 'Jade', 'Aloe', 'Cactus'],
       keywords: ['buy succulent', 'succulent', 'echeveria', 'haworthia', 'sedum', 'crassula', 'jade', 'aloe', 'cactus'],
@@ -382,6 +405,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Plant delivery in Bangalore with dispatch details, live plant packing, ETA from dispatch, payment options and support from Rosary Plant House.',
     intro: 'Bangalore plant delivery is one of the smoother routes for Rosary Plant House because the expected delivery time is usually short after dispatch. The most important choices are selecting plants that suit balcony light, avoiding overwatering after delivery and reporting transit issues quickly if they occur.',
     answer: 'For Bangalore, Rosary Plant House lists the delivery ETA as 1-2 days from dispatch. Plants are dispatched after payment on the nearest Monday or Wednesday when payment is completed by the previous day.',
+    image: GUIDE_IMAGE_ASSETS.delivery,
+    imageAlt: 'Live plant packing setup for Rosary Plant House Bangalore delivery guide',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Jade', 'Crassula', 'Aloe', 'Haworthia', 'Indoor', 'Hanging'],
       keywords: ['bangalore', 'balcony', 'succulent', 'cactus', 'jade', 'aloe', 'indoor', 'hanging'],
@@ -433,6 +458,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Plant delivery in Chennai with Tamil Nadu ETA, live plant packing, dispatch days, payment options and care tips for humid weather.',
     intro: 'Chennai plant delivery needs good packing and careful after-delivery watering because the city can be hot and humid. Succulents, cactus plants and balcony plants can still do well when they receive bright light, airflow and a soil mix that does not stay wet.',
     answer: 'For Chennai and Tamil Nadu, Rosary Plant House lists the delivery ETA as 1-2 days from dispatch. Keep new plants in bright shade first, then move them gradually to their final balcony or window spot.',
+    image: GUIDE_IMAGE_ASSETS.delivery,
+    imageAlt: 'Packed succulents and nursery supplies for Rosary Plant House Chennai delivery guide',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Aloe', 'Jade', 'Crassula', 'Haworthia', 'Indoor', 'Hanging'],
       keywords: ['chennai', 'tamil nadu', 'humidity', 'succulent', 'cactus', 'aloe', 'jade', 'balcony'],
@@ -483,6 +510,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Low maintenance balcony plants for India, including succulents, cacti, hanging plants, jade and aloe with simple care and watering tips.',
     intro: 'Low maintenance balcony plants should handle bright light, airflow and missed watering better than delicate foliage plants. For Indian homes, succulents, cactus plants, Jade, Aloe, Crassula, Sedum and selected hanging plants are practical choices when grown in draining pots.',
     answer: 'The best low maintenance balcony plants are succulents, cactus, Jade, Aloe, Crassula, Sedum, Haworthia, Sansevieria and hardy hanging plants. Give them drainage, bright light and water only when needed.',
+    image: GUIDE_IMAGE_ASSETS.hanging,
+    imageAlt: 'Hanging balcony plants for Rosary Plant House low maintenance plant guide',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Jade', 'Crassula', 'Aloe', 'Sedum', 'Haworthia', 'Sansevieria', 'Hanging'],
       keywords: ['low maintenance', 'balcony', 'succulent', 'cactus', 'jade', 'aloe', 'hanging', 'sansevieria'],
@@ -533,6 +562,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Buy cactus plants online in India with beginner care tips for light, soil, watering, monsoon protection and safe plant delivery.',
     intro: 'Cactus plants are strong visual plants for bright balconies, sunny windows and dry corners. Buying cactus plants online is easiest when you choose healthy, compact plants and understand that they need strong light, gritty soil and controlled watering after delivery.',
     answer: 'When buying cactus plants online in India, choose bright-light plants with clear photos, price, availability and care notes. Keep them in strong light, use gritty soil and protect them from repeated monsoon rain.',
+    image: GUIDE_IMAGE_ASSETS.flowering,
+    imageAlt: 'Flowering cactus selection for Rosary Plant House cactus plants online guide',
     productFilters: {
       categories: ['Cactus'],
       keywords: ['cactus', 'cacti', 'mammillaria', 'gymnocalycium', 'opuntia', 'cereus', 'flowering cactus'],
@@ -582,6 +613,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Ceramic pot succulents for gifts, desks and balconies, with tips on drainage, light, watering, styling and safe online ordering.',
     intro: 'Ceramic pot succulents look polished for gifts, desks, shelves and balcony corners. The main care point is drainage: succulents can look beautiful in ceramic pots, but the roots still need a fast-draining mix and careful watering.',
     answer: 'Ceramic pot succulents work best when the pot has drainage or is used as an outer cover. Choose compact succulents, keep them in bright light and water only after the mix dries.',
+    image: GUIDE_IMAGE_ASSETS.ceramic,
+    imageAlt: 'Ceramic pot succulents from Rosary Plant House for gifts and desks',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Echeveria', 'Haworthia', 'Crassula', 'Jade', 'Aloe'],
       keywords: ['ceramic', 'pot', 'gift', 'desk', 'succulent', 'cactus', 'echeveria', 'haworthia'],
@@ -630,6 +663,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Hanging plants for balcony gardens in India, with care tips for light, watering, airflow, trailing growth and online plant delivery.',
     intro: 'Hanging plants make balcony gardens feel fuller without using floor space. For Indian homes, the best hanging choices are plants that can handle airflow, bright filtered light and a watering routine that matches the season.',
     answer: 'Good hanging balcony plants include trailing succulents, Creeper types, Peperomia, selected foliage plants and hardy low-water plants. Use secure hooks, bright light, drainage and careful watering.',
+    image: GUIDE_IMAGE_ASSETS.hanging,
+    imageAlt: 'Trailing hanging balcony plants for Rosary Plant House balcony garden guide',
     productFilters: {
       categories: ['Hanging', 'Creeper', 'Peperomia', 'Succulent', 'Sedum'],
       keywords: ['hanging', 'trailing', 'creeper', 'balcony', 'peperomia', 'sedum', 'string'],
@@ -679,6 +714,8 @@ export const CONTENT_HUBS = Object.freeze([
     metaDescription: 'Coonoor plant nursery guide for Rosary Plant House, covering succulents, cacti, indoor plants, online ordering, support and delivery.',
     intro: 'Rosary Plant House is a Coonoor nursery in The Nilgiris focused on succulents, cactus plants, indoor plants and practical care guidance. The nursery location helps connect online plant buyers with a real source, support channel and plant-specific advice.',
     answer: 'Rosary Plant House is located in Coonoor, The Nilgiris, Tamil Nadu, and sells succulents, cacti, indoor plants and balcony plants online with WhatsApp support and delivery policies.',
+    image: GUIDE_IMAGE_ASSETS.group,
+    imageAlt: 'Rosary Plant House Coonoor nursery bench with succulents and cactus plants',
     productFilters: {
       categories: ['Succulent', 'Cactus', 'Indoor', 'Hanging', 'Echeveria', 'Jade', 'Crassula', 'Aloe'],
       keywords: ['coonoor', 'nursery', 'nilgiris', 'succulent', 'cactus', 'indoor', 'balcony', 'plant house'],
@@ -723,6 +760,14 @@ export const CONTENT_HUBS = Object.freeze([
 ]);
 
 export const GUIDES_INDEX_PATH = '/guides';
+
+export function getContentHubImage(hub = {}) {
+  return hub.image || GUIDE_IMAGE_ASSETS.group;
+}
+
+export function getContentHubImageAlt(hub = {}) {
+  return hub.imageAlt || `${hub.title || 'Plant care guide'} from ${PRODUCT_SEO_SITE.name}`;
+}
 
 function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
@@ -838,6 +883,7 @@ export function buildContentHubSchemaItems(hub = {}, { baseUrl = PRODUCT_SEO_SIT
         '@type': 'Organization',
         name: PRODUCT_SEO_SITE.name,
       },
+      image: getAbsoluteImageUrl(getContentHubImage(hub), publicBase),
       about: [hub.h1, ...(hub.productFilters?.categories || [])].filter(Boolean),
       articleSection: hub.sections?.map((section) => section.heading) || [],
     },

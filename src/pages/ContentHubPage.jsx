@@ -7,6 +7,8 @@ import {
   buildContentHubSchemaItems,
   getContentHubBySlug,
   getContentHubCanonicalUrl,
+  getContentHubImage,
+  getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
   getRelatedContentHubs,
@@ -108,12 +110,15 @@ export default function ContentHubPage() {
   }
 
   const relatedHubs = getRelatedContentHubs(hub);
+  const guideImage = getContentHubImage(hub);
+  const guideImageAlt = getContentHubImageAlt(hub);
 
   return (
     <div className="animate-fade-in max-w-5xl mx-auto pb-16">
       <SEO
         title={hub.title}
         description={hub.metaDescription}
+        image={guideImage}
         canonicalUrl={getContentHubCanonicalUrl(hub)}
         schemaData={schemaData}
       />
@@ -132,6 +137,14 @@ export default function ContentHubPage() {
           <h1 className="text-3xl md:text-5xl font-bold leading-tight text-[var(--text-primary)]">{hub.h1}</h1>
           <p className="text-base md:text-lg leading-8 text-[var(--text-secondary)]">{hub.intro}</p>
         </header>
+
+        <figure className="overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)]">
+          <img
+            src={guideImage}
+            alt={guideImageAlt}
+            className="aspect-[3/2] w-full object-cover"
+          />
+        </figure>
 
         <section className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
           <h2 className="text-xl font-bold text-[var(--text-primary)]">Quick answer</h2>

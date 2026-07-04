@@ -440,8 +440,10 @@ test('static content hub pages expose article answers, FAQs, product links, and 
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/guides\/succulents-in-india" \/>/);
   assert.match(html, /<main class="seo-content-hub-page"/);
   assert.match(html, /Succulents in India/);
+  assert.match(html, /<img src="\/guides\/guide-succulent-group-nursery\.jpg" alt="Succulent nursery collection for Rosary Plant House care guides" \/>/);
   assert.match(html, /\/plant\/1-sempervivum-tectorum\//);
   assert.match(html, /"@type":"Article"/);
+  assert.match(html, /"image":"https:\/\/rosaryplanthouse\.com\/guides\/guide-succulent-group-nursery\.jpg"/);
   assert.match(html, /"@type":"FAQPage"/);
   assert.match(html, /"@type":"ItemList"/);
   assert.match(html, /"@type":"BreadcrumbList"/);
@@ -456,6 +458,7 @@ test('static guides index page lists every content hub with crawlable schema', (
   assert.match(html, /<title>Plant Care Guides \| Rosary Plant House<\/title>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/guides" \/>/);
   assert.match(html, /<main class="seo-guides-index-page"/);
+  assert.match(html, /<img src="\/guides\/guide-succulent-group-nursery\.jpg" alt="Succulent nursery collection for Rosary Plant House care guides" loading="lazy" \/>/);
   assert.match(html, /\/guides\/succulents-in-india/);
   assert.match(html, /\/guides\/low-water-balcony-plants/);
   assert.match(html, /\/guides\/monsoon-succulent-care/);
@@ -472,6 +475,8 @@ test('sitemap includes static content hub URLs for informational search demand',
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/succulents-in-india/);
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/low-water-balcony-plants/);
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/guides\/monsoon-succulent-care/);
+  assert.match(sitemap, /<image:loc>https:\/\/rosaryplanthouse\.com\/guides\/guide-succulent-group-nursery\.jpg<\/image:loc>/);
+  assert.match(sitemap, /<image:title>Succulent nursery collection for Rosary Plant House care guides<\/image:title>/);
   assert.match(sitemap, /<image:loc>https:\/\/example\.com\/1\.jpg<\/image:loc>/);
   assert.match(sitemap, /<image:title>Sempervivum Tectorum from Rosary Plant House<\/image:title>/);
 });

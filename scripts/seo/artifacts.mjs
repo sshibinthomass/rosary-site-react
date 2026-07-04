@@ -29,6 +29,8 @@ import {
   GUIDES_INDEX_PATH,
   buildContentHubSchemaItems,
   getContentHubCanonicalUrl,
+  getContentHubImage,
+  getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
   getGuidesIndexCanonicalUrl,
@@ -274,6 +276,8 @@ export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
       loc: getContentHubCanonicalUrl(hub, publicBase),
       priority: '0.72',
       changefreq: 'monthly',
+      image: getAbsoluteImageUrl(getContentHubImage(hub), publicBase),
+      imageTitle: getContentHubImageAlt(hub),
     })),
     ...products
       .filter(productIsPublic)
@@ -642,6 +646,7 @@ function buildGuidesIndexSchemaItems(baseUrl) {
       name: 'Plant Care Guides',
       description: 'Plant care guides for succulents, cactus, balcony plants, monsoon care and root rot recovery from Rosary Plant House.',
       url: canonicalUrl,
+      image: getAbsoluteImageUrl(getContentHubImage(CONTENT_HUBS[0]), publicBase),
       publisher: {
         '@type': 'Organization',
         name: SITE_NAME,
@@ -656,6 +661,7 @@ function buildGuidesIndexSchemaItems(baseUrl) {
         position: index + 1,
         name: hub.title,
         url: getContentHubCanonicalUrl(hub, publicBase),
+        image: getAbsoluteImageUrl(getContentHubImage(hub), publicBase),
       })),
     },
   ];
@@ -958,7 +964,7 @@ export function buildStaticGuidesIndexHtml({
 }) {
   const publicBase = baseUrl.replace(/\/$/, '');
   const canonicalUrl = getGuidesIndexCanonicalUrl(publicBase);
-  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const image = getAbsoluteImageUrl(getContentHubImage(CONTENT_HUBS[0]), publicBase);
   const body = `<main class="seo-guides-index-page">
   <h1>Plant Care Guides</h1>
   <p>Browse Rosary Plant House guides for succulent care, cactus care, low water balcony plants, monsoon protection and root rot recovery.</p>
@@ -966,6 +972,7 @@ export function buildStaticGuidesIndexHtml({
     <h2>Care guide library</h2>
     <ul>
       ${CONTENT_HUBS.map((hub) => `<li>
+        <img src="${escapeHtml(getContentHubImage(hub))}" alt="${escapeHtml(getContentHubImageAlt(hub))}" loading="lazy" />
         <a href="${escapeHtml(getContentHubPath(hub))}">${escapeHtml(hub.title)}</a>
         <p>${escapeHtml(hub.metaDescription)}</p>
       </li>`).join('\n')}
@@ -997,7 +1004,7 @@ export function buildStaticContentHubHtml({
   const publicBase = baseUrl.replace(/\/$/, '');
   const matchedProducts = getContentHubProducts(hub, products);
   const canonicalUrl = getContentHubCanonicalUrl(hub, publicBase);
-  const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
+  const image = getAbsoluteImageUrl(getContentHubImage(hub), publicBase);
   const schemaItems = buildContentHubSchemaItems(hub, {
     baseUrl: publicBase,
     products: matchedProducts,
@@ -1008,6 +1015,7 @@ export function buildStaticContentHubHtml({
   </nav>
   <article>
     <h1>${escapeHtml(hub.title)}</h1>
+    <img src="${escapeHtml(getContentHubImage(hub))}" alt="${escapeHtml(getContentHubImageAlt(hub))}" />
     <p>${escapeHtml(hub.intro)}</p>
     <section>
       <h2>Quick answer</h2>

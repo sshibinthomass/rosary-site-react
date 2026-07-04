@@ -44,6 +44,9 @@ test('image audit script verifies required SEO image assets', async () => {
   assert.ok(report.checkedAssets.includes('public/og-image.jpg'));
   assert.ok(report.checkedAssets.includes('public/hero-bg.jpg'));
   assert.ok(report.checkedAssets.includes('public/placeholder-plant.jpg'));
+  assert.ok(report.checkedGuideImages >= 5, 'guide images should be verified by the audit');
+  assert.ok(report.checkedAssets.includes('public/guides/guide-succulent-group-nursery.jpg'));
+  assert.ok(report.checkedAssets.includes('public/guides/guide-ceramic-pot-succulents.jpg'));
 });
 
 test('package and Vercel expose image SEO verification and cache product images', () => {

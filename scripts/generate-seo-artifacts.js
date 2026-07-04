@@ -29,7 +29,7 @@ import {
 } from './seo/artifacts.mjs';
 import { getProductPath, isSeoIndexable } from '../src/utils/productSeo.js';
 import { CATEGORIES } from '../src/config/constants.js';
-import { CONTENT_HUBS } from '../src/utils/contentHubs.js';
+import { CONTENT_HUBS, GUIDE_IMAGE_ASSETS } from '../src/utils/contentHubs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -185,6 +185,20 @@ async function writeStaticPublicPage({ indexHtml, page, artifactProducts, review
   await fs.writeFile(path.join(distDir, `${page}.html`), pageHtml, 'utf8');
 }
 
+async function copyGuideImageAssetsToDist() {
+  const imagePaths = new Set(Object.values(GUIDE_IMAGE_ASSETS));
+
+  for (const publicPath of imagePaths) {
+    const relativePath = String(publicPath || '').replace(/^\//, '');
+    if (!relativePath) continue;
+
+    const sourcePath = path.join(publicDir, relativePath);
+    const destinationPath = path.join(distDir, relativePath);
+    await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+    await fs.copyFile(sourcePath, destinationPath);
+  }
+}
+
 async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews }) {
   const indexPath = path.join(distDir, 'index.html');
   const indexHtml = await fs.readFile(indexPath, 'utf8');
@@ -217,6 +231,7 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews 
     baseUrl: BASE_URL,
   });
   await fs.mkdir(guideRoot, { recursive: true });
+  await copyGuideImageAssetsToDist();
   await fs.writeFile(path.join(guideRoot, 'index.html'), guidesIndexHtml, 'utf8');
   await fs.writeFile(path.join(distDir, 'guides.html'), guidesIndexHtml, 'utf8');
 

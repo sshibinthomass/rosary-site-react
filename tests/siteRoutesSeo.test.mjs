@@ -120,24 +120,45 @@ test('homepage keeps the landing content compact and highlights shopping entry p
 
   assert.match(homeSource, /const featuredCategories = CATEGORIES\.slice\(0, 6\);/);
   assert.match(homeSource, /const CATEGORY_IMAGES = Object\.freeze/);
-  assert.match(homeSource, /const HOME_HERO_IMAGE = '\/home\/hero-natural-nursery\.jpg';/);
-  assert.match(homeSource, /const BROWSE_ALL_IMAGE = '\/home\/browse-every-plant-natural\.jpg';/);
+  assert.match(homeSource, /const HOME_HERO_IMAGE = '\/home\/hero-natural-nursery-1200\.webp';/);
+  assert.match(homeSource, /const HOME_HERO_SEO_IMAGE = '\/home\/hero-natural-nursery\.jpg';/);
+  assert.match(homeSource, /const BROWSE_ALL_IMAGE = '\/home\/browse-every-plant-natural-900\.webp';/);
   assert.match(homeSource, /to="\/shop"[\s\S]*className="[^"]*bg-\[var\(--color-forest\)\][^"]*"[\s\S]*Browse every plant/);
   assert.doesNotMatch(homeSource, /Rosette, trailing and compact succulents/);
   assert.doesNotMatch(homeSource, /Plant buyers mention healthy plants and careful packing/);
 
   for (const asset of [
     'hero-natural-nursery.jpg',
+    'hero-natural-nursery-1200.webp',
     'browse-every-plant-natural.jpg',
+    'browse-every-plant-natural-900.webp',
     'category-succulent-natural.jpg',
+    'category-succulent-natural-360.webp',
     'category-cactus-natural.jpg',
+    'category-cactus-natural-360.webp',
     'category-echeveria-natural.jpg',
+    'category-echeveria-natural-360.webp',
     'category-jade-natural.jpg',
+    'category-jade-natural-360.webp',
     'category-crassula-natural.jpg',
+    'category-crassula-natural-360.webp',
     'category-peperomia-natural.jpg',
+    'category-peperomia-natural-360.webp',
   ]) {
     assert.ok(fs.existsSync(`${rootDir}/public/home/${asset}`), `public/home/${asset} should exist`);
   }
+});
+
+test('homepage hero links to customer reviews beside the primary actions', () => {
+  const homeSource = readText('src/pages/HomePage.jsx');
+  const heroStart = homeSource.indexOf('<section className="relative overflow-hidden');
+  const heroEnd = homeSource.indexOf('</section>', heroStart);
+  const heroSource = homeSource.slice(heroStart, heroEnd);
+
+  assert.ok(heroStart >= 0, 'home hero section should be present');
+  assert.match(heroSource, /to="\/shop"[\s\S]*Shop all plants/);
+  assert.match(heroSource, /to="\/guides"[\s\S]*Care guides/);
+  assert.match(heroSource, /to="\/reviews"[\s\S]*Customer reviews/);
 });
 
 test('homepage owns broad social proof while shop stays product-first', () => {
@@ -150,11 +171,21 @@ test('homepage owns broad social proof while shop stays product-first', () => {
 
   assert.match(shopSource, /Shop live plants/);
   assert.match(shopSource, /Search plants by name or category/);
-  assert.match(shopSource, /Safe Packaging/);
-  assert.match(shopSource, /Transit Replacement/);
+  assert.doesNotMatch(shopSource, /Safe Packaging/);
+  assert.doesNotMatch(shopSource, /Transit Replacement/);
+  assert.doesNotMatch(shopSource, /Ships Mon & Wed/);
+  assert.doesNotMatch(shopSource, /5-Star Rated/);
   assert.doesNotMatch(shopSource, /Bringing Nature's Finest/);
   assert.doesNotMatch(shopSource, /What Our Customers Say/);
   assert.doesNotMatch(shopSource, /Watch Stories Reviews/);
+});
+
+test('shop hero links to support, Instagram, and customer reviews', () => {
+  const shopSource = readText('src/pages/ShopPage.jsx');
+
+  assert.match(shopSource, /href="https:\/\/wa\.me\/917904050237"[\s\S]*Ask before ordering/);
+  assert.match(shopSource, /href="https:\/\/instagram\.com\/rosary_plant_house"[\s\S]*Follow on Instagram/);
+  assert.match(shopSource, /to="\/reviews"[\s\S]*Reviews/);
 });
 
 test('category shop pages promote the selected category in the primary heading', () => {

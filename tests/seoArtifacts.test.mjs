@@ -392,7 +392,7 @@ test('static policies page includes crawlable policy content and merchant schema
 
 test('static public pages replace the SPA shell with route-specific crawlable HTML', () => {
   const pages = [
-    ['home', /<title>Buy Succulents, Cacti and Indoor Plants Online \| Rosary Plant House<\/title>/, /<img src="\/home\/hero-natural-nursery\.jpg"[\s\S]*<a href="\/shop"><img src="\/home\/browse-every-plant-natural\.jpg"[\s\S]*Shop all plants<\/a>/],
+    ['home', /<title>Buy Succulents, Cacti and Indoor Plants Online \| Rosary Plant House<\/title>/, /<img src="\/home\/hero-natural-nursery-1200\.webp" alt="Rosary Plant House natural nursery collection" width="1200" height="600" \/>[\s\S]*<a href="\/shop"><img src="\/home\/browse-every-plant-natural-900\.webp" alt="Browse all plants at Rosary Plant House" width="900" height="507" \/>Shop all plants<\/a>/],
     ['shop', /<title>Shop Succulents, Cacti and Indoor Plants \| Rosary Plant House<\/title>/, /<main class="seo-shop-page"/],
     ['faq', /<title>Help &amp; FAQ \| Rosary Plant House<\/title>/, /All over South India and major cities in North India/],
     ['contact', /<title>Contact Rosary Plant House \| Rosary Plant House<\/title>/, /WhatsApp support: Every day, 9 AM to 9 PM/],

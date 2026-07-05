@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const cssSource = fs.readFileSync('src/index.css', 'utf8');
+const accountPageSource = fs.readFileSync('src/pages/AccountPage.jsx', 'utf8');
+const themeContextSource = fs.readFileSync('src/context/ThemeContext.jsx', 'utf8');
 const productCareDetailsSource = fs.readFileSync('src/components/ProductCareDetails.jsx', 'utf8');
 const productCareSignalsSource = fs.readFileSync('src/components/ProductCareSignals.jsx', 'utf8');
 const productLineArtSource = fs.readFileSync('src/components/ProductLineArt.jsx', 'utf8');
@@ -13,6 +15,13 @@ test('Tailwind dark utilities follow the app theme class instead of system color
     /@custom-variant\s+dark\s*\([^;]*:where\(\.dark,\s*\.dark\s+\*\)[^;]*\);/s,
     'Tailwind dark: utilities should only apply under the app-controlled .dark class'
   );
+});
+
+test('light mode is the default theme unless the user selects dark', () => {
+  assert.match(themeContextSource, /const\s+DEFAULT_THEME\s*=\s*'light'/);
+  assert.doesNotMatch(themeContextSource, /prefers-color-scheme/);
+  assert.doesNotMatch(themeContextSource, /matchMedia/);
+  assert.doesNotMatch(accountPageSource, /<option value="system">System<\/option>/);
 });
 
 test('plant care line-art icons use theme text color instead of black and white overrides', () => {

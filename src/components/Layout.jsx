@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { syncUser } from '../services/userService';
 import { CATEGORIES } from '../config/constants';
 import Footer from './Footer';
 import BackToTop from './BackToTop';
 import logo from '../assets/logo.png';
+
+let userServicePromise = null;
+
+function loadUserService() {
+  if (!userServicePromise) {
+    userServicePromise = import('../services/userService');
+  }
+
+  return userServicePromise;
+}
 const HomeIcon = ({ active }) => (
   <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -307,15 +316,23 @@ const navItems = [
 ];
 
 export default function Layout({ children }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { cartCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   const allCategories = ['All', ...CATEGORIES];
+  const accountNavLabel = user ? 'Account' : 'Log in';
+  const mainNavItems = navItems.map((item) => item.path === '/account'
+    ? { ...item, label: accountNavLabel }
+    : item);
+  const userNavItems = [
+    { path: '/cart', label: 'Cart', Icon: CartIcon, currentCount: cartCount },
+    { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
+    { path: '/account', label: accountNavLabel, Icon: UserIcon },
+  ];
 
   // Close sidebar on route change
   useEffect(() => {
@@ -325,9 +342,21 @@ export default function Layout({ children }) {
 
   // Sync user to Firestore on login
   useEffect(() => {
+    let cancelled = false;
+
     if (user) {
-      syncUser(user);
+      loadUserService()
+        .then(({ syncUser }) => {
+          if (!cancelled) syncUser(user);
+        })
+        .catch((error) => {
+          console.error('Failed to sync user:', error);
+        });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // Prevent body scroll when sidebar open
@@ -350,7 +379,7 @@ export default function Layout({ children }) {
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -361,15 +390,15 @@ export default function Layout({ children }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <NavLink to="/" className="flex items-center gap-2">
-              <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-              <h1 className="font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
+            <NavLink to="/" className="flex min-w-0 items-center gap-2">
+              <img src={logo} alt="Logo" className="w-8 h-8 shrink-0 object-contain" />
+              <h1 className="truncate font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
             </NavLink>
           </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navItems.map(({ path, label, Icon }) => {
+            {mainNavItems.map(({ path, label, Icon }) => {
               const isActive = path === '/shop'
                 ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
                 : location.pathname === path;
@@ -404,17 +433,34 @@ export default function Layout({ children }) {
             )}
           </div>
 
-          {/* Mobile Admin Link (Only if not in desktop nav) */}
-          {isAdmin && (
-            <div className="md:hidden">
-              <NavLink 
-                to="/admin" 
+          <div className="md:hidden flex items-center gap-2 shrink-0">
+            <NavLink
+              to="/account"
+              aria-label={accountNavLabel}
+              className={({ isActive }) => `
+                inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 transition-colors
+                ${isActive
+                  ? 'border-[var(--color-forest)] bg-[var(--color-forest)] text-white'
+                  : 'border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                }
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  <UserIcon active={isActive} />
+                  <span className="text-xs font-semibold">{accountNavLabel}</span>
+                </>
+              )}
+            </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/admin"
                 className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--color-terracotta)] text-white"
               >
                 Admin
               </NavLink>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
@@ -575,11 +621,7 @@ export default function Layout({ children }) {
           <div className="my-2 border-t border-[var(--border-color)]"></div>
 
           {/* User Account / Navigation */}
-          {[
-            { path: '/cart', label: 'Cart', Icon: CartIcon, currentCount: cartCount },
-            { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
-            { path: user ? '/orders' : '/account', label: user ? 'Orders' : 'Account', Icon: UserIcon },
-          ].map(({ path, label, Icon, currentCount }) => {
+          {userNavItems.map(({ path, label, Icon, currentCount }) => {
             const isActive = location.pathname === path;
             const isCart = path === '/cart';
             const icon = Icon({ active: isActive });
@@ -679,7 +721,7 @@ export default function Layout({ children }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
         <div className="max-w-lg mx-auto px-4">
           <div className="flex items-center justify-around h-16">
-            {navItems.map(({ path, label, Icon }) => {
+            {mainNavItems.map(({ path, label, Icon }) => {
               const isActive = path === '/shop'
                 ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
                 : location.pathname === path;

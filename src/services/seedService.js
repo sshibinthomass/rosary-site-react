@@ -1,10 +1,19 @@
 import { collection, doc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import productsData from '../data/products.json';
+
+let seedProductsPromise = null;
+
+async function getSeedProducts() {
+  if (!seedProductsPromise) {
+    seedProductsPromise = import('../data/products.json').then((module) => module.default || []);
+  }
+
+  return seedProductsPromise;
+}
 
 // Seed all products from the JSON file
 export async function seedProducts(onProgress) {
-  const products = productsData;
+  const products = await getSeedProducts();
   const batchSize = 500; // Firestore limit is 500 per batch
   let totalAdded = 0;
 
@@ -69,6 +78,7 @@ export async function clearAllProducts() {
 }
 
 // Get count of products in JSON
-export function getProductCount() {
-  return productsData.length;
+export async function getProductCount() {
+  const products = await getSeedProducts();
+  return products.length;
 }

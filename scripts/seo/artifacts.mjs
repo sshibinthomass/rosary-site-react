@@ -810,9 +810,9 @@ function getPublicPageConfig(page, { baseUrl, products = [], reviews = [] }) {
       description: 'Buy rare succulents, cacti, and indoor plants online from Rosary Plant House, Coonoor. Safe packing, clear support, and India shipping.',
       body: `<main class="seo-home-page">
   <h1>Buy succulents, cacti and indoor plants online from Coonoor</h1>
-  <img src="/home/hero-natural-nursery.jpg" alt="Rosary Plant House natural nursery collection" />
+  <img src="/home/hero-natural-nursery-1200.webp" alt="Rosary Plant House natural nursery collection" width="1200" height="600" />
   <p>Rosary Plant House grows and ships rare succulents, cacti, foliage plants, and balcony plants from Coonoor, The Nilgiris.</p>
-  <p><a href="/shop"><img src="/home/browse-every-plant-natural.jpg" alt="Browse all plants at Rosary Plant House" />Shop all plants</a> or start with categories, care guides, reviews and support details.</p>
+  <p><a href="/shop"><img src="/home/browse-every-plant-natural-900.webp" alt="Browse all plants at Rosary Plant House" width="900" height="507" />Shop all plants</a> or start with categories, care guides, reviews and support details.</p>
   <section>
     <h2>Popular plant categories</h2>
     <ul>${CATEGORIES.slice(0, 10).map((category) => `<li><a href="/category/${encodeURIComponent(category)}">${escapeHtml(category)} plants</a></li>`).join('')}</ul>

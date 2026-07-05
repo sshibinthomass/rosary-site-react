@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../services/productService';
-import { seedProducts, getProductCount, clearAllProducts } from '../services/seedService';
 import { compressImage, resolveImageUrl } from '../utils/imageCompressor';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '../config/firebase';
@@ -63,12 +62,31 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('basic');
   const [seeding, setSeeding] = useState(false);
   const [seedProgress, setSeedProgress] = useState({ current: 0, total: 0 });
+  const [seedProductCount, setSeedProductCount] = useState(null);
   const [availabilityFilter, setAvailabilityFilter] = useState('all'); // all, available, hidden
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (products.length > 0 || loading || seedProductCount !== null) return;
+
+    let cancelled = false;
+    import('../services/seedService')
+      .then(({ getProductCount }) => getProductCount())
+      .then((count) => {
+        if (!cancelled) setSeedProductCount(count);
+      })
+      .catch((err) => {
+        console.error('Failed to load seed product count:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [products.length, loading, seedProductCount]);
 
   const loadProducts = async () => {
     try {
@@ -82,16 +100,18 @@ export default function AdminDashboard() {
   };
 
   const handleSeedProducts = async () => {
-    if (!confirm(`This will add ${getProductCount()} products from Excel to Firestore. Continue?`)) return;
+    const { getProductCount, seedProducts } = await import('../services/seedService');
+    const productCount = seedProductCount ?? (await getProductCount());
+    if (!confirm(`This will add ${productCount} products from Excel to Firestore. Continue?`)) return;
     
     setSeeding(true);
-    setSeedProgress({ current: 0, total: getProductCount() });
+    setSeedProgress({ current: 0, total: productCount });
     
     try {
       await seedProducts((current, total) => {
         setSeedProgress({ current, total });
       });
-      success(`Successfully added ${getProductCount()} products!`);
+      success(`Successfully added ${productCount} products!`);
       loadProducts(); // Refresh the list
     } catch (err) {
       error('Failed to seed products: ' + err.message);
@@ -105,6 +125,7 @@ export default function AdminDashboard() {
     if (!confirm('This action cannot be undone. Type YES to confirm.')) return;
     
     try {
+      const { clearAllProducts } = await import('../services/seedService');
       const result = await clearAllProducts();
       success(`Deleted ${result.deleted} products`);
       setProducts([]);
@@ -614,7 +635,7 @@ export default function AdminDashboard() {
         <div className="card p-4 mb-4 bg-gradient-to-r from-[var(--color-forest)] to-[var(--color-forest-light)] text-white">
           <h3 className="font-semibold mb-2">📦 Import Products from Excel</h3>
           <p className="text-sm text-white/80 mb-3">
-            You have {getProductCount()} products ready to import from your Excel file.
+            You have {seedProductCount ?? '...'} products ready to import from your Excel file.
           </p>
           {seeding ? (
             <div>

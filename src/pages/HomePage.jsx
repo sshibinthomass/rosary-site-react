@@ -13,16 +13,17 @@ const featuredReviews = [
 ].slice(0, 4);
 
 const CATEGORY_IMAGES = Object.freeze({
-  Succulent: '/home/category-succulent-natural.jpg',
-  Cactus: '/home/category-cactus-natural.jpg',
-  Echeveria: '/home/category-echeveria-natural.jpg',
-  Jade: '/home/category-jade-natural.jpg',
-  Crassula: '/home/category-crassula-natural.jpg',
-  Peperomia: '/home/category-peperomia-natural.jpg',
+  Succulent: '/home/category-succulent-natural-360.webp',
+  Cactus: '/home/category-cactus-natural-360.webp',
+  Echeveria: '/home/category-echeveria-natural-360.webp',
+  Jade: '/home/category-jade-natural-360.webp',
+  Crassula: '/home/category-crassula-natural-360.webp',
+  Peperomia: '/home/category-peperomia-natural-360.webp',
 });
 
-const HOME_HERO_IMAGE = '/home/hero-natural-nursery.jpg';
-const BROWSE_ALL_IMAGE = '/home/browse-every-plant-natural.jpg';
+const HOME_HERO_IMAGE = '/home/hero-natural-nursery-1200.webp';
+const HOME_HERO_SEO_IMAGE = '/home/hero-natural-nursery.jpg';
+const BROWSE_ALL_IMAGE = '/home/browse-every-plant-natural-900.webp';
 
 const trustFacts = [
   { title: 'Safe packing', value: 'Bare-rooted live plant packing' },
@@ -86,7 +87,7 @@ export default function HomePage() {
       <SEO
         title="Buy Succulents, Cacti and Indoor Plants Online"
         description="Buy rare succulents, cacti, indoor plants and low water balcony plants online from Rosary Plant House, Coonoor. Shop plants, care guides and WhatsApp support."
-        image={HOME_HERO_IMAGE}
+        image={HOME_HERO_SEO_IMAGE}
         canonicalUrl="https://rosaryplanthouse.com/"
         schemaData={homeSchema}
       />
@@ -97,6 +98,9 @@ export default function HomePage() {
           alt="Natural nursery collection at Rosary Plant House"
           className="absolute inset-0 h-full w-full object-cover"
           loading="eager"
+          fetchPriority="high"
+          width="1200"
+          height="600"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/78 via-black/48 to-black/12" />
         <div className="relative flex min-h-[440px] max-w-3xl flex-col justify-end px-5 py-9 sm:px-8 md:px-10 md:py-12">
@@ -121,6 +125,12 @@ export default function HomePage() {
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/45 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
             >
               Care guides
+            </Link>
+            <Link
+              to="/reviews"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/45 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Customer reviews
             </Link>
           </div>
         </div>
@@ -150,6 +160,8 @@ export default function HomePage() {
               alt="Browse the full Rosary Plant House collection"
               className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
               loading="lazy"
+              width="900"
+              height="507"
             />
             <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/24 to-transparent" />
             <span className="relative mt-auto block px-5 pb-20 pt-5 sm:p-5">
@@ -171,6 +183,8 @@ export default function HomePage() {
                     alt={`${category} plants`}
                     className="h-28 w-full object-cover transition duration-300 group-hover:scale-105"
                     loading="lazy"
+                    width="360"
+                    height="360"
                   />
                   <span className="block px-3 pt-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                     Category

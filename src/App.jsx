@@ -45,7 +45,7 @@ const ProductPage = lazy(() => import('./pages/ProductPage'));
 const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
 const GuidesPage = lazy(() => import('./pages/GuidesPage'));
 const ContentHubPage = lazy(() => import('./pages/ContentHubPage'));
-import ProductModalWrapper from './components/ProductModalWrapper';
+const ProductModalWrapper = lazy(() => import('./components/ProductModalWrapper'));
 
 function PageLoader() {
   return (

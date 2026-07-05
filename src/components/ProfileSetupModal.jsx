@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
+
+let userServicePromise = null;
+
+function loadUserService() {
+  if (!userServicePromise) {
+    userServicePromise = import('../services/userService');
+  }
+
+  return userServicePromise;
+}
 
 export default function ProfileSetupModal() {
   const { user } = useAuth();
@@ -45,6 +54,7 @@ export default function ProfileSetupModal() {
     sessionStorage.removeItem('isFreshLogin');
 
     try {
+      const { getUserProfile } = await loadUserService();
       const data = await getUserProfile(user.uid);
       
       // If profile is empty/incomplete, show modal
@@ -70,6 +80,7 @@ export default function ProfileSetupModal() {
     if (cleanValue.length === 6) {
       setLookingUp(true);
       try {
+        const { lookupPincode } = await loadUserService();
         const result = await lookupPincode(cleanValue);
         if (result) {
           setProfile(prev => ({
@@ -97,6 +108,7 @@ export default function ProfileSetupModal() {
   const handleSave = async () => {
     setLoading(true);
     try {
+      const { saveUserProfile } = await loadUserService();
       await saveUserProfile(user.uid, profile);
       success('Profile updated!');
       setIsOpen(false);

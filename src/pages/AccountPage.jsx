@@ -9,6 +9,92 @@ import { getOrdersByUserId } from '../services/orderService';
 import { NavLink } from 'react-router-dom';
 import SEO from '../components/SEO';
 
+const ACCOUNT_ICON_PATHS = Object.freeze({
+  leaf: (
+    <>
+      <path d="M5 19c8 0 14-6 14-14V4h-1C10 4 4 10 4 18v1h1Z" />
+      <path d="M4 20c3.5-4.5 8-7 13-8" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
+  cart: (
+    <>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="18" cy="20" r="1.5" />
+      <path d="M3 4h2l2.4 11.5a2 2 0 0 0 2 1.5h8.9a2 2 0 0 0 2-1.6L22 8H6" />
+    </>
+  ),
+  heart: <path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 22l8.8-9a5.2 5.2 0 0 0 0-7.4Z" />,
+  package: (
+    <>
+      <path d="m3 7 9-5 9 5-9 5-9-5Z" />
+      <path d="M3 7v10l9 5 9-5V7" />
+      <path d="M12 12v10" />
+      <path d="m7.5 4.5 9 5" />
+    </>
+  ),
+  star: <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 16.9 6.6 19.8l1-6.1-4.4-4.3 6.1-.9L12 3Z" />,
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.8 9a2.5 2.5 0 0 1 4.8 1.1c0 1.7-1.6 2.4-2.3 3.1-.4.4-.5.8-.5 1.3" />
+      <path d="M12 18h.01" />
+    </>
+  ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </>
+  ),
+  appearance: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a9 9 0 0 0 0 18" />
+    </>
+  ),
+  settings: (
+    <>
+      <path d="M12.2 2h-.4a2 2 0 0 0-2 2v.3a2 2 0 0 1-1 1.7l-.4.2a2 2 0 0 1-2 0L6.1 6a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.3.2a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.3.2a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.3-.2a2 2 0 0 1 2 0l.4.2a2 2 0 0 1 1 1.7v.3a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.3a2 2 0 0 1 1-1.7l.4-.2a2 2 0 0 1 2 0l.3.2a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.3-.2a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.3-.2a2 2 0 0 0 .7-2.7l-.2-.4A2 2 0 0 0 18 6l-.3.2a2 2 0 0 1-2 0l-.4-.2a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </>
+  )
+});
+
+function AccountIcon({ name, className = 'h-6 w-6', strokeWidth = 1.9 }) {
+  const iconPath = ACCOUNT_ICON_PATHS[name];
+
+  if (!iconPath) {
+    return null;
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      className={`inline-block flex-shrink-0 text-[var(--text-primary)] ${className}`}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={strokeWidth}
+      viewBox="0 0 24 24"
+    >
+      {iconPath}
+    </svg>
+  );
+}
+
 export default function AccountPage() {
   const { user, loading, isAdmin, signInWithGoogle, logout } = useAuth();
   const { cart, wishlist } = useCart();
@@ -130,7 +216,7 @@ export default function AccountPage() {
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
-      success('Welcome back! 🌿');
+      success('Welcome back!');
     } catch (err) {
       error('Failed to sign in. Please try again.');
     }
@@ -139,7 +225,7 @@ export default function AccountPage() {
   const handleLogout = async () => {
     try {
       await logout();
-      success('See you soon! 👋');
+      success('See you soon!');
     } catch (err) {
       error('Failed to sign out.');
     }
@@ -149,7 +235,7 @@ export default function AccountPage() {
     return (
       <div className="animate-fade-in text-center py-12">
         <div className="animate-pulse-soft">
-          <span className="text-4xl">🌿</span>
+          <AccountIcon name="leaf" className="mx-auto h-10 w-10" />
         </div>
       </div>
     );
@@ -265,7 +351,7 @@ export default function AccountPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
-                    Pincode {lookingUp && <span className="text-[var(--color-terracotta)]">🔍</span>}
+                    Pincode {lookingUp && <AccountIcon name="search" className="ml-1 h-3 w-3 align-[-1px]" strokeWidth={2.2} />}
                   </label>
                   <input
                     type="text"
@@ -352,7 +438,7 @@ export default function AccountPage() {
       ) : (
         /* Guest Login Card */
         <div className="card p-6 text-center">
-          <span className="text-5xl">👤</span>
+          <AccountIcon name="user" className="mx-auto h-12 w-12" />
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Welcome!</h2>
           <p className="text-[var(--text-secondary)] mt-2 max-w-xs mx-auto text-sm">
             Sign in to sync your cart & wishlist across devices
@@ -382,7 +468,7 @@ export default function AccountPage() {
           to="/cart"
           className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
         >
-          <span className="text-3xl">🛒</span>
+          <AccountIcon name="cart" className="mx-auto h-8 w-8" />
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{cart.length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Cart Items</p>
         </NavLink>
@@ -390,12 +476,12 @@ export default function AccountPage() {
           to="/wishlist"
           className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
         >
-          <span className="text-3xl">💚</span>
+          <AccountIcon name="heart" className="mx-auto h-8 w-8" />
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{wishlist.length}</p>
           <p className="text-xs text-[var(--text-secondary)]">Saved</p>
         </NavLink>
         <NavLink to={user ? `/orders` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
-          <span className="text-3xl">📦</span>
+          <AccountIcon name="package" className="mx-auto h-8 w-8" />
           <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
             {userOrders.filter(o => o.status !== 'pending' && o.status !== 'cancelled').length}
           </p>
@@ -409,21 +495,21 @@ export default function AccountPage() {
       <div className="card p-4 mt-3 space-y-3">
         <NavLink to="/reviews" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
           <div className="flex items-center gap-3">
-            <span className="text-xl">⭐</span>
+            <AccountIcon name="star" className="h-5 w-5" />
             <span className="font-medium">Reviews</span>
           </div>
           <span className="text-[var(--text-secondary)]">›</span>
         </NavLink>
         <NavLink to="/faq" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
           <div className="flex items-center gap-3">
-            <span className="text-xl">🤔</span>
+            <AccountIcon name="help" className="h-5 w-5" />
             <span className="font-medium">FAQ & Policies</span>
           </div>
           <span className="text-[var(--text-secondary)]">›</span>
         </NavLink>
         <NavLink to="/contact" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
           <div className="flex items-center gap-3">
-            <span className="text-xl">📬</span>
+            <AccountIcon name="mail" className="h-5 w-5" />
             <span className="font-medium">Contact Us</span>
           </div>
           <span className="text-[var(--text-secondary)]">›</span>
@@ -433,7 +519,7 @@ export default function AccountPage() {
       {/* Settings */}
       <div className="card p-4 mt-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🌓</span>
+          <AccountIcon name="appearance" className="h-6 w-6" />
           <span className="font-medium text-[var(--text-primary)]">Appearance</span>
         </div>
         <select
@@ -441,7 +527,6 @@ export default function AccountPage() {
           onChange={(e) => setTheme(e.target.value)}
           className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-none rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer"
         >
-          <option value="system">System</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
@@ -454,7 +539,7 @@ export default function AccountPage() {
           className="card p-4 mt-4 flex items-center justify-between group hover:border-[var(--color-terracotta)]"
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">⚙️</span>
+            <AccountIcon name="settings" className="h-6 w-6" />
             <span className="font-medium text-[var(--text-primary)]">Admin Dashboard</span>
           </div>
           <svg className="w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--color-terracotta)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

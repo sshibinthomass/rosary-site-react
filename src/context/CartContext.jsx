@@ -1,21 +1,26 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { 
-  getCart, 
-  addToCart as addToCartService, 
-  removeFromCart as removeFromCartService,
-  updateCartQuantity as updateCartQuantityService,
-  clearCart as clearCartService
-} from '../services/cartService';
-import {
-  getWishlist,
-  addToWishlist as addToWishlistService,
-  removeFromWishlist as removeFromWishlistService,
-  clearWishlist as clearWishlistService
-} from '../services/wishlistService';
 import { useToast } from './ToastContext';
 
 const CartContext = createContext(null);
+let cartServicePromise = null;
+let wishlistServicePromise = null;
+
+function loadCartService() {
+  if (!cartServicePromise) {
+    cartServicePromise = import('../services/cartService');
+  }
+
+  return cartServicePromise;
+}
+
+function loadWishlistService() {
+  if (!wishlistServicePromise) {
+    wishlistServicePromise = import('../services/wishlistService');
+  }
+
+  return wishlistServicePromise;
+}
 
 // LocalStorage keys
 const LOCAL_CART_KEY = 'rosary_guest_cart';
@@ -107,10 +112,15 @@ export function CartProvider({ children }) {
   const handleUserLogin = async () => {
     setLoading(true);
     try {
+      const [cartService, wishlistService] = await Promise.all([
+        loadCartService(),
+        loadWishlistService()
+      ]);
+
       // Get cloud data
       const [cloudCart, cloudWishlist] = await Promise.all([
-        getCart(user.uid),
-        getWishlist(user.uid)
+        cartService.getCart(user.uid),
+        wishlistService.getWishlist(user.uid)
       ]);
 
       // Get local data
@@ -147,10 +157,14 @@ export function CartProvider({ children }) {
 
   const syncLocalToCloud = async (localCart, localWishlist) => {
     if (!user) return;
+    const [cartService, wishlistService] = await Promise.all([
+      loadCartService(),
+      loadWishlistService()
+    ]);
     
     // Sync cart items to cloud
     for (const item of localCart) {
-      await addToCartService(user.uid, {
+      await cartService.addToCart(user.uid, {
         id: item.productId,
         name: item.name,
         price: item.price,
@@ -161,7 +175,7 @@ export function CartProvider({ children }) {
     
     // Sync wishlist items to cloud
     for (const item of localWishlist) {
-      await addToWishlistService(user.uid, {
+      await wishlistService.addToWishlist(user.uid, {
         id: item.productId,
         name: item.name,
         price: item.price,
@@ -172,8 +186,8 @@ export function CartProvider({ children }) {
     
     // Reload from cloud
     const [newCart, newWishlist] = await Promise.all([
-      getCart(user.uid),
-      getWishlist(user.uid)
+      cartService.getCart(user.uid),
+      wishlistService.getWishlist(user.uid)
     ]);
     setCart(newCart);
     setWishlist(newWishlist);
@@ -184,6 +198,7 @@ export function CartProvider({ children }) {
     // Keep browser cart, sync to cloud
     const localCart = getLocalCart();
     const localWishlist = getLocalWishlist();
+    const { clearCart: clearCartService } = await loadCartService();
     
     // Clear cloud data first
     await clearCartService(user.uid);
@@ -214,10 +229,15 @@ export function CartProvider({ children }) {
     setWishlist(pendingCloudData.wishlist);
     
     // Add local items that aren't in cloud
+    const [cartService, wishlistService] = await Promise.all([
+      loadCartService(),
+      loadWishlistService()
+    ]);
+
     for (const item of localCart) {
       const existsInCloud = pendingCloudData.cart.some(c => c.productId === item.productId);
       if (!existsInCloud) {
-        await addToCartService(user.uid, {
+        await cartService.addToCart(user.uid, {
           id: item.productId,
           ...item
         }, item.quantity);
@@ -227,7 +247,7 @@ export function CartProvider({ children }) {
     for (const item of localWishlist) {
       const existsInCloud = pendingCloudData.wishlist.some(w => w.productId === item.productId);
       if (!existsInCloud) {
-        await addToWishlistService(user.uid, {
+        await wishlistService.addToWishlist(user.uid, {
           id: item.productId,
           ...item
         });
@@ -236,8 +256,8 @@ export function CartProvider({ children }) {
     
     // Reload merged data
     const [newCart, newWishlist] = await Promise.all([
-      getCart(user.uid),
-      getWishlist(user.uid)
+      cartService.getCart(user.uid),
+      wishlistService.getWishlist(user.uid)
     ]);
     setCart(newCart);
     setWishlist(newWishlist);
@@ -259,6 +279,7 @@ export function CartProvider({ children }) {
     if (user) {
       // Logged in - save to Firestore
       try {
+        const { addToCart: addToCartService } = await loadCartService();
         await addToCartService(user.uid, product, quantity);
         setCart(prev => {
           const existing = prev.find(item => item.productId === product.id);
@@ -300,6 +321,7 @@ export function CartProvider({ children }) {
   const removeFromCart = useCallback(async (productId) => {
     if (user) {
       try {
+        const { removeFromCart: removeFromCartService } = await loadCartService();
         await removeFromCartService(user.uid, productId);
         setCart(prev => prev.filter(item => item.productId !== productId));
       } catch (error) {
@@ -322,6 +344,7 @@ export function CartProvider({ children }) {
     
     if (user) {
       try {
+        const { updateCartQuantity: updateCartQuantityService } = await loadCartService();
         await updateCartQuantityService(user.uid, productId, quantity);
         setCart(prev => prev.map(item => 
           item.productId === productId ? { ...item, quantity } : item
@@ -344,6 +367,7 @@ export function CartProvider({ children }) {
   const clearCart = useCallback(async () => {
     if (user) {
       try {
+        const { clearCart: clearCartService } = await loadCartService();
         await clearCartService(user.uid);
         setCart([]);
       } catch (error) {
@@ -368,6 +392,7 @@ export function CartProvider({ children }) {
 
     if (user) {
       try {
+        const { addToWishlist: addToWishlistService } = await loadWishlistService();
         await addToWishlistService(user.uid, product);
         setWishlist(prev => {
           if (prev.find(item => item.productId === product.id)) {
@@ -396,6 +421,7 @@ export function CartProvider({ children }) {
   const removeFromWishlist = useCallback(async (productId) => {
     if (user) {
       try {
+        const { removeFromWishlist: removeFromWishlistService } = await loadWishlistService();
         await removeFromWishlistService(user.uid, productId);
         setWishlist(prev => prev.filter(item => item.productId !== productId));
       } catch (error) {
@@ -414,6 +440,7 @@ export function CartProvider({ children }) {
   const clearWishlist = useCallback(async () => {
     if (user) {
       try {
+        const { clearWishlist: clearWishlistService } = await loadWishlistService();
         await clearWishlistService(user.uid);
         setWishlist([]);
       } catch (error) {
@@ -438,9 +465,13 @@ export function CartProvider({ children }) {
     if (!user) return;
     setLoading(true);
     try {
+      const [cartService, wishlistService] = await Promise.all([
+        loadCartService(),
+        loadWishlistService()
+      ]);
       const [cartData, wishlistData] = await Promise.all([
-        getCart(user.uid),
-        getWishlist(user.uid)
+        cartService.getCart(user.uid),
+        wishlistService.getWishlist(user.uid)
       ]);
       setCart(cartData);
       setWishlist(wishlistData);

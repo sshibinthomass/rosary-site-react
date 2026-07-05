@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import logo from '../assets/logo.png';
 
 export default function LoginPopup() {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -20,10 +21,10 @@ export default function LoginPopup() {
       const isDismissed = sessionStorage.getItem('loginPopupDismissed') === 'true';
 
       if (!isDismissed) {
-        // Show after a short delay so it doesn't jarringly block the initial render immediately
+        // Let shoppers browse before interrupting the public page with account sync.
         const timer = setTimeout(() => {
           setShow(true);
-        }, 1500);
+        }, 15000);
         return () => clearTimeout(timer);
       }
     };
@@ -35,7 +36,7 @@ export default function LoginPopup() {
     setSigningIn(true);
     try {
       await signInWithGoogle();
-      success('Welcome back! 🌿');
+      success('Welcome back!');
       // On success, the 'user' state will update, which triggers the useEffect payload.
       // But we can also just close it immediately.
       handleClose(); 
@@ -75,7 +76,11 @@ export default function LoginPopup() {
         </button>
 
         <div className="p-6 text-center pt-10">
-          <span className="text-5xl block mb-4">🌿</span>
+          <img
+            src={logo}
+            alt="Rosary Plant House logo"
+            className="mx-auto mb-4 h-16 w-16 object-contain"
+          />
           <h2 id="login-popup-title" className="text-xl font-bold text-[var(--text-primary)] mb-2">
             Welcome to Rosary!
           </h2>

@@ -1,15 +1,27 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { 
-  signInWithPopup, 
-  signOut, 
-  onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult
-} from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
 import { ADMIN_EMAILS } from '../config/constants';
 
 const AuthContext = createContext(null);
+let firebaseAuthApiPromise = null;
+
+async function loadFirebaseAuthApi() {
+  if (!firebaseAuthApiPromise) {
+    firebaseAuthApiPromise = Promise.all([
+      import('firebase/auth'),
+      import('../config/firebaseAuth'),
+    ]).then(([authApi, firebaseConfig]) => ({
+      auth: firebaseConfig.auth,
+      googleProvider: firebaseConfig.googleProvider,
+      getRedirectResult: authApi.getRedirectResult,
+      onAuthStateChanged: authApi.onAuthStateChanged,
+      signInWithPopup: authApi.signInWithPopup,
+      signInWithRedirect: authApi.signInWithRedirect,
+      signOut: authApi.signOut,
+    }));
+  }
+
+  return firebaseAuthApiPromise;
+}
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -26,38 +38,96 @@ export function AuthProvider({ children }) {
   const loggingInRef = useRef(false);
 
   useEffect(() => {
-    // Check for redirect result on mount
-    getRedirectResult(auth)
-      .then((result) => {
-        console.log('Redirect result:', result);
-        if (result?.user) {
-          console.log('Redirect user found:', result.user.email);
-          sessionStorage.setItem('isFreshLogin', 'true');
-          setUser(result.user);
-          setIsAdmin(ADMIN_EMAILS.includes(result.user.email));
-        }
-      })
-      .catch((error) => {
-        console.error('Redirect result error:', error);
-      });
+    let cancelled = false;
+    let unsubscribe = null;
 
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log('Auth state changed:', currentUser ? `User: ${currentUser.email}` : 'No user');
-      if (currentUser && loggingInRef.current) {
-        sessionStorage.setItem('isFreshLogin', 'true');
-        loggingInRef.current = false;
+    const initializeAuth = async () => {
+      try {
+        const { auth, getRedirectResult, onAuthStateChanged } = await loadFirebaseAuthApi();
+        if (cancelled) return;
+
+        getRedirectResult(auth)
+          .then((result) => {
+            console.log('Redirect result:', result);
+            if (result?.user) {
+              console.log('Redirect user found:', result.user.email);
+              sessionStorage.setItem('isFreshLogin', 'true');
+              setUser(result.user);
+              setIsAdmin(ADMIN_EMAILS.includes(result.user.email));
+            }
+          })
+          .catch((error) => {
+            console.error('Redirect result error:', error);
+          });
+
+        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          console.log('Auth state changed:', currentUser ? `User: ${currentUser.email}` : 'No user');
+          if (currentUser && loggingInRef.current) {
+            sessionStorage.setItem('isFreshLogin', 'true');
+            loggingInRef.current = false;
+          }
+          setUser(currentUser);
+          setIsAdmin(ADMIN_EMAILS.includes(currentUser?.email));
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+        if (!cancelled) setLoading(false);
       }
-      setUser(currentUser);
-      setIsAdmin(ADMIN_EMAILS.includes(currentUser?.email));
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const scheduleAuth = () => {
+      if (typeof window === 'undefined') {
+        initializeAuth();
+        return () => {};
+      }
+
+      let authStarted = false;
+      let timeoutId = null;
+      const pathname = window.location.pathname;
+      const shouldLoadImmediately = /^\/(account|admin|orders)(\/|\.html|$)/.test(pathname);
+      const startAuth = () => {
+        if (authStarted) return;
+        authStarted = true;
+        if (timeoutId) window.clearTimeout(timeoutId);
+        initializeAuth();
+      };
+
+      if (shouldLoadImmediately) {
+        startAuth();
+        return () => {};
+      }
+
+      window.addEventListener('pointerdown', startAuth, { once: true, passive: true });
+      window.addEventListener('keydown', startAuth, { once: true });
+      window.addEventListener('wheel', startAuth, { once: true, passive: true });
+      window.addEventListener('touchstart', startAuth, { once: true, passive: true });
+      timeoutId = window.setTimeout(startAuth, 10000);
+
+      return () => {
+        if (timeoutId) window.clearTimeout(timeoutId);
+        window.removeEventListener('pointerdown', startAuth);
+        window.removeEventListener('keydown', startAuth);
+        window.removeEventListener('wheel', startAuth);
+        window.removeEventListener('touchstart', startAuth);
+      };
+    };
+
+    const cancelScheduledAuth = scheduleAuth();
+
+    return () => {
+      cancelled = true;
+      cancelScheduledAuth();
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {
+    let authApi;
     try {
+      authApi = await loadFirebaseAuthApi();
+      const { auth, googleProvider, signInWithPopup } = authApi;
+
       loggingInRef.current = true;
       // Try popup first (works better on desktop & bypasses tracking prevention)
       const result = await signInWithPopup(auth, googleProvider);
@@ -72,6 +142,7 @@ export function AuthProvider({ children }) {
           error.code === 'auth/popup-closed-by-user' ||
           error.code === 'auth/cancelled-popup-request') {
         try {
+          const { auth, googleProvider, signInWithRedirect } = authApi || await loadFirebaseAuthApi();
           console.log('Falling back to redirect...');
           sessionStorage.setItem('isFreshLogin', 'true');
           await signInWithRedirect(auth, googleProvider);
@@ -90,6 +161,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      const { auth, signOut } = await loadFirebaseAuthApi();
       await signOut(auth);
       setUser(null);
       setIsAdmin(false);

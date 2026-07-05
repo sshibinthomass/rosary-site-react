@@ -1,19 +1,48 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { getProducts } from '../services/productService';
-import { getLimitedPlants } from '../services/limitedService';
 import { CATEGORIES } from '../config/constants';
 import SEO from '../components/SEO';
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 24;
+const SHOP_CATEGORY_BACKGROUNDS = Object.freeze({
+  'All': '/shop/category-backgrounds/all.jpg',
+  'Limited': '/shop/category-backgrounds/limited.jpg',
+  'Succulent': '/shop/category-backgrounds/succulent.jpg',
+  'Cactus': '/shop/category-backgrounds/cactus.jpg',
+  'Echeveria': '/shop/category-backgrounds/echeveria.jpg',
+  'Jade': '/shop/category-backgrounds/jade.jpg',
+  'Crassula': '/shop/category-backgrounds/crassula.jpg',
+  'Peperomia': '/shop/category-backgrounds/peperomia.jpg',
+  'Aloe': '/shop/category-backgrounds/aloe.jpg',
+  'Sedum': '/shop/category-backgrounds/sedum.jpg',
+  'Haworthia': '/shop/category-backgrounds/haworthia.jpg',
+  'Creeper': '/shop/category-backgrounds/creeper.jpg',
+  'Sansevieria': '/shop/category-backgrounds/sansevieria.jpg',
+  'Indoor': '/shop/category-backgrounds/indoor.jpg',
+  'Hanging': '/shop/category-backgrounds/hanging.jpg',
+  'Mother': '/shop/category-backgrounds/mother.jpg',
+  'Combo': '/shop/category-backgrounds/combo.jpg',
+  'Others': '/shop/category-backgrounds/others.jpg',
+});
+let productServicePromise = null;
+let limitedServicePromise = null;
 
-const SHOP_TRUST_BADGES = [
-  { label: 'Safe Packaging', desc: 'Bare-rooted plants packed with care' },
-  { label: 'Transit Replacement', desc: 'Damage support after delivery' },
-  { label: 'Ships Mon & Wed', desc: 'Regular live-plant dispatch' },
-  { label: '5-Star Rated', desc: 'Loved by plant parents' },
-];
+function loadProductService() {
+  if (!productServicePromise) {
+    productServicePromise = import('../services/productService');
+  }
+
+  return productServicePromise;
+}
+
+function loadLimitedService() {
+  if (!limitedServicePromise) {
+    limitedServicePromise = import('../services/limitedService');
+  }
+
+  return limitedServicePromise;
+}
 
 export default function ShopPage() {
   const { categoryName } = useParams();
@@ -21,18 +50,13 @@ export default function ShopPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState('Recommended');
-  const [filterWatering, setFilterWatering] = useState('Not Specific');
-  const [filterSunlight, setFilterSunlight] = useState('Not Specific');
-  const [filterTransit, setFilterTransit] = useState('Not Specific');
-  const [filterPriceMin, setFilterPriceMin] = useState('');
-  const [filterPriceMax, setFilterPriceMax] = useState('');
   const categoryScrollerRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef(null);
+  const backgroundLoadCancelRef = useRef(null);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
@@ -43,14 +67,42 @@ export default function ShopPage() {
   const shopSeoTitle = isCategoryPage ? `${selectedCategory} Plants` : 'Shop Plants';
   const shopEyebrow = isCategoryPage ? `${selectedCategory} plant collection` : 'Rosary Plant House catalogue';
   const shopDescription = isCategoryPage
-    ? `Browse current ${selectedCategory} plants available from Rosary Plant House. Use filters to choose by price, light, watering and transit sensitivity.`
-    : 'Search current succulents, cacti, indoor plants and limited drops. Use filters to quickly choose plants by price, light, watering and transit sensitivity.';
+    ? `Browse current ${selectedCategory} plants available from Rosary Plant House.`
+    : 'Search current succulents, cacti, indoor plants and limited drops from Rosary Plant House.';
+  const shopHeroBackground = SHOP_CATEGORY_BACKGROUNDS[selectedCategory] || SHOP_CATEGORY_BACKGROUNDS['Others'];
+  const shopHeroStyle = {
+    backgroundImage: `linear-gradient(90deg, rgba(10, 16, 28, 0.96) 0%, rgba(10, 16, 28, 0.86) 44%, rgba(10, 16, 28, 0.58) 100%), url(${shopHeroBackground})`,
+    backgroundPosition: 'center',
+    backgroundSize: 'cover',
+  };
+
+  const scheduleBackgroundLoad = useCallback((callback) => {
+    if (backgroundLoadCancelRef.current) {
+      backgroundLoadCancelRef.current();
+      backgroundLoadCancelRef.current = null;
+    }
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(callback, { timeout: 4000 });
+      backgroundLoadCancelRef.current = () => window.cancelIdleCallback(idleId);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(callback, 1200);
+    backgroundLoadCancelRef.current = () => window.clearTimeout(timeoutId);
+  }, []);
 
   const loadProducts = useCallback(async () => {
+    if (backgroundLoadCancelRef.current) {
+      backgroundLoadCancelRef.current();
+      backgroundLoadCancelRef.current = null;
+    }
+
     setLoading(true);
     try {
       if (selectedCategory !== 'All') {
         if (selectedCategory === 'Limited') {
+          const { getLimitedPlants } = await loadLimitedService();
           const limited = await getLimitedPlants();
           const limitedWithCategory = (limited || []).map((item) => ({
             ...item,
@@ -58,37 +110,87 @@ export default function ShopPage() {
           }));
           setProducts(limitedWithCategory);
         } else {
-          const data = await getProducts(selectedCategory);
-          setProducts(data || []);
+          const { getProducts, getProductsPage } = await loadProductService();
+          const firstPage = await getProductsPage(selectedCategory, BATCH_SIZE);
+          setProducts(firstPage.products || []);
+
+          if (firstPage.hasMore) {
+            scheduleBackgroundLoad(async () => {
+              try {
+                const data = await getProducts(selectedCategory);
+                setProducts(data || []);
+              } catch (error) {
+                console.error('Error loading full product catalog:', error);
+              }
+            });
+          }
         }
         return;
       }
 
-      // For 'All': fetch all limited and normal products
-      const [limited, normal] = await Promise.all([
+      // For 'All': show a small first page, then hydrate the full catalog after first paint.
+      const [{ getLimitedPlants }, { getProducts, getProductsPage }] = await Promise.all([
+        loadLimitedService(),
+        loadProductService()
+      ]);
+      const [limited, normalPage] = await Promise.all([
         getLimitedPlants(),
-        getProducts(null)
+        getProductsPage(null, BATCH_SIZE)
       ]);
       
       const limitedWithCategory = (limited || []).map((item) => ({
         ...item,
         category: item.category || 'Limited'
       }));
-      
-      const normalList = normal || [];
-      setProducts([...limitedWithCategory, ...normalList]);
+
+      setProducts([...limitedWithCategory, ...(normalPage.products || [])]);
+
+      if (normalPage.hasMore) {
+        scheduleBackgroundLoad(async () => {
+          try {
+            const normal = await getProducts(null);
+            setProducts([...limitedWithCategory, ...(normal || [])]);
+          } catch (error) {
+            console.error('Error loading full product catalog:', error);
+          }
+        });
+      }
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, scheduleBackgroundLoad]);
 
   // Load products when category changes
   useEffect(() => {
-    loadProducts();
+    let frameId = null;
+    let timeoutId = null;
+    let cancelled = false;
+
+    const startLoadingProducts = () => {
+      if (!cancelled) loadProducts();
+    };
+
+    if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+      frameId = window.requestAnimationFrame(() => {
+        timeoutId = window.setTimeout(startLoadingProducts, 0);
+      });
+    } else {
+      timeoutId = setTimeout(startLoadingProducts, 0);
+    }
+
     setSearchQuery('');
     setVisibleCount(BATCH_SIZE);
+    return () => {
+      cancelled = true;
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      if (backgroundLoadCancelRef.current) {
+        backgroundLoadCancelRef.current();
+        backgroundLoadCancelRef.current = null;
+      }
+    };
   }, [loadProducts]);
 
   const handleCategoryClick = useCallback((category) => {
@@ -118,7 +220,7 @@ export default function ShopPage() {
     };
   }, [categories.length]);
 
-  // Filter products by search query and attributes
+  // Filter products by stock and search query.
   const filteredProducts = products.filter((p) => {
     // Stock condition - completely hide out of stock items everywhere
     const inStock = p.available !== false && (p.qtyAvailable !== 'NA' || p.inStock);
@@ -132,61 +234,16 @@ export default function ShopPage() {
       const q = searchQuery.trim().toLowerCase();
       passesSearch = name.includes(q) || category.includes(q);
     }
-    
-    // Normalize data legacy values (e.g. 'Med' -> 'Moderate/Medium')
-    const productWatering = (p.watering === 'Med' || p.watering === 'Moderate' || p.watering === 'Medium' ? 'Moderate/Medium' : p.watering) || 'Moderate/Medium';
-    const productSunlight = (p.sunlight === 'Med' || p.sunlight === 'Moderate' || p.sunlight === 'Medium' ? 'Moderate/Medium' : p.sunlight) || 'Moderate/Medium';
-    const productTransit = p.transit === 'Safe' ? 'Low' : p.transit === 'Delicate' ? 'High' : (p.transit === 'Medium' || p.transit === 'Moderate' ? 'Moderate/Medium' : p.transit);
-    
-    // Attributes
-    const passesWatering = filterWatering === 'Not Specific' || (productWatering === filterWatering);
-    const passesSunlight = filterSunlight === 'Not Specific' || (productSunlight === filterSunlight);
-    const passesTransit = filterTransit === 'Not Specific' || (productTransit === filterTransit);
-    
-    // Price
-    const productPrice = p.salesPrice || p.price || 0;
-    const passesPrice = 
-      (!filterPriceMin || productPrice >= Number(filterPriceMin)) &&
-      (!filterPriceMax || productPrice <= Number(filterPriceMax));
-    
-    return passesSearch && passesWatering && passesSunlight && passesTransit && passesPrice;
+
+    return passesSearch;
   });
 
-  const sortedProducts = useMemo(() => {
-    let sorted = [...filteredProducts];
-    if (sortOption === 'Price: Low to High') {
-      sorted.sort((a, b) => {
-        const pA = a.salesPrice || a.price || 0;
-        const pB = b.salesPrice || b.price || 0;
-        return pA - pB;
-      });
-    } else if (sortOption === 'Price: High to Low') {
-      sorted.sort((a, b) => {
-        const pA = a.salesPrice || a.price || 0;
-        const pB = b.salesPrice || b.price || 0;
-        return pB - pA;
-      });
-    } else if (sortOption === 'Newest') {
-      sorted.sort((a, b) => {
-        const isALimited = a.category === 'Limited';
-        const isBLimited = b.category === 'Limited';
-        
-        if (isALimited && !isBLimited) return -1;
-        if (!isALimited && isBLimited) return 1;
+  const sortedProducts = filteredProducts;
 
-        const idA = parseInt(a.id) || 0;
-        const idB = parseInt(b.id) || 0;
-        return idB - idA;
-      });
-    }
-
-    return sorted;
-  }, [filteredProducts, sortOption]);
-
-  // Reset visible count when filters change
+  // Reset visible count when search changes.
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-  }, [searchQuery, filterWatering, filterSunlight, filterTransit, filterPriceMin, filterPriceMax, sortOption]);
+  }, [searchQuery]);
 
   // Products to actually render (batched)
   const visibleProducts = useMemo(() => sortedProducts.slice(0, visibleCount), [sortedProducts, visibleCount]);
@@ -210,25 +267,6 @@ export default function ShopPage() {
     return () => observer.disconnect();
   }, [hasMore, sortedProducts.length]);
 
-  const hasActiveAdvancedFilters =
-    filterWatering !== 'Not Specific' ||
-    filterSunlight !== 'Not Specific' ||
-    filterTransit !== 'Not Specific' ||
-    filterPriceMin ||
-    filterPriceMax;
-  const productCountLabel = hasMore
-    ? `${Math.min(visibleCount, sortedProducts.length)} of ${sortedProducts.length}`
-    : `${sortedProducts.length}`;
-  const selectedCategoryLabel = selectedCategory === 'All' ? 'All Plants' : `${selectedCategory} Plants`;
-  const selectChevronStyle = {
-    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1em 1em'
-  };
-  const selectClassName = 'mt-1.5 h-11 w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 pr-9 text-sm font-medium text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--color-forest)] focus:ring-2 focus:ring-[var(--color-forest)]/15 cursor-pointer appearance-none';
-  const priceInputClassName = 'h-11 min-w-0 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 text-sm font-medium text-[var(--text-primary)] shadow-sm outline-none transition placeholder:text-[var(--text-secondary)]/70 focus:border-[var(--color-forest)] focus:ring-2 focus:ring-[var(--color-forest)]/15';
-
   const homeSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -247,16 +285,19 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="animate-fade-in min-h-screen pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <SEO 
         title={shopSeoTitle}
-        description="Shop succulents, cacti, indoor plants and balcony plants from Rosary Plant House, Coonoor. Search, filter and choose plants with safe packing and support."
+        description="Shop succulents, cacti, indoor plants and balcony plants from Rosary Plant House, Coonoor. Search and choose plants with safe packing and support."
         canonicalUrl={shopCanonicalUrl}
         schemaData={homeSchema}
       />
       {/* Shop Header */}
       <section className="mb-4">
-        <div className="relative overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 shadow-sm md:p-5">
+        <div
+          className="relative overflow-hidden rounded-lg border border-white/10 bg-slate-950 p-4 text-white shadow-sm md:p-5"
+          style={shopHeroStyle}
+        >
           {/* Decorative elements */}
           <div className="hidden" />
           <div className="hidden" />
@@ -266,7 +307,7 @@ export default function ShopPage() {
             <div className="max-w-3xl text-left">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-forest)]">{shopEyebrow}</p>
               <h1
-                className="text-2xl font-bold leading-tight text-[var(--text-primary)] md:text-3xl"
+                className="text-2xl font-bold leading-tight text-white md:text-3xl"
                 aria-label={isCategoryPage ? `Shop ${selectedCategory} plants` : 'Shop live plants'}
               >
                 {isCategoryPage ? (
@@ -277,7 +318,7 @@ export default function ShopPage() {
                   'Shop live plants'
                 )}
               </h1>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/72">
                 {shopDescription}
               </p>
               
@@ -286,28 +327,24 @@ export default function ShopPage() {
                   <svg fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 21.841c-1.613 0-3.193-.433-4.577-1.252l-.328-.194-3.398.891.905-3.314-.213-.339A9.813 9.813 0 012.186 12 9.845 9.845 0 0112 2.159 9.845 9.845 0 0121.814 12 9.845 9.845 0 0112 21.841z"></path></svg>
                   Ask before ordering
                 </a>
-                <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--color-forest)]">
+                <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm font-semibold text-white transition hover:border-[var(--color-forest)] hover:bg-black/45">
                   <svg fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"></path></svg>
                   Follow on Instagram
                 </a>
+                <Link to="/reviews" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm font-semibold text-white transition hover:border-[var(--color-forest)] hover:bg-black/45">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                    <path d="m9 10 2 2 4-4" />
+                  </svg>
+                  Reviews
+                </Link>
               </div>
             </div>
 
-            {/* Hero plant image (desktop only) */}
-            <div className="hidden">
-              <div className="relative w-40 h-40 lg:w-52 lg:h-52">
-                <div className="absolute -inset-1 bg-white/15 rounded-full animate-pulse-soft" />
-                <img
-                  src="/hero-plant.png"
-                  alt="Beautiful succulents from Rosary Plant House nursery"
-                  className="w-full h-full object-cover rounded-full border-3 border-white/30 shadow-xl"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Offer banner */}
-          <div className="relative z-10 mt-4 rounded-lg bg-[var(--color-sage)]/15 px-3 py-2 text-xs font-semibold leading-5 text-[var(--color-forest)] md:flex md:items-center md:justify-between">
+          <div className="relative z-10 mt-4 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold leading-5 text-emerald-200 md:flex md:items-center md:justify-between">
             <p>
               Purchase above INR 1000 and get a complimentary plant.
             </p>
@@ -315,26 +352,6 @@ export default function ShopPage() {
               Post an Instagram story from your previous order, tag us and get a complimentary plant.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Trust Badges */}
-      <section className="mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-          {[
-            { icon: '📦', label: 'Safe Packaging', desc: 'Plants packed with care' },
-            { icon: '🔄', label: 'Transit Replacement', desc: 'Damage? We replace it' },
-            { icon: '🚚', label: 'Ships Mon & Wed', desc: 'Regular dispatch schedule' },
-            { icon: '⭐', label: '5-Star Rated', desc: 'Loved by customers' },
-          ].map((badge) => (
-            <div key={badge.label} className="flex items-center gap-2.5 p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] hover:shadow-sm transition-shadow">
-              <span className="text-xl shrink-0">{badge.icon}</span>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-[var(--text-primary)] leading-tight">{badge.label}</p>
-                <p className="text-[10px] text-[var(--text-secondary)] leading-tight mt-0.5 hidden md:block">{badge.desc}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -439,134 +456,6 @@ export default function ShopPage() {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              <label className="block min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">Watering</span>
-                <select
-                  aria-label="Watering"
-                  value={filterWatering}
-                  onChange={(e) => setFilterWatering(e.target.value)}
-                  className={selectClassName}
-                  style={selectChevronStyle}
-                >
-                  <option value="Not Specific">Any</option>
-                  <option value="Low">Low</option>
-                  <option value="Moderate/Medium">Moderate/Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </label>
-
-              <label className="block min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">Sunlight</span>
-                <select
-                  aria-label="Sunlight"
-                  value={filterSunlight}
-                  onChange={(e) => setFilterSunlight(e.target.value)}
-                  className={selectClassName}
-                  style={selectChevronStyle}
-                >
-                  <option value="Not Specific">Any</option>
-                  <option value="Low">Low</option>
-                  <option value="Moderate/Medium">Moderate/Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </label>
-
-              <label className="block min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">Transit</span>
-                <select
-                  aria-label="Transit"
-                  value={filterTransit}
-                  onChange={(e) => setFilterTransit(e.target.value)}
-                  className={selectClassName}
-                  style={selectChevronStyle}
-                >
-                  <option value="Not Specific">Any</option>
-                  <option value="Low">Low</option>
-                  <option value="Moderate/Medium">Moderate/Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </label>
-
-              <label className="block min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">Price</span>
-                <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                  <input
-                    type="number"
-                    value={filterPriceMin}
-                    onChange={(e) => setFilterPriceMin(e.target.value)}
-                    placeholder="Min"
-                    min="0"
-                    inputMode="numeric"
-                    className={priceInputClassName}
-                    aria-label="Minimum price"
-                  />
-                  <span className="text-sm font-semibold text-[var(--text-secondary)]">to</span>
-                  <input
-                    type="number"
-                    value={filterPriceMax}
-                    onChange={(e) => setFilterPriceMax(e.target.value)}
-                    placeholder="Max"
-                    min="0"
-                    inputMode="numeric"
-                    className={priceInputClassName}
-                    aria-label="Maximum price"
-                  />
-                </div>
-              </label>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between xl:justify-end">
-              <div className="min-h-11 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-sm sm:min-w-[12rem]">
-                {searchQuery.trim() ? (
-                  <span>
-                    {sortedProducts.length} result{sortedProducts.length !== 1 ? 's' : ''} for "<strong className="font-semibold text-[var(--text-primary)]">{searchQuery}</strong>"
-                  </span>
-                ) : (
-                  <span>
-                    <strong className="font-semibold text-[var(--text-primary)]">{selectedCategoryLabel}</strong>{' '}
-                    <span className="text-xs opacity-75">({productCountLabel})</span>
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                {hasActiveAdvancedFilters && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterWatering('Not Specific');
-                      setFilterSunlight('Not Specific');
-                      setFilterTransit('Not Specific');
-                      setFilterPriceMin('');
-                      setFilterPriceMax('');
-                    }}
-                    className="h-11 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 text-sm font-semibold text-[var(--color-forest)] shadow-sm transition hover:border-[var(--color-forest)] focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]/20"
-                  >
-                    Clear filters
-                  </button>
-                )}
-
-                <label className="block min-w-0 sm:w-56">
-                  <span className="text-xs font-semibold text-[var(--text-secondary)]">Sort by</span>
-                  <select
-                    id="sort-select"
-                    aria-label="Sort products"
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className={selectClassName}
-                    style={selectChevronStyle}
-                  >
-                    <option value="Recommended">Recommended</option>
-                    <option value="Price: Low to High">Price: Low to High</option>
-                    <option value="Price: High to Low">Price: High to Low</option>
-                    <option value="Newest">Newest</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 

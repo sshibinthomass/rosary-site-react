@@ -3,6 +3,15 @@ import {
   SITE_POLICY,
   SITE_URL,
 } from './sitePolicy.js';
+import {
+  getProductRobots,
+  getSeoReviewSeed,
+  getSeoStatus,
+  isAvailableForPublicSale,
+  isIdentityVerified,
+  isSeoIndexable,
+} from './seoPolicy.js';
+import { CATEGORIES } from '../config/constants.js';
 
 export const DEFAULT_SEO_IMAGE_PATH = '/og-image.jpg';
 export const HERO_SEO_IMAGE_PATH = '/hero-bg.jpg';
@@ -24,6 +33,36 @@ export function slugify(value) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+const CATEGORY_BY_SLUG = new Map(CATEGORIES.map((category) => [slugify(category), category]));
+const CATEGORY_ALIASES = new Map([
+  ['cacti', 'Cactus'],
+  ['jade-plant', 'Jade'],
+  ['foliage-plant', 'Indoor'],
+  ['indoor-plant', 'Indoor'],
+  ['trailing-vine', 'Hanging'],
+]);
+
+function matchKnownCategory(value) {
+  const slug = slugify(value);
+  if (!slug) return '';
+  return CATEGORY_BY_SLUG.get(slug) || CATEGORY_ALIASES.get(slug) || '';
+}
+
+export function getProductPublicCategory(product = {}) {
+  const candidates = [
+    product.category,
+    product.careGuide?.siteCategory,
+    product.careGuide?.plantType,
+  ];
+
+  for (const candidate of candidates) {
+    const category = matchKnownCategory(candidate);
+    if (category) return category;
+  }
+
+  return product.category || 'Plants';
 }
 
 function stripProductIdFromSlug(slug, productId) {
@@ -112,6 +151,19 @@ export function getProductDisplayName(product = {}) {
   return product.title || product.name || product.commonName || product.schema?.name || 'Plant';
 }
 
+function compactText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function getProductShoppingName(product = {}) {
+  return compactText(
+    product.merchant?.title ||
+    product.careGuide?.seoProductName ||
+    product.schema?.name ||
+    getProductDisplayName(product)
+  );
+}
+
 export function getProductPrice(product = {}) {
   const price = Number(product.salesPrice ?? product.price);
   return Number.isFinite(price) && price > 0 ? price : null;
@@ -169,6 +221,10 @@ function buildOfferShippingDetailsSchema() {
 }
 
 export function getProductMetaTitle(product = {}) {
+  if (isAvailableForPublicSale(product) && getProductPrice(product) !== null) {
+    return `Buy ${getProductShoppingName(product)} Online`;
+  }
+
   return product.seo?.metaTitle || product.seo?.h1 || getProductDisplayName(product);
 }
 
@@ -365,7 +421,7 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
       '@type': 'Brand',
       name: product.schema?.brand || SITE_NAME,
     },
-    category: product.category,
+    category: getProductPublicCategory(product),
     url,
   };
 
@@ -393,7 +449,7 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
 }
 
 export function buildBreadcrumbStructuredData(product = {}, { baseUrl = SITE_URL } = {}) {
-  const category = product.category || 'Plants';
+  const category = getProductPublicCategory(product);
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',

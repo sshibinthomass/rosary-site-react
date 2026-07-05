@@ -24,10 +24,11 @@ import { getContentHubBySlug } from '../src/utils/contentHubs.js';
 const storefrontProduct = {
   id: '1',
   commonName: 'Red tip',
-  available: true,
-  seoStatus: 'published',
-  identityVerified: true,
-  salesPrice: 69,
+    available: true,
+    seoStatus: 'published',
+    identityVerified: true,
+    updatedAt: '2026-07-04T22:11:49.000Z',
+    salesPrice: 69,
   title: 'Sempervivum Tectorum',
   imageUrl: 'https://example.com/1.jpg',
   size: '(1.5"-2")',
@@ -149,6 +150,9 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
       metaTitle: 'Sempervivum tectorum Care Guide',
       metaDescription: 'Generated meta description.',
       h1: 'Sempervivum tectorum plant care',
+      relatedPlants: ['echeveria', 'haworthia', 'jade-plant'],
+      relatedCareGuides: ['succulent-care-guide', 'monsoon-succulent-care'],
+      relatedProblemGuides: ['succulent-root-rot'],
     },
     schema: {
       name: 'Sempervivum tectorum',
@@ -202,6 +206,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
 
   const sitemap = buildSitemapXml([product], { baseUrl: 'https://rosaryplanthouse.com' });
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+  assert.match(sitemap, /<lastmod>2026-07-04<\/lastmod>/);
   assert.match(sitemap, /https:\/\/rosaryplanthouse\.com\/policies/);
   assert.doesNotMatch(sitemap, /\/cart/);
 
@@ -215,7 +220,8 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
     product,
     baseUrl: 'https://rosaryplanthouse.com',
   });
-  assert.match(html, /<title>Sempervivum tectorum Care Guide \| Rosary Plant House<\/title>/);
+  assert.match(html, /<title>Buy Sempervivum tectorum Plant Online \| Rosary Plant House<\/title>/);
+  assert.match(html, /<h1>Sempervivum Tectorum<\/h1>/);
   assert.match(html, /<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" \/>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/" \/>/);
   assert.match(html, /<script type="application\/ld\+json">/);
@@ -231,6 +237,14 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.match(html, /<h3>Yellow leaves<\/h3>/);
   assert.match(html, /<strong>Reason:<\/strong> Overwatering or low light\./);
   assert.match(html, /<h2>Recovery tips<\/h2>/);
+  assert.match(html, /<section class="seo-product-related-links">/);
+  assert.match(html, /<h2>Related plant pages and guides<\/h2>/);
+  assert.match(html, /<h3>Related plants<\/h3>/);
+  assert.match(html, /<h3>Related care guides<\/h3>/);
+  assert.match(html, /<h3>Related problem guides<\/h3>/);
+  assert.match(html, /<a href="\/category\/Echeveria">Echeveria plants<\/a>/);
+  assert.match(html, /<a href="\/guides\/succulents-in-india">Succulents in India: Care and Buying Guide<\/a>/);
+  assert.match(html, /<a href="\/guides\/root-rot-succulent-care">Root Rot in Succulents: Signs and Recovery<\/a>/);
 });
 
 test('SEO artifacts omit unverified products from sitemap and merchant feed', () => {
@@ -256,6 +270,21 @@ test('SEO artifacts omit unverified products from sitemap and merchant feed', ()
   const feed = buildMerchantFeedTsv([approvedProduct, reviewProduct], { baseUrl: 'https://rosaryplanthouse.com' });
   assert.match(feed, /RPH-1/);
   assert.doesNotMatch(feed, /RPH-2/);
+});
+
+test('sitemap can use a source content lastmod when products do not have row timestamps', () => {
+  const product = {
+    ...storefrontProduct,
+    updatedAt: undefined,
+    seo: { slug: 'sempervivum-tectorum-1' },
+  };
+
+  const sitemap = buildSitemapXml([product], {
+    baseUrl: 'https://rosaryplanthouse.com',
+    lastmod: '2026-07-05T08:00:00.000Z',
+  });
+
+  assert.match(sitemap, /<loc>https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/<\/loc>\s*<lastmod>2026-07-05<\/lastmod>/);
 });
 
 test('merchant feed row detection distinguishes empty feeds from product feeds', () => {
@@ -313,6 +342,9 @@ test('SEO artifacts support local SEO-only products without Firebase storefront 
       metaTitle: 'Sempervivum tectorum Care Guide',
       metaDescription: 'Generated meta description.',
       h1: 'Sempervivum tectorum plant care',
+      relatedPlants: ['echeveria', 'haworthia', 'jade-plant'],
+      relatedCareGuides: ['succulent-care-guide', 'monsoon-succulent-care'],
+      relatedProblemGuides: ['succulent-root-rot'],
     },
     schema: {
       name: 'Sempervivum tectorum',
@@ -418,6 +450,90 @@ test('static category pages expose category-specific titles, links, and ItemList
   assert.match(html, /<h1>Buy Succulent plants online<\/h1>/);
   assert.match(html, /https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
   assert.match(html, /"@type":"ItemList"/);
+});
+
+test('top static category pages include crawlable guidance, FAQs, guide links, and product links', () => {
+  const cases = [
+    {
+      category: 'Succulent',
+      expectedCopy: /beginner-friendly succulents/,
+      expectedCare: /fast-draining soil/,
+      expectedGuide: /\/guides\/succulents-in-india/,
+    },
+    {
+      category: 'Cactus',
+      expectedCopy: /bright balconies and sunny windows/,
+      expectedCare: /gritty cactus mix/,
+      expectedGuide: /\/guides\/cactus-care-india/,
+    },
+    {
+      category: 'Echeveria',
+      expectedCopy: /rosette succulents/,
+      expectedCare: /protect them from long rain spells/,
+      expectedGuide: /\/guides\/buy-succulents-online-india/,
+    },
+    {
+      category: 'Haworthia',
+      expectedCopy: /bright filtered light/,
+      expectedCare: /avoid harsh afternoon sun/,
+      expectedGuide: /\/guides\/indoor-succulent-care/,
+    },
+  ];
+
+  for (const { category, expectedCopy, expectedCare, expectedGuide } of cases) {
+    const product = {
+      ...storefrontProduct,
+      category,
+      title: `${category} Test Plant`,
+      commonName: `${category} Test Plant`,
+      seo: { slug: `${category.toLowerCase()}-test-plant-1` },
+      careGuide: {
+        siteCategory: category,
+        plantType: category,
+      },
+    };
+
+    const html = buildStaticCategoryHtml({
+      indexHtml: appShellHtml,
+      category,
+      products: [product],
+      baseUrl: 'https://rosaryplanthouse.com',
+    });
+
+    assert.match(html, /<section class="seo-category-intro">/);
+    assert.match(html, expectedCopy);
+    assert.match(html, expectedCare);
+    assert.match(html, new RegExp(`Frequently asked questions about ${category} plants`));
+    assert.match(html, expectedGuide);
+    assert.match(html, new RegExp(`/plant/1-${category.toLowerCase()}-test-plant/`));
+    assert.match(html, /"@type":"FAQPage"/);
+    assert.match(html, /"@type":"BreadcrumbList"/);
+  }
+});
+
+test('static category pages use SEO care category when storefront category is generic', () => {
+  const product = {
+    ...storefrontProduct,
+    category: 'Plants',
+    seo: { slug: 'sempervivum-tectorum-1', metaTitle: 'Sempervivum tectorum Care Guide' },
+    schema: { name: 'Sempervivum tectorum', description: 'Generated schema description.' },
+    merchant: { title: 'Sempervivum tectorum Plant', description: 'Generated merchant description.' },
+    careGuide: {
+      siteCategory: 'Succulent',
+      plantType: 'Succulent',
+    },
+  };
+
+  const html = buildStaticCategoryHtml({
+    indexHtml: appShellHtml,
+    category: 'Succulent',
+    products: [product],
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<a href="\/plant\/1-sempervivum-tectorum\/">Sempervivum Tectorum<\/a>/);
+  assert.match(html, /"name":"Sempervivum Tectorum"/);
+  assert.match(html, /"url":"https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/"/);
 });
 
 test('static content hub pages expose article answers, FAQs, product links, and schema', () => {

@@ -10,7 +10,7 @@ const featuredGuides = CONTENT_HUBS.slice(0, 3);
 const featuredReviews = [
   ...reviewsData.filter((review) => review.featured),
   ...reviewsData.filter((review) => !review.featured),
-].slice(0, 2);
+].slice(0, 4);
 
 const CATEGORY_IMAGES = Object.freeze({
   Succulent: '/home/category-succulent-natural.jpg',
@@ -104,10 +104,10 @@ export default function HomePage() {
             Rosary Plant House, Coonoor
           </p>
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
-            Succulents, cacti and indoor plants
+            Bringing Nature's Finest Succulents & Plants to You
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-white/88">
-            Shop healthy plants from the Nilgiris with care guidance and WhatsApp support.
+            Shop healthy bare-rooted succulents, cacti and indoor plants from the Nilgiris with care guidance and WhatsApp support.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -245,8 +245,9 @@ export default function HomePage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-forest)]">Reviews</p>
             <h2 id="home-reviews" className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-              What customers say
+              What Our Customers Say
             </h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">Trusted by plant lovers across India</p>
           </div>
           <Link to="/reviews" className="text-sm font-semibold text-[var(--color-forest)] hover:underline">
             Read reviews
@@ -262,6 +263,25 @@ export default function HomePage() {
               <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">"{shortReview(review.text)}"</p>
             </article>
           ))}
+        </div>
+        <div className="flex flex-col items-center gap-4 pt-2">
+          <Link
+            to="/insta-reviews"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-forest)] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-forest-light)]"
+          >
+            Watch Stories Reviews
+          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a href="https://www.facebook.com/rosaryplanthouse/reviews" target="_blank" rel="noopener noreferrer" className="rounded-full border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--color-forest)]">
+              Facebook Reviews
+            </a>
+            <a href="https://www.instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="rounded-full border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--color-forest)]">
+              Insta Reviews
+            </a>
+            <a href="https://maps.app.goo.gl/h5ziUGAuvC4FZZqn8" target="_blank" rel="noopener noreferrer" className="rounded-full border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--color-forest)]">
+              Google Reviews
+            </a>
+          </div>
         </div>
       </section>
     </div>

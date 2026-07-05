@@ -140,6 +140,32 @@ test('homepage keeps the landing content compact and highlights shopping entry p
   }
 });
 
+test('homepage owns broad social proof while shop stays product-first', () => {
+  const homeSource = readText('src/pages/HomePage.jsx');
+  const shopSource = readText('src/pages/ShopPage.jsx');
+
+  assert.match(homeSource, /Bringing Nature's Finest/);
+  assert.match(homeSource, /What Our Customers Say/);
+  assert.match(homeSource, /Watch Stories Reviews/);
+
+  assert.match(shopSource, /Shop live plants/);
+  assert.match(shopSource, /Search plants by name or category/);
+  assert.match(shopSource, /Safe Packaging/);
+  assert.match(shopSource, /Transit Replacement/);
+  assert.doesNotMatch(shopSource, /Bringing Nature's Finest/);
+  assert.doesNotMatch(shopSource, /What Our Customers Say/);
+  assert.doesNotMatch(shopSource, /Watch Stories Reviews/);
+});
+
+test('category shop pages promote the selected category in the primary heading', () => {
+  const shopSource = readText('src/pages/ShopPage.jsx');
+
+  assert.match(shopSource, /const isCategoryPage = selectedCategory !== 'All';/);
+  assert.match(shopSource, /aria-label=\{isCategoryPage \? `Shop \$\{selectedCategory\} plants` : 'Shop live plants'\}/);
+  assert.match(shopSource, /<strong className="font-extrabold text-\[var\(--color-forest\)\]">\{selectedCategory\}<\/strong>/);
+  assert.match(shopSource, /const shopDescription = isCategoryPage/);
+});
+
 test('policies page is routed and discoverable from public navigation', () => {
   const appSource = readText('src/App.jsx');
   const footerSource = readText('src/components/Footer.jsx');
@@ -170,4 +196,71 @@ test('care guide navigation points to the guide library index', () => {
   assert.match(layoutSource, /\{ path: '\/guides', label: 'Care Guides'/);
   assert.doesNotMatch(footerSource, /Care Guides', path: '\/guides\/succulents-in-india'/);
   assert.doesNotMatch(layoutSource, /path: '\/guides\/succulents-in-india', label: 'Care Guides'/);
+});
+
+test('web app manifests launch from the production root domain path', () => {
+  for (const filePath of ['public/manifest.json', 'public/site.webmanifest']) {
+    const manifest = JSON.parse(readText(filePath));
+
+    assert.equal(manifest.name, 'Rosary Plant House', `${filePath} should use the public app name`);
+    assert.equal(manifest.short_name, 'Rosary Plants', `${filePath} should use the short app name`);
+    assert.equal(manifest.start_url, '/', `${filePath} should start at the production root`);
+    assert.notEqual(manifest.start_url, '/rosary-site-react/');
+  }
+});
+
+test('site.webmanifest is the canonical linked web app manifest', () => {
+  const indexSource = readText('index.html');
+  const manifestLinks = indexSource.match(/<link\s+rel="manifest"[^>]+>/g) || [];
+
+  assert.equal(manifestLinks.length, 1);
+  assert.match(manifestLinks[0], /href="\/site\.webmanifest"/);
+  assert.doesNotMatch(manifestLinks[0], /href="\/manifest\.json"/);
+});
+
+test('product pages render related SEO links on the standalone page', () => {
+  const productPageSource = readText('src/pages/ProductPage.jsx');
+  const relatedLinksSource = readText('src/components/ProductRelatedLinks.jsx');
+
+  assert.match(productPageSource, /import ProductRelatedLinks from '\.\.\/components\/ProductRelatedLinks';/);
+  assert.match(productPageSource, /<ProductRelatedLinks product=\{product\} \/>/);
+  assert.match(relatedLinksSource, /Related plants/);
+  assert.match(relatedLinksSource, /Related care guides/);
+  assert.match(relatedLinksSource, /Related problem guides/);
+});
+
+test('mobile drawer uses inline icons instead of emoji menu markers', () => {
+  const layoutSource = readText('src/components/Layout.jsx');
+  const oldEmojiMarkers = [
+    [0x1f33f],
+    [0x2b50],
+    [0x1f5c2, 0xfe0f],
+    [0x1f3e0],
+    [0x1fab4],
+    [0x1f335],
+    [0x1f338],
+    [0x1f48e],
+    [0x1f340],
+    [0x1f331],
+    [0x1fabb],
+    [0x1f33e],
+    [0x1f343],
+    [0x1f40d],
+    [0x1f3e1],
+    [0x1f38b],
+    [0x1f333],
+    [0x1f381],
+    [0x1f4e6],
+    [0x1f4f8],
+    [0x2753],
+    [0x2139, 0xfe0f],
+    [0x1f4de],
+  ].map((codePoints) => String.fromCodePoint(...codePoints));
+
+  assert.match(layoutSource, /function MenuGlyph/);
+  assert.match(layoutSource, /const categoryIconTypes = Object\.freeze/);
+  assert.match(layoutSource, /const infoNavItems = \[/);
+  for (const marker of oldEmojiMarkers) {
+    assert.equal(layoutSource.includes(marker), false, `Layout should not render ${marker} emoji menu markers`);
+  }
 });

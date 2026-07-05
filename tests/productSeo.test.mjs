@@ -7,7 +7,9 @@ import {
   extractProductIdFromParam,
   getProductLongDescription,
   getProductMetaDescription,
+  getProductMetaTitle,
   getProductPath,
+  getProductPublicCategory,
   mergeProductWithLocalEnrichment,
 } from '../src/utils/productSeo.js';
 
@@ -22,6 +24,33 @@ test('product SEO paths keep the existing id-first route style', () => {
   assert.equal(extractProductIdFromParam('1-sempervivum-tectorum'), '1');
   assert.equal(extractProductIdFromParam('sempervivum-tectorum-1'), '1');
   assert.equal(extractProductIdFromParam('L12-rare-succulent'), 'L12');
+});
+
+test('public product category falls back to SEO care metadata when storefront category is generic', () => {
+  assert.equal(getProductPublicCategory({
+    category: 'Plants',
+    careGuide: {
+      siteCategory: 'Succulent',
+      plantType: 'Foliage plant',
+    },
+  }), 'Succulent');
+
+  assert.equal(getProductPublicCategory({
+    category: 'Cactus',
+    careGuide: {
+      siteCategory: 'Succulent',
+    },
+  }), 'Cactus');
+
+  assert.equal(getProductPublicCategory({
+    careGuide: {
+      plantType: 'Cactus',
+    },
+  }), 'Cactus');
+
+  assert.equal(getProductPublicCategory({
+    category: 'Plants',
+  }), 'Plants');
 });
 
 test('local enrichment merges additively while Firestore storefront fields win', () => {
@@ -89,6 +118,21 @@ test('product detail descriptions use enriched data instead of Firebase descript
   assert.deepEqual(merged.faqs, [{ question: 'New question?', answer: 'New answer.' }]);
   assert.equal(getProductLongDescription(merged), 'New enriched long description for the individual plant page.');
   assert.equal(getProductMetaDescription(merged), 'New enriched SEO description.');
+});
+
+test('saleable product meta titles lead with buying intent', () => {
+  assert.equal(getProductMetaTitle({
+    id: '1',
+    title: 'Sempervivum tectorum',
+    available: true,
+    salesPrice: 59,
+    seo: {
+      metaTitle: 'Sempervivum tectorum Care Guide and Plant Details',
+    },
+    merchant: {
+      title: 'Sempervivum tectorum Plant',
+    },
+  }), 'Buy Sempervivum tectorum Plant Online');
 });
 
 test('product care sections organize enriched care and troubleshooting fields', () => {

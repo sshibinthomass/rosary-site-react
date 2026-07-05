@@ -11,6 +11,7 @@ import {
   getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
+  getProductRelatedSeoLinks,
 } from '../src/utils/contentHubs.js';
 
 const rootDir = path.resolve('.');
@@ -93,4 +94,28 @@ test('content hub product matching returns relevant public products first', () =
   const matches = getContentHubProducts(hub, products);
   assert.equal(matches[0].id, '1');
   assert.equal(matches.some((product) => product.id === '2'), false);
+});
+
+test('product related SEO links resolve known plant categories, care guides, and problem guides', () => {
+  const links = getProductRelatedSeoLinks({
+    seo: {
+      relatedPlants: ['echeveria', 'haworthia', 'jade-plant', 'unknown-family'],
+      relatedCareGuides: ['succulent-care-guide', 'monsoon-succulent-care'],
+      relatedProblemGuides: ['succulent-root-rot', 'succulent-sunburn'],
+    },
+  });
+
+  assert.deepEqual(links.plants, [
+    { label: 'Echeveria plants', path: '/category/Echeveria' },
+    { label: 'Haworthia plants', path: '/category/Haworthia' },
+    { label: 'Jade plants', path: '/category/Jade' },
+  ]);
+  assert.deepEqual(links.careGuides, [
+    { label: 'Succulents in India: Care and Buying Guide', path: '/guides/succulents-in-india' },
+    { label: 'Monsoon Succulent Care in India', path: '/guides/monsoon-succulent-care' },
+  ]);
+  assert.deepEqual(links.problemGuides, [
+    { label: 'Root Rot in Succulents: Signs and Recovery', path: '/guides/root-rot-succulent-care' },
+    { label: 'Indoor Succulent Care for Indian Apartments', path: '/guides/indoor-succulent-care' },
+  ]);
 });

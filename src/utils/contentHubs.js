@@ -5,6 +5,7 @@ import {
   getProductDisplayName,
   isSeoIndexable,
 } from './productSeo.js';
+import { CATEGORIES } from '../config/constants.js';
 
 export const GUIDE_IMAGE_ASSETS = Object.freeze({
   group: '/guides/guide-succulent-group-nursery.jpg',
@@ -773,6 +774,12 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function slugToken(value) {
+  return normalizeText(value)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function normalizeCareLevel(value) {
   const normalized = normalizeText(value);
   if (['med', 'medium', 'moderate'].includes(normalized)) return 'moderate/medium';
@@ -816,6 +823,148 @@ export function getContentHubCanonicalUrl(hub = {}, baseUrl = PRODUCT_SEO_SITE.u
 export function getContentHubBySlug(slug) {
   const normalizedSlug = normalizeText(slug);
   return CONTENT_HUBS.find((hub) => hub.slug === normalizedSlug) || null;
+}
+
+const RELATED_CATEGORY_ALIASES = new Map([
+  ...CATEGORIES.map((category) => [slugToken(category), category]),
+  ['cacti', 'Cactus'],
+  ['cactus-plant', 'Cactus'],
+  ['jade-plant', 'Jade'],
+  ['jade-plants', 'Jade'],
+  ['succulents', 'Succulent'],
+  ['haworthias', 'Haworthia'],
+  ['echeverias', 'Echeveria'],
+  ['crassulas', 'Crassula'],
+  ['peperomias', 'Peperomia'],
+  ['bergeranthus-species', 'Succulent'],
+  ['chlorophytum', 'Indoor'],
+  ['compact-aloe-cluster', 'Aloe'],
+  ['dianthus', 'Others'],
+  ['donkeys-tail', 'Sedum'],
+  ['finger-jade', 'Jade'],
+  ['gasteria', 'Succulent'],
+  ['graptopetalum', 'Succulent'],
+  ['hoodia', 'Succulent'],
+  ['huernia-zebrina', 'Succulent'],
+  ['hydrangea', 'Others'],
+  ['kalanchoe', 'Succulent'],
+  ['lapidaria', 'Succulent'],
+  ['lifesaver-cactus', 'Succulent'],
+  ['lithops', 'Succulent'],
+  ['mammillaria', 'Cactus'],
+  ['opuntia', 'Cactus'],
+  ['peanut-cactus', 'Cactus'],
+  ['philodendron', 'Indoor'],
+  ['portulaca', 'Succulent'],
+  ['sempervivum', 'Succulent'],
+  ['string-of-necklace', 'Hanging'],
+  ['string-of-necklaces', 'Hanging'],
+  ['titanopsis', 'Succulent'],
+  ['tradescantia', 'Creeper'],
+  ['variegated-chlorophytum', 'Indoor'],
+]);
+
+const RELATED_CARE_GUIDE_ALIASES = new Map([
+  ['succulent-care-guide', 'succulents-in-india'],
+  ['succulent-care', 'succulents-in-india'],
+  ['watering-succulents', 'succulents-in-india'],
+  ['monsoon-succulent-care', 'monsoon-succulent-care'],
+  ['balcony-succulent-care', 'low-water-balcony-plants'],
+  ['indoor-plant-care', 'indoor-succulent-care'],
+  ['indoor-succulent-care', 'indoor-succulent-care'],
+  ['bright-indirect-light-plants', 'indoor-succulent-care'],
+  ['bright-light-plants', 'low-water-balcony-plants'],
+  ['balcony-plant-care', 'low-water-balcony-plants'],
+  ['low-water-plants', 'low-water-balcony-plants'],
+  ['cactus-care-guide', 'cactus-care-india'],
+  ['cactus-and-mesemb-watering', 'cactus-care-india'],
+  ['watering-cactus', 'cactus-care-india'],
+  ['watering-indoor-plants', 'indoor-succulent-care'],
+  ['echeveria-care-guide', 'succulents-in-india'],
+  ['haworthia-care-guide', 'indoor-succulent-care'],
+  ['jade-plant-care-guide', 'low-water-balcony-plants'],
+  ['sunny-balcony-plants', 'low-water-balcony-plants'],
+  ['trailing-succulent-care', 'hanging-plants-balcony'],
+  ['trailing-plant-care', 'hanging-plants-balcony'],
+  ['hanging-plant-care', 'hanging-plants-balcony'],
+  ['hanging-plants', 'hanging-plants-balcony'],
+  ['flowering-plant-care', 'cactus-plants-online-india'],
+]);
+
+const RELATED_PROBLEM_GUIDE_ALIASES = new Map([
+  ['succulent-root-rot', 'root-rot-succulent-care'],
+  ['cactus-root-rot', 'root-rot-succulent-care'],
+  ['root-rot', 'root-rot-succulent-care'],
+  ['root-rot-guide', 'root-rot-succulent-care'],
+  ['succulent-stem-rot', 'root-rot-succulent-care'],
+  ['succulent-leaf-yellowing', 'root-rot-succulent-care'],
+  ['yellow-leaves-guide', 'root-rot-succulent-care'],
+  ['leaf-yellowing', 'root-rot-succulent-care'],
+  ['succulent-leggy-growth', 'indoor-succulent-care'],
+  ['leggy-growth', 'indoor-succulent-care'],
+  ['succulent-sunburn', 'indoor-succulent-care'],
+  ['cactus-sunburn', 'cactus-care-india'],
+  ['succulent-leaf-drop', 'monsoon-succulent-care'],
+  ['succulent-pests', 'monsoon-succulent-care'],
+  ['cactus-pests', 'cactus-care-india'],
+  ['indoor-plant-pests', 'indoor-succulent-care'],
+  ['flower-drop-guide', 'cactus-plants-online-india'],
+]);
+
+function uniqueLinks(links) {
+  const seen = new Set();
+  return links.filter((link) => {
+    if (!link?.path || seen.has(link.path)) return false;
+    seen.add(link.path);
+    return true;
+  });
+}
+
+function resolveRelatedCategoryLink(value) {
+  const token = slugToken(value);
+  const tokenParts = token.split('-').filter(Boolean);
+  const category = RELATED_CATEGORY_ALIASES.get(token) || CATEGORIES.find((candidate) => {
+    const categoryToken = slugToken(candidate);
+    return token === categoryToken || tokenParts.includes(categoryToken);
+  });
+  if (!category) return null;
+
+  return {
+    label: `${category} plants`,
+    path: `/category/${encodeURIComponent(category)}`,
+  };
+}
+
+function resolveRelatedGuideLink(value, aliases) {
+  const token = slugToken(value);
+  const slug = aliases.get(token) || token;
+  const hub = getContentHubBySlug(slug);
+  if (!hub) return null;
+
+  return {
+    label: hub.title,
+    path: getContentHubPath(hub),
+  };
+}
+
+export function getProductRelatedSeoLinks(product = {}) {
+  const seo = product.seo || {};
+  const relatedPlants = Array.isArray(seo.relatedPlants) ? seo.relatedPlants : [];
+  const relatedCareGuides = Array.isArray(seo.relatedCareGuides) ? seo.relatedCareGuides : [];
+  const relatedProblemGuides = Array.isArray(seo.relatedProblemGuides) ? seo.relatedProblemGuides : [];
+  const careGuides = uniqueLinks(
+    relatedCareGuides.map((guide) => resolveRelatedGuideLink(guide, RELATED_CARE_GUIDE_ALIASES)).filter(Boolean)
+  );
+  const problemGuides = uniqueLinks(
+    relatedProblemGuides.map((guide) => resolveRelatedGuideLink(guide, RELATED_PROBLEM_GUIDE_ALIASES)).filter(Boolean)
+  );
+
+  return {
+    plants: uniqueLinks(relatedPlants.map(resolveRelatedCategoryLink).filter(Boolean)),
+    careGuides,
+    problemGuides,
+    guides: uniqueLinks([...careGuides, ...problemGuides]),
+  };
 }
 
 export function getRelatedContentHubs(hub = {}) {

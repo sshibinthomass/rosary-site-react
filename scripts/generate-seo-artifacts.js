@@ -39,6 +39,14 @@ const distDir = path.join(rootDir, 'dist');
 const productsPath = path.join(rootDir, 'src', 'data', 'products.json');
 const reviewsPath = path.join(rootDir, 'src', 'data', 'reviews.json');
 const BASE_URL = process.env.SITE_URL || 'https://rosaryplanthouse.com';
+const sitemapSourcePaths = [
+  productsPath,
+  reviewsPath,
+  path.join(rootDir, 'src', 'utils', 'contentHubs.js'),
+  path.join(rootDir, 'src', 'utils', 'productSeo.js'),
+  path.join(rootDir, 'src', 'utils', 'sitePolicy.js'),
+  path.join(rootDir, 'scripts', 'seo', 'artifacts.mjs'),
+];
 
 dotenv.config({ path: path.join(rootDir, '.env.local'), quiet: true });
 
@@ -50,6 +58,24 @@ async function readProducts() {
 async function readReviews() {
   const raw = await fs.readFile(reviewsPath, 'utf8');
   return JSON.parse(raw);
+}
+
+async function getSitemapLastmod() {
+  const stats = await Promise.all(
+    sitemapSourcePaths.map(async (filePath) => {
+      try {
+        return await fs.stat(filePath);
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  const newestTime = stats.reduce((newest, stat) => (
+    stat && stat.mtimeMs > newest ? stat.mtimeMs : newest
+  ), 0);
+
+  return newestTime > 0 ? new Date(newestTime).toISOString() : '';
 }
 
 async function writeMerchantFeed(filePath, products) {
@@ -84,15 +110,33 @@ async function readExistingMerchantFeedProducts() {
   }
 }
 
+function parseServiceAccountJson(rawJson, sourceName) {
+  try {
+    return JSON.parse(rawJson);
+  } catch (error) {
+    console.warn(`Ignoring ${sourceName} because it is not valid Firebase service account JSON: ${error.message}`);
+    return null;
+  }
+}
+
 function readServiceAccount() {
   const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (rawJson) {
-    return JSON.parse(rawJson);
+    const serviceAccount = parseServiceAccountJson(rawJson, 'FIREBASE_SERVICE_ACCOUNT_JSON');
+    if (serviceAccount) return serviceAccount;
+  }
+
+  const rawBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
+  if (rawBase64) {
+    const decodedJson = Buffer.from(rawBase64, 'base64').toString('utf8');
+    const serviceAccount = parseServiceAccountJson(decodedJson, 'FIREBASE_SERVICE_ACCOUNT_BASE64');
+    if (serviceAccount) return serviceAccount;
   }
 
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
   if (serviceAccountPath && fsSync.existsSync(serviceAccountPath)) {
-    return JSON.parse(fsSync.readFileSync(serviceAccountPath, 'utf8'));
+    const serviceAccount = parseServiceAccountJson(fsSync.readFileSync(serviceAccountPath, 'utf8'), serviceAccountPath);
+    if (serviceAccount) return serviceAccount;
   }
 
   return null;
@@ -113,18 +157,22 @@ async function readFirebaseProductsWithAdmin() {
   const serviceAccount = readServiceAccount();
   if (!serviceAccount) return null;
 
-  const app = initializeAdminApp({
-    credential: cert(serviceAccount),
-  }, `seo-artifacts-admin-${Date.now()}`);
+  let app;
 
   try {
+    app = initializeAdminApp({
+      credential: cert(serviceAccount),
+    }, `seo-artifacts-admin-${Date.now()}`);
     const snapshot = await getAdminFirestore(app).collection('products').get();
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+  } catch (error) {
+    console.warn(`Skipping Firebase Admin storefront merge because Admin read failed: ${error.message}`);
+    return null;
   } finally {
-    await deleteAdminApp(app);
+    if (app) await deleteAdminApp(app);
   }
 }
 
@@ -157,9 +205,9 @@ async function readFirebaseProducts() {
   return readFirebaseProductsWithClient();
 }
 
-async function writePublicArtifacts({ artifactProducts, seoIndexProducts }) {
+async function writePublicArtifacts({ artifactProducts, seoIndexProducts, lastmod }) {
   await fs.mkdir(publicDir, { recursive: true });
-  await fs.writeFile(path.join(publicDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
+  await fs.writeFile(path.join(publicDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL, lastmod }), 'utf8');
   await fs.writeFile(path.join(publicDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
   await writeMerchantFeed(path.join(publicDir, 'google-merchant-feed.tsv'), artifactProducts);
   await fs.writeFile(path.join(publicDir, 'llms.txt'), buildLlmsTxt(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
@@ -199,7 +247,7 @@ async function copyGuideImageAssetsToDist() {
   }
 }
 
-async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews }) {
+async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews, lastmod }) {
   const indexPath = path.join(distDir, 'index.html');
   const indexHtml = await fs.readFile(indexPath, 'utf8');
   const plantRoot = path.join(distDir, 'plant');
@@ -208,7 +256,7 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews 
   const policyHtml = buildStaticPolicyHtml({ indexHtml, baseUrl: BASE_URL });
   const notFoundHtml = buildStaticNotFoundHtml({ indexHtml, baseUrl: BASE_URL });
 
-  await fs.writeFile(path.join(distDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
+  await fs.writeFile(path.join(distDir, 'sitemap.xml'), buildSitemapXml(artifactProducts, { baseUrl: BASE_URL, lastmod }), 'utf8');
   await fs.writeFile(path.join(distDir, 'robots.txt'), buildRobotsTxt({ baseUrl: BASE_URL }), 'utf8');
   await writeMerchantFeed(path.join(distDir, 'google-merchant-feed.tsv'), artifactProducts);
   await fs.writeFile(path.join(distDir, 'llms.txt'), buildLlmsTxt(artifactProducts, { baseUrl: BASE_URL }), 'utf8');
@@ -281,6 +329,7 @@ async function main() {
   const args = new Set(process.argv.slice(2));
   const localProducts = await readProducts();
   const reviews = await readReviews();
+  const lastmod = await getSitemapLastmod();
   const merchantFeedProducts = await readExistingMerchantFeedProducts();
   const firebaseProducts = await readFirebaseProducts();
   const mergedStorefrontProducts = mergeFirebaseStorefrontData(localProducts, firebaseProducts);
@@ -294,12 +343,12 @@ async function main() {
     console.log(`Loaded ${merchantFeedProducts.length} existing Merchant feed rows as storefront fallback data`);
   }
 
-  await writePublicArtifacts({ artifactProducts, seoIndexProducts });
+  await writePublicArtifacts({ artifactProducts, seoIndexProducts, lastmod });
 
   if (!args.has('--public-only')) {
     try {
       await fs.access(path.join(distDir, 'index.html'));
-      await writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews });
+      await writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews, lastmod });
     } catch (error) {
       if (args.has('--dist')) throw error;
       console.warn('Skipping dist SEO pages because dist/index.html is not available yet.');

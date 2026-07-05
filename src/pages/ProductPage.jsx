@@ -9,6 +9,7 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 import { CURRENCY } from '../config/constants';
 import SEO from '../components/SEO';
 import ProductCareDetails from '../components/ProductCareDetails';
+import ProductRelatedLinks from '../components/ProductRelatedLinks';
 import {
   buildBreadcrumbStructuredData,
   buildFaqStructuredData,
@@ -17,6 +18,7 @@ import {
   getProductLongDescription,
   getProductMetaDescription,
   getProductMetaTitle,
+  getProductPublicCategory,
   getProductRobots,
 } from '../utils/productSeo';
 
@@ -61,6 +63,7 @@ export default function ProductPage() {
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
+  const publicCategory = product ? getProductPublicCategory(product) : 'Plants';
   const hasDiscount = originalPrice && originalPrice > price;
   const discountPercent = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
   const inCart = product ? isInCart(product.id) : false;
@@ -149,14 +152,10 @@ export default function ProductPage() {
       <div className="flex items-center text-xs text-[var(--text-secondary)] font-medium mb-6 gap-1.5">
         <NavLink to="/" className="hover:text-[var(--color-forest)] transition-colors">Home</NavLink>
         <span>/</span>
-        {product.category && (
-          <>
-            <NavLink to={`/category/${encodeURIComponent(product.category)}`} className="hover:text-[var(--color-forest)] transition-colors">
-              {product.category}
-            </NavLink>
-            <span>/</span>
-          </>
-        )}
+        <NavLink to={`/category/${encodeURIComponent(publicCategory)}`} className="hover:text-[var(--color-forest)] transition-colors">
+          {publicCategory}
+        </NavLink>
+        <span>/</span>
         <span className="text-[var(--text-primary)] truncate max-w-[200px]">{title}</span>
       </div>
 
@@ -167,7 +166,7 @@ export default function ProductPage() {
           <div className="relative aspect-square bg-[var(--bg-tertiary)] rounded-2xl overflow-hidden group">
             <img
               src={imageList[activeImageIndex]}
-              alt={`${title} - ${product.category || 'Plant'} from Rosary Plant House`}
+              alt={`${title} - ${publicCategory} from Rosary Plant House`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
 
@@ -263,9 +262,7 @@ export default function ProductPage() {
 
           {/* Category & Tags */}
           <div className="flex flex-wrap gap-2 text-xs">
-            {product.category && (
-              <span className="px-3 py-1 bg-[var(--color-forest)]/10 text-[var(--color-forest)] rounded-full font-semibold">{product.category}</span>
-            )}
+            <span className="px-3 py-1 bg-[var(--color-forest)]/10 text-[var(--color-forest)] rounded-full font-semibold">{publicCategory}</span>
             {product.indoor && <span className="px-3 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full border border-green-100 dark:border-green-800 font-medium">🏠 Indoor</span>}
             {product.hanging && <span className="px-3 py-1 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-full border border-purple-100 dark:border-purple-800 font-medium">🎋 Hanging</span>}
             {product.mother && <span className="px-3 py-1 bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full border border-pink-100 dark:border-pink-800 font-medium">🌱 Mother Plant</span>}
@@ -376,6 +373,7 @@ export default function ProductPage() {
           <ProductCareDetails product={product} variant="wide" />
         </section>
       )}
+      <ProductRelatedLinks product={product} />
     </div>
   );
 }

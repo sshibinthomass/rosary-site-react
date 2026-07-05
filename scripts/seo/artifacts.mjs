@@ -12,6 +12,7 @@ import {
   getProductMetaDescription,
   getProductMetaTitle,
   getProductPrice,
+  getProductPublicCategory,
   getProductRobots,
   isProductInStock,
   isSeoIndexable,
@@ -33,6 +34,7 @@ import {
   getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
+  getProductRelatedSeoLinks,
   getGuidesIndexCanonicalUrl,
   getRelatedContentHubs,
 } from '../../src/utils/contentHubs.js';
@@ -95,6 +97,44 @@ function absoluteUrl(url, baseUrl) {
 
 function productIsPublic(product) {
   return isSeoIndexable(product);
+}
+
+function normalizeSitemapDate(value) {
+  if (!value) return '';
+
+  let date;
+  if (value instanceof Date) {
+    date = value;
+  } else if (typeof value?.toDate === 'function') {
+    date = value.toDate();
+  } else if (Number.isFinite(value?.seconds)) {
+    date = new Date(value.seconds * 1000);
+  } else {
+    date = new Date(value);
+  }
+
+  if (!Number.isFinite(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function getProductSitemapLastmod(product = {}, fallbackLastmod = '') {
+  const candidates = [
+    product.seo?.lastmod,
+    product.seo?.lastModified,
+    product.seo?.updatedAt,
+    product.lastmod,
+    product.lastModified,
+    product.updatedAt,
+    product.modifiedAt,
+    fallbackLastmod,
+  ];
+
+  for (const candidate of candidates) {
+    const date = normalizeSitemapDate(candidate);
+    if (date) return date;
+  }
+
+  return '';
 }
 
 function productId(product) {
@@ -258,22 +298,26 @@ export function stripFirebaseOwnedFieldsForSeoIndex(products = []) {
   });
 }
 
-export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
+export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL, lastmod = '' } = {}) {
   const publicBase = baseUrl.replace(/\/$/, '');
+  const defaultLastmod = normalizeSitemapDate(lastmod);
   const staticPaths = ['/', '/shop', '/about', '/contact', '/faq', '/policies', '/reviews', '/insta-reviews', GUIDES_INDEX_PATH];
   const urls = [
     ...staticPaths.map((path) => ({
       loc: `${publicBase}${path}`,
+      lastmod: defaultLastmod,
       priority: path === '/' ? '1.0' : '0.7',
       changefreq: 'weekly',
     })),
     ...CATEGORIES.map((category) => ({
       loc: `${publicBase}/category/${encodeURIComponent(category)}`,
+      lastmod: defaultLastmod,
       priority: '0.75',
       changefreq: 'weekly',
     })),
     ...CONTENT_HUBS.map((hub) => ({
       loc: getContentHubCanonicalUrl(hub, publicBase),
+      lastmod: defaultLastmod,
       priority: '0.72',
       changefreq: 'monthly',
       image: getAbsoluteImageUrl(getContentHubImage(hub), publicBase),
@@ -283,6 +327,7 @@ export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
       .filter(productIsPublic)
       .map((product) => ({
         loc: getProductCanonicalUrl(product, publicBase),
+        lastmod: getProductSitemapLastmod(product, defaultLastmod),
         priority: '0.8',
         changefreq: 'weekly',
         image: absoluteUrl(getPrimaryProductImage(product), publicBase),
@@ -294,6 +339,7 @@ export function buildSitemapXml(products, { baseUrl = DEFAULT_BASE_URL } = {}) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls.map((url) => `  <url>
     <loc>${escapeXml(url.loc)}</loc>
+${url.lastmod ? `    <lastmod>${escapeXml(url.lastmod)}</lastmod>` : ''}
     <changefreq>${url.changefreq}</changefreq>
     <priority>${url.priority}</priority>
 ${url.image ? `    <image:image>
@@ -354,7 +400,7 @@ export function buildMerchantFeedTsv(products, { baseUrl = DEFAULT_BASE_URL } = 
         `${price.toFixed(2)} INR`,
         product.schema?.brand || SITE_NAME,
         'new',
-        `Live plants > ${product.category || 'Plants'}`,
+        `Live plants > ${getProductPublicCategory(product)}`,
         'Standard live plant shipping',
         'Transit damage replacement or refund support',
       ].map(tsvCell).join('\t');
@@ -504,11 +550,35 @@ function renderCareSections(product) {
     .join('\n');
 }
 
+function renderRelatedLinkGroup(title, links) {
+  if (!Array.isArray(links) || links.length === 0) return '';
+
+  return `<div>
+    <h3>${escapeHtml(title)}</h3>
+    <ul>
+      ${links.map((link) => `<li><a href="${escapeHtml(link.path)}">${escapeHtml(link.label)}</a></li>`).join('\n')}
+    </ul>
+  </div>`;
+}
+
+function renderRelatedSeoLinks(product) {
+  const links = getProductRelatedSeoLinks(product);
+  if (links.plants.length === 0 && links.careGuides.length === 0 && links.problemGuides.length === 0) return '';
+
+  return `<section class="seo-product-related-links">
+  <h2>Related plant pages and guides</h2>
+  ${renderRelatedLinkGroup('Related plants', links.plants)}
+  ${renderRelatedLinkGroup('Related care guides', links.careGuides)}
+  ${renderRelatedLinkGroup('Related problem guides', links.problemGuides)}
+</section>`;
+}
+
 function renderStaticBody(product, baseUrl) {
-  const title = product.seo?.h1 || getProductDisplayName(product);
+  const title = getProductDisplayName(product);
   const image = absoluteUrl(getPrimaryProductImage(product), baseUrl);
   const longDescription = getProductLongDescription(product);
   const quickAnswer = product.careGuide?.quickAnswer;
+  const category = getProductPublicCategory(product);
   const price = getProductPrice(product);
   const priceMarkup = price !== null
     ? `<p><strong>Price:</strong> Rs. ${price.toLocaleString('en-IN')} ${isProductInStock(product) ? 'in stock' : 'out of stock'}</p>`
@@ -516,7 +586,7 @@ function renderStaticBody(product, baseUrl) {
 
   return `<main class="seo-product-page" data-product-id="${escapeHtml(product.id)}">
   <nav aria-label="Breadcrumb">
-    <a href="/">Home</a> / <a href="/category/${encodeURIComponent(product.category || 'Plants')}">${escapeHtml(product.category || 'Plants')}</a> / <span>${escapeHtml(getProductDisplayName(product))}</span>
+    <a href="/">Home</a> / <a href="/category/${encodeURIComponent(category)}">${escapeHtml(category)}</a> / <span>${escapeHtml(getProductDisplayName(product))}</span>
   </nav>
   <article>
     <h1>${escapeHtml(title)}</h1>
@@ -526,6 +596,7 @@ function renderStaticBody(product, baseUrl) {
     ${longDescription ? `<section><h2>Plant details and care</h2>${renderParagraphs(longDescription)}</section>` : ''}
     ${renderCareSections(product)}
     ${renderFaqs(product)}
+    ${renderRelatedSeoLinks(product)}
   </article>
 </main>`;
 }
@@ -911,6 +982,260 @@ export function buildStaticPublicPageHtml({
   });
 }
 
+const TOP_CATEGORY_SEO_CONTENT = Object.freeze({
+  Succulent: {
+    metaDescription: 'Shop beginner-friendly succulents from Rosary Plant House, with care guidance for bright light, fast-draining soil, safe packing and plant delivery support.',
+    intro: [
+      'Succulent plants are a strong choice for Indian balconies, bright windows and low-water plant collections. Start with beginner-friendly succulents that can handle dry gaps, bright light and simple after-delivery care.',
+      'Rosary Plant House lists live succulent plants with product pages, price, availability, care details and packing support so you can choose plants that suit your space before ordering online.',
+    ],
+    buyingTitle: 'How to choose succulent plants',
+    buying: [
+      'Choose compact plants with clear names, current availability and a care note that matches your light conditions. Haworthia, Sedum, Crassula, Jade, Aloe and many Echeveria types are practical choices for beginners.',
+      'If you are buying succulents online for the first time, pick plants that prefer low to moderate watering and avoid placing new arrivals in harsh afternoon sun immediately after delivery.',
+    ],
+    careTitle: 'Succulent care basics',
+    care: [
+      'Give most succulents bright light, fast-draining soil and a pot with drainage holes. Water deeply, then wait until the mix dries before watering again.',
+      'During monsoon or humid weather, keep succulents under cover, increase airflow and reduce watering so the roots do not stay wet for too long.',
+    ],
+    guides: [
+      { path: '/guides/succulents-in-india', label: 'Succulents in India care guide' },
+      { path: '/guides/buy-succulents-online-india', label: 'Buying succulents online in India' },
+      { path: '/guides/root-rot-succulent-care', label: 'Root rot prevention and recovery' },
+    ],
+    faqs: [
+      {
+        question: 'Which succulents are best for beginners?',
+        answer: 'Haworthia, Sedum, Jade, Crassula, Aloe and many compact Echeveria plants are good beginner choices when they get bright light, drainage and careful watering.',
+      },
+      {
+        question: 'Do succulents need daily watering?',
+        answer: 'No. Most succulents prefer one full watering followed by a dry gap. Water only after the potting mix dries.',
+      },
+      {
+        question: 'Can succulents grow indoors?',
+        answer: 'Yes, if they are close to a bright window or balcony door. Dark shelves and rooms without window light are not suitable long term.',
+      },
+    ],
+  },
+  Cactus: {
+    metaDescription: 'Shop cactus plants for bright balconies and sunny windows, with gritty soil, low-water care guidance, safe packing and Rosary Plant House support.',
+    intro: [
+      'Cactus plants suit bright balconies and sunny windows because they store water and prefer stronger light than most indoor foliage plants.',
+      'Use this category to compare available cactus plants, check product pages and choose compact plants that can handle simple low-water care after delivery.',
+    ],
+    buyingTitle: 'How to choose cactus plants',
+    buying: [
+      'Look for clear product photos, current price, availability and notes about light needs. Compact cactus plants are easier to place on windowsills, balcony shelves and small sunny corners.',
+      'For online orders, choose plants that can travel safely and give them a short recovery period in bright shade before moving them into stronger sun.',
+    ],
+    careTitle: 'Cactus care basics',
+    care: [
+      'Use a gritty cactus mix, a pot with drainage holes and deep but infrequent watering. The soil should dry fully before the next watering.',
+      'Protect cactus plants from repeated monsoon rain and avoid dark indoor corners where growth becomes weak and the pot dries slowly.',
+    ],
+    guides: [
+      { path: '/guides/cactus-care-india', label: 'Cactus care in India' },
+      { path: '/guides/cactus-plants-online-india', label: 'Buying cactus plants online' },
+      { path: '/guides/low-water-balcony-plants', label: 'Low water balcony plant guide' },
+    ],
+    faqs: [
+      {
+        question: 'How often should cactus plants be watered?',
+        answer: 'Water after the soil dries fully. The gap changes by season, light and pot size, but daily watering is not suitable.',
+      },
+      {
+        question: 'Can cactus plants grow indoors?',
+        answer: 'They can grow near a very bright sunny window, but most cactus plants do better in strong balcony or windowsill light than in dark rooms.',
+      },
+      {
+        question: 'Why is my cactus becoming soft?',
+        answer: 'A soft cactus often means excess moisture or rot. Stop watering, check drainage and move it to a brighter, airier spot.',
+      },
+    ],
+  },
+  Echeveria: {
+    metaDescription: 'Shop Echeveria rosette succulents online with bright-light care guidance, safe packing, delivery support and beginner buying tips.',
+    intro: [
+      'Echeveria plants are rosette succulents loved for compact shapes, layered leaves and balcony-friendly displays. They need stronger light than many indoor succulents, so placement matters.',
+      'This category groups available Echeveria plant pages so shoppers can compare shapes, availability, care notes and related succulent guidance before ordering.',
+    ],
+    buyingTitle: 'How to choose Echeveria plants',
+    buying: [
+      'Choose Echeveria when you have a bright window, covered balcony or spot with good morning sun. Compact, firm rosettes are easier for beginners than stretched or weak plants.',
+      'After delivery, let the plant recover in bright shade first, then increase light gradually so the rosette stays compact without scorching.',
+    ],
+    careTitle: 'Echeveria care basics',
+    care: [
+      'Give Echeveria bright light, a quick-draining succulent mix and careful watering only after the potting mix dries.',
+      'Keep airflow good during humid weather, remove dead lower leaves and protect them from long rain spells to reduce rot risk.',
+    ],
+    guides: [
+      { path: '/guides/buy-succulents-online-india', label: 'Buying succulents online in India' },
+      { path: '/guides/succulents-in-india', label: 'Succulent care guide for India' },
+      { path: '/guides/monsoon-succulent-care', label: 'Monsoon succulent care' },
+    ],
+    faqs: [
+      {
+        question: 'Do Echeveria plants need direct sun?',
+        answer: 'They need bright light and often enjoy gentle morning sun, but newly delivered plants should be introduced to stronger light gradually.',
+      },
+      {
+        question: 'Why is my Echeveria stretching?',
+        answer: 'Stretching usually means the plant needs more light. Move it closer to a bright window or covered balcony gradually.',
+      },
+      {
+        question: 'How do I water Echeveria?',
+        answer: 'Water the soil thoroughly, avoid leaving water in the rosette, and wait until the mix dries before watering again.',
+      },
+    ],
+  },
+  Haworthia: {
+    metaDescription: 'Shop Haworthia plants online for bright filtered light, low-water indoor care, safe packing and Rosary Plant House delivery support.',
+    intro: [
+      'Haworthia plants are compact succulents that suit bright filtered light, windowsills and covered balconies better than harsh open sun.',
+      'They are useful for shoppers who want small, low-water plants with attractive leaf patterns and a gentler light requirement than many rosette succulents.',
+    ],
+    buyingTitle: 'How to choose Haworthia plants',
+    buying: [
+      'Choose Haworthia for bright shade, morning light or filtered balcony light. They are a good fit when you want a small succulent but cannot provide all-day direct sun.',
+      'Check each product page for availability, plant size and care notes, then keep new plants in a stable bright spot after delivery.',
+    ],
+    careTitle: 'Haworthia care basics',
+    care: [
+      'Keep Haworthia in bright filtered light, use a fast-draining mix and water only after the potting mix has dried.',
+      'For healthier leaves, avoid harsh afternoon sun, closed humid corners and decorative pots without drainage because Haworthia roots dislike staying wet.',
+    ],
+    guides: [
+      { path: '/guides/indoor-succulent-care', label: 'Indoor succulent care' },
+      { path: '/guides/succulents-in-india', label: 'Succulents in India care guide' },
+      { path: '/guides/root-rot-succulent-care', label: 'Root rot prevention and recovery' },
+    ],
+    faqs: [
+      {
+        question: 'Can Haworthia grow indoors?',
+        answer: 'Yes, Haworthia can grow indoors near a bright window. Dark rooms are not suitable for long-term healthy growth.',
+      },
+      {
+        question: 'Does Haworthia need direct sunlight?',
+        answer: 'Haworthia prefers bright filtered light or gentle morning sun. Harsh afternoon sun can stress or mark the leaves.',
+      },
+      {
+        question: 'How often should Haworthia be watered?',
+        answer: 'Water after the mix dries. Indoor Haworthia usually dries slower than balcony plants, so avoid fixed daily watering.',
+      },
+    ],
+  },
+});
+
+function getCategorySeoContent(category) {
+  const exactKey = Object.keys(TOP_CATEGORY_SEO_CONTENT)
+    .find((key) => key.toLowerCase() === String(category || '').toLowerCase());
+
+  if (exactKey) return TOP_CATEGORY_SEO_CONTENT[exactKey];
+
+  return {
+    metaDescription: `Shop ${category} plants from Rosary Plant House, Coonoor, with plant-specific care guidance, safe packing, and WhatsApp support.`,
+    intro: [
+      `Browse ${category} plants from Rosary Plant House with crawlable plant pages, care details, safe packing and support from Coonoor.`,
+      `Use the product links below to compare current ${category} availability, plant names, prices and care notes before ordering online.`,
+    ],
+    buyingTitle: `How to choose ${category} plants`,
+    buying: [
+      'Check each plant page for current availability, plant identity, size, price and care notes before adding it to your order.',
+      'Choose plants that match your light conditions and watering routine so they can settle well after delivery.',
+    ],
+    careTitle: `${category} care basics`,
+    care: [
+      'Give new plants a calm recovery period after delivery, then place them according to the light and watering guidance on the product page.',
+      'Use a pot with drainage and avoid overwatering, especially during humid or rainy weather.',
+    ],
+    guides: [
+      { path: '/guides', label: 'Plant care guide library' },
+      { path: '/guides/buy-succulents-online-india', label: 'Buying plants online guide' },
+    ],
+    faqs: [
+      {
+        question: `How do I choose ${category} plants online?`,
+        answer: 'Start with plant pages that show the name, price, availability, photo and care notes, then choose plants that match your light and watering conditions.',
+      },
+      {
+        question: `Are ${category} plants delivered with care guidance?`,
+        answer: 'Rosary Plant House product pages include care details, and the site also provides guides for plant delivery, watering, light and seasonal care.',
+      },
+    ],
+  };
+}
+
+function renderCategoryText(paragraphs = []) {
+  return paragraphs
+    .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join('\n');
+}
+
+function renderCategoryGuideLinks(links = []) {
+  if (!Array.isArray(links) || links.length === 0) return '';
+
+  return `<section class="seo-category-guides">
+    <h2>Related care and buying guides</h2>
+    <ul>
+      ${links.map((link) => `<li><a href="${escapeHtml(link.path)}">${escapeHtml(link.label)}</a></li>`).join('\n')}
+    </ul>
+  </section>`;
+}
+
+function renderCategoryFaqs(category, faqs = []) {
+  if (!Array.isArray(faqs) || faqs.length === 0) return '';
+
+  return `<section class="seo-category-faqs">
+    <h2>Frequently asked questions about ${escapeHtml(category)} plants</h2>
+    ${faqs.map((faq) => `<details open>
+      <summary>${escapeHtml(faq.question)}</summary>
+      <p>${escapeHtml(faq.answer)}</p>
+    </details>`).join('\n')}
+  </section>`;
+}
+
+function buildCategoryFaqSchema(faqs = []) {
+  const validFaqs = faqs.filter((faq) => faq?.question && faq?.answer);
+  if (validFaqs.length === 0) return null;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: validFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+}
+
+function buildCategoryBreadcrumbSchema(category, publicBase) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: `${publicBase}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: category,
+        item: `${publicBase}/category/${encodeURIComponent(category)}`,
+      },
+    ],
+  };
+}
+
 export function buildStaticCategoryHtml({
   indexHtml,
   category,
@@ -920,12 +1245,13 @@ export function buildStaticCategoryHtml({
   const publicBase = baseUrl.replace(/\/$/, '');
   const categoryProducts = products
     .filter(productIsPublic)
-    .filter((product) => String(product.category || '').toLowerCase() === String(category || '').toLowerCase());
+    .filter((product) => String(getProductPublicCategory(product)).toLowerCase() === String(category || '').toLowerCase());
   const canonicalPath = `/category/${encodeURIComponent(category)}`;
   const canonicalUrl = `${publicBase}${canonicalPath}`;
   const image = getAbsoluteImageUrl(DEFAULT_SEO_IMAGE_PATH, publicBase);
   const title = `Buy ${category} Plants Online | ${SITE_NAME}`;
-  const description = `Shop ${category} plants from Rosary Plant House, Coonoor, with plant-specific care guidance, safe packing, and WhatsApp support.`;
+  const categoryContent = getCategorySeoContent(category);
+  const description = categoryContent.metaDescription;
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -936,15 +1262,36 @@ export function buildStaticCategoryHtml({
       url: getProductCanonicalUrl(product, publicBase),
     })),
   };
+  const faqSchema = buildCategoryFaqSchema(categoryContent.faqs);
+  const breadcrumbSchema = buildCategoryBreadcrumbSchema(category, publicBase);
+  const schemaItems = [itemList, faqSchema, breadcrumbSchema].filter(Boolean);
+  const productLinks = categoryProducts.slice(0, 50)
+    .map((product) => `<li><a href="${escapeHtml(getProductCanonicalUrl(product, publicBase).replace(publicBase, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`)
+    .join('\n');
   const body = `<main class="seo-category-page">
+  <nav aria-label="Breadcrumb">
+    <a href="/">Home</a> / <span>${escapeHtml(category)}</span>
+  </nav>
   <h1>Buy ${escapeHtml(category)} plants online</h1>
-  <p>Browse ${escapeHtml(category)} plants from Rosary Plant House with care details, safe packing, and support from Coonoor.</p>
-  <section>
-    <h2>${escapeHtml(category)} plant pages</h2>
+  <section class="seo-category-intro">
+    ${renderCategoryText(categoryContent.intro)}
+  </section>
+  <section class="seo-category-buying-guide">
+    <h2>${escapeHtml(categoryContent.buyingTitle)}</h2>
+    ${renderCategoryText(categoryContent.buying)}
+  </section>
+  <section class="seo-category-care-guide">
+    <h2>${escapeHtml(categoryContent.careTitle)}</h2>
+    ${renderCategoryText(categoryContent.care)}
+  </section>
+  <section class="seo-category-products">
+    <h2>Popular ${escapeHtml(category)} plant pages</h2>
     <ul>
-      ${categoryProducts.slice(0, 50).map((product) => `<li><a href="${escapeHtml(getProductCanonicalUrl(product, publicBase).replace(publicBase, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`).join('\n')}
+      ${productLinks || '<li>New plants are added as availability changes.</li>'}
     </ul>
   </section>
+  ${renderCategoryGuideLinks(categoryContent.guides)}
+  ${renderCategoryFaqs(category, categoryContent.faqs)}
 </main>`;
 
   return injectStaticHtml({
@@ -953,7 +1300,7 @@ export function buildStaticCategoryHtml({
     description,
     canonicalUrl,
     image,
-    schemaItems: [itemList],
+    schemaItems,
     body,
   });
 }

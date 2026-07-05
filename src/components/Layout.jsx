@@ -38,6 +38,266 @@ const UserIcon = ({ active }) => (
   </svg>
 );
 
+function MenuGlyph({ type, className = 'w-5 h-5' }) {
+  const iconProps = {
+    className: `${className} fill-none stroke-current`,
+    viewBox: '0 0 24 24',
+    strokeWidth: '1.9',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': 'true',
+  };
+
+  switch (type) {
+    case 'all':
+      return (
+        <svg {...iconProps}>
+          <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+        </svg>
+      );
+    case 'limited':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 3.5l2.3 4.7 5.2.7-3.8 3.7.9 5.2L12 15.4l-4.6 2.4.9-5.2-3.8-3.7 5.2-.7z" />
+        </svg>
+      );
+    case 'folder':
+      return (
+        <svg {...iconProps}>
+          <path d="M3.5 7.5h6l1.8 2H20a1 1 0 011 1v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a1 1 0 011-1z" />
+        </svg>
+      );
+    case 'succulent':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 5c1.7 2.1 1.7 4.1 0 6-1.7-1.9-1.7-3.9 0-6z" />
+          <path d="M7 8c2.6.3 4.1 1.6 4.5 4-2.4-.3-3.9-1.7-4.5-4z" />
+          <path d="M17 8c-2.6.3-4.1 1.6-4.5 4 2.4-.3 3.9-1.7 4.5-4z" />
+          <path d="M5.5 13c2.7-.5 4.7.2 6 2-2.5.7-4.5 0-6-2z" />
+          <path d="M18.5 13c-2.7-.5-4.7.2-6 2 2.5.7 4.5 0 6-2z" />
+          <path d="M12 15v4" />
+        </svg>
+      );
+    case 'cactus':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 21V7a3 3 0 116 0v4" />
+          <path d="M12 12H9a3 3 0 01-3-3V7" />
+          <path d="M18 11v1a3 3 0 01-3 3h-3" />
+          <path d="M8 21h8" />
+        </svg>
+      );
+    case 'flower':
+      return (
+        <svg {...iconProps}>
+          <circle cx="12" cy="12" r="2.2" />
+          <path d="M12 4.5c1.3 1.4 1.3 2.8 0 4.1-1.3-1.3-1.3-2.7 0-4.1z" />
+          <path d="M12 19.5c-1.3-1.4-1.3-2.8 0-4.1 1.3 1.3 1.3 2.7 0 4.1z" />
+          <path d="M4.5 12c1.4-1.3 2.8-1.3 4.1 0-1.3 1.3-2.7 1.3-4.1 0z" />
+          <path d="M19.5 12c-1.4 1.3-2.8 1.3-4.1 0 1.3-1.3 2.7-1.3 4.1 0z" />
+        </svg>
+      );
+    case 'jade':
+      return (
+        <svg {...iconProps}>
+          <path d="M7 4.5h10l3 5-8 10-8-10z" />
+          <path d="M7 4.5l5 15 5-15M4 9.5h16" />
+        </svg>
+      );
+    case 'cluster':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 11c-2.2-2-2.2-4 0-6 2.2 2 2.2 4 0 6z" />
+          <path d="M7.5 13c-2.4-.6-3.5-2.1-3.3-4.5 2.5.2 3.7 1.7 3.3 4.5z" />
+          <path d="M16.5 13c-.4-2.8.8-4.3 3.3-4.5.2 2.4-.9 3.9-3.3 4.5z" />
+          <path d="M8 19c1.2-2.3 2.5-3.4 4-3.4s2.8 1.1 4 3.4" />
+        </svg>
+      );
+    case 'leaf':
+      return (
+        <svg {...iconProps}>
+          <path d="M5 19C6 10 12 5 20 5c0 8-5 14-14 15" />
+          <path d="M5 19c4-4 7-7 10-10" />
+        </svg>
+      );
+    case 'aloe':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 21V8" />
+          <path d="M12 19L7 8" />
+          <path d="M12 19l5-11" />
+          <path d="M12 17L5 13" />
+          <path d="M12 17l7-4" />
+          <path d="M8 21h8" />
+        </svg>
+      );
+    case 'sedum':
+      return (
+        <svg {...iconProps}>
+          <path d="M7 6c5 0 8 3 10 9" />
+          <circle cx="7" cy="6" r="1.5" />
+          <circle cx="11" cy="8" r="1.5" />
+          <circle cx="14" cy="11" r="1.5" />
+          <circle cx="17" cy="15" r="1.5" />
+        </svg>
+      );
+    case 'haworthia':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 5l2.4 7H9.6z" />
+          <path d="M7 8l5 8 5-8" />
+          <path d="M5 14c2 4 4.3 6 7 6s5-2 7-6" />
+          <path d="M10.5 10h3M9.5 13h5" />
+        </svg>
+      );
+    case 'creeper':
+      return (
+        <svg {...iconProps}>
+          <path d="M6 20c6-4 9-9 8-16" />
+          <path d="M10 12c-2.8-.2-4.5-1.5-5-4 2.8.1 4.5 1.4 5 4z" />
+          <path d="M14 9c2.9-.3 4.7-1.7 5.3-4.2-2.9.1-4.7 1.5-5.3 4.2z" />
+          <path d="M12 16c2.8-.2 4.6-1.5 5.4-3.8-2.8-.1-4.6 1.2-5.4 3.8z" />
+        </svg>
+      );
+    case 'snake-plant':
+      return (
+        <svg {...iconProps}>
+          <path d="M8 21V6c2.7 2.5 3.6 7 2.7 15" />
+          <path d="M16 21V6c-2.7 2.5-3.6 7-2.7 15" />
+          <path d="M12 21V4" />
+          <path d="M7 21h10" />
+        </svg>
+      );
+    case 'indoor':
+      return (
+        <svg {...iconProps}>
+          <path d="M4 12l8-7 8 7" />
+          <path d="M6.5 11v8.5h11V11" />
+          <path d="M12 19v-5" />
+          <path d="M12 14c-2.2-.4-3.5-1.6-4-3.5 2.3.1 3.6 1.2 4 3.5z" />
+          <path d="M12 14c2.2-.4 3.5-1.6 4-3.5-2.3.1-3.6 1.2-4 3.5z" />
+        </svg>
+      );
+    case 'hanging':
+      return (
+        <svg {...iconProps}>
+          <path d="M8 4h8l-4 5z" />
+          <path d="M6.5 12h11l-1.5 7h-8z" />
+          <path d="M8 12L4 5M16 12l4-7" />
+          <path d="M10 15c-1.6.6-2.5 1.7-2.7 3.2" />
+          <path d="M14 15c1.6.6 2.5 1.7 2.7 3.2" />
+        </svg>
+      );
+    case 'mother':
+      return (
+        <svg {...iconProps}>
+          <path d="M12 21V8" />
+          <path d="M12 12c-3-.5-4.8-2.1-5.5-5 3 .2 4.9 1.9 5.5 5z" />
+          <path d="M12 11c3-.6 4.8-2.3 5.5-5.2-3.1.3-4.9 2-5.5 5.2z" />
+          <path d="M16 21v-5" />
+          <path d="M16 16c1.8-.3 2.9-1.3 3.4-3-1.8.1-2.9 1.1-3.4 3z" />
+          <path d="M8 21h10" />
+        </svg>
+      );
+    case 'combo':
+      return (
+        <svg {...iconProps}>
+          <path d="M4.5 9h15v10.5h-15z" />
+          <path d="M4 9h16M12 9v10.5M8 9c-1.7-2-1.2-4 1-4 1.5 0 2.4 1.5 3 4" />
+          <path d="M16 9c1.7-2 1.2-4-1-4-1.5 0-2.4 1.5-3 4" />
+        </svg>
+      );
+    case 'box':
+      return (
+        <svg {...iconProps}>
+          <path d="M4.5 8.5L12 4l7.5 4.5v7L12 20l-7.5-4.5z" />
+          <path d="M4.5 8.5L12 13l7.5-4.5M12 13v7" />
+        </svg>
+      );
+    case 'book':
+      return (
+        <svg {...iconProps}>
+          <path d="M5 5.5h6a3 3 0 013 3v11a3 3 0 00-3-3H5z" />
+          <path d="M19 5.5h-5a3 3 0 00-3 3" />
+          <path d="M19 5.5v11h-5a3 3 0 00-3 3" />
+        </svg>
+      );
+    case 'document':
+      return (
+        <svg {...iconProps}>
+          <path d="M7 3.5h7l3 3V20H7z" />
+          <path d="M14 3.5V7h3M9.5 11h5M9.5 15h5" />
+        </svg>
+      );
+    case 'camera':
+      return (
+        <svg {...iconProps}>
+          <path d="M6.5 7.5h3l1.2-2h2.6l1.2 2h3A2.5 2.5 0 0120 10v6.5a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 16.5V10a2.5 2.5 0 012.5-2.5z" />
+          <circle cx="12" cy="13.5" r="3" />
+        </svg>
+      );
+    case 'help':
+      return (
+        <svg {...iconProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M9.7 9.5a2.5 2.5 0 014.7 1.2c0 1.9-2.4 2-2.4 3.8" />
+          <path d="M12 18h.01" />
+        </svg>
+      );
+    case 'info':
+      return (
+        <svg {...iconProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 11v5M12 8h.01" />
+        </svg>
+      );
+    case 'phone':
+      return (
+        <svg {...iconProps}>
+          <path d="M8.5 5.5l2 3-1.6 1.6c1 2 2.6 3.6 5 5l1.6-1.6 3 2v3c0 .8-.7 1.5-1.5 1.5C9.7 20 4 14.3 4 7c0-.8.7-1.5 1.5-1.5z" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...iconProps}>
+          <path d="M5 19C6 10 12 5 20 5c0 8-5 14-14 15" />
+          <path d="M5 19c4-4 7-7 10-10" />
+        </svg>
+      );
+  }
+}
+
+const categoryIconTypes = Object.freeze({
+  All: 'all',
+  Limited: 'limited',
+  Succulent: 'succulent',
+  Cactus: 'cactus',
+  Echeveria: 'flower',
+  Jade: 'jade',
+  Crassula: 'cluster',
+  Peperomia: 'leaf',
+  Aloe: 'aloe',
+  Sedum: 'sedum',
+  Haworthia: 'haworthia',
+  Creeper: 'creeper',
+  Sansevieria: 'snake-plant',
+  Indoor: 'indoor',
+  Hanging: 'hanging',
+  Mother: 'mother',
+  Combo: 'combo',
+  Others: 'box',
+});
+
+const infoNavItems = [
+  { path: '/guides', label: 'Care Guides', iconType: 'book' },
+  { path: '/policies', label: 'Policies', iconType: 'document' },
+  { path: '/reviews', label: 'Reviews', iconType: 'limited' },
+  { path: '/insta-reviews', label: 'Instagram Stories', iconType: 'camera' },
+  { path: '/faq', label: 'FAQ', iconType: 'help' },
+  { path: '/about', label: 'About Us', iconType: 'info' },
+  { path: '/contact', label: 'Contact', iconType: 'phone' },
+];
+
 const navItems = [
   { path: '/', label: 'Home', Icon: HomeIcon },
   { path: '/shop', label: 'Shop', Icon: ShopIcon },
@@ -175,7 +435,7 @@ export default function Layout({ children }) {
         {/* Sidebar Header */}
         <div className="flex-none flex items-center justify-between px-4 h-16 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🌿</span>
+            <MenuGlyph type="succulent" className="w-6 h-6 text-[var(--color-forest)]" />
             <h2 className="font-semibold text-[var(--text-primary)]">Menu</h2>
           </div>
           <button
@@ -251,7 +511,9 @@ export default function Layout({ children }) {
               }
             `}
           >
-            <span className="text-lg w-6 flex items-center justify-center">⭐</span>
+            <span className="w-6 h-6 flex items-center justify-center shrink-0">
+              <MenuGlyph type="limited" className="w-5 h-5" />
+            </span>
             <span className="font-semibold">Limited Collection</span>
           </button>
 
@@ -262,7 +524,9 @@ export default function Layout({ children }) {
               className="w-full flex items-center justify-between px-3 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <span className="w-6 h-6 flex items-center justify-center text-lg grayscale">🗂️</span>
+                <span className="w-6 h-6 flex items-center justify-center text-[var(--color-forest)] shrink-0">
+                  <MenuGlyph type="folder" className="w-5 h-5" />
+                </span>
                 <span className="font-medium text-[var(--text-primary)]">Categories</span>
               </div>
               <svg 
@@ -281,16 +545,9 @@ export default function Layout({ children }) {
               <div className="pl-6 flex flex-col gap-1 border-l-2 border-[var(--bg-tertiary)] ml-6 my-1">
                 {allCategories.map((cat) => {
                   const isActive = 
-                    (cat === 'All' && (location.pathname === '/' || location.pathname === '')) ||
+                    (cat === 'All' && (location.pathname === '/' || location.pathname === '' || location.pathname === '/shop')) ||
                     location.pathname === `/category/${encodeURIComponent(cat)}`;
-                  
-                  const emoji = {
-                    'All': '🏠', 'Limited': '⭐', 'Succulent': '🪴', 'Cactus': '🌵',
-                    'Echeveria': '🌸', 'Jade': '💎', 'Crassula': '🍀', 'Peperomia': '🌿',
-                    'Aloe': '🌱', 'Sedum': '🪻', 'Haworthia': '🌾', 'Creeper': '🍃',
-                    'Sansevieria': '🐍', 'Indoor': '🏡', 'Hanging': '🎋', 'Mother': '🌳',
-                    'Combo': '🎁', 'Others': '📦'
-                  }[cat] || '🌿';
+                  const iconType = categoryIconTypes[cat] || 'leaf';
 
                   return (
                     <button
@@ -304,7 +561,9 @@ export default function Layout({ children }) {
                         }
                       `}
                     >
-                      <span className="text-sm w-5 text-center">{emoji}</span>
+                      <span className="w-5 h-5 flex items-center justify-center shrink-0">
+                        <MenuGlyph type={iconType} className="w-4 h-4" />
+                      </span>
                       <span>{cat}</span>
                     </button>
                   );
@@ -354,15 +613,7 @@ export default function Layout({ children }) {
 
           {/* Info Pages */}
           <div className="flex flex-col gap-1">
-            {[
-              { path: '/guides', label: 'Care Guides', emoji: 'G' },
-              { path: '/policies', label: 'Policies', emoji: 'P' },
-              { path: '/reviews', label: 'Reviews', emoji: '⭐' },
-              { path: '/insta-reviews', label: 'Instagram Stories', emoji: '📸' },
-              { path: '/faq', label: 'FAQ', emoji: '❓' },
-              { path: '/about', label: 'About Us', emoji: 'ℹ️' },
-              { path: '/contact', label: 'Contact', emoji: '📞' }
-            ].map(({ path, label, emoji }) => {
+            {infoNavItems.map(({ path, label, iconType }) => {
               const isActive = location.pathname === path;
               return (
                 <NavLink
@@ -378,7 +629,9 @@ export default function Layout({ children }) {
                     }
                   `}
                 >
-                  <span className="text-base w-6 text-center grayscale">{emoji}</span>
+                  <span className="w-6 h-6 flex items-center justify-center shrink-0">
+                    <MenuGlyph type={iconType} className="w-5 h-5" />
+                  </span>
                   <span>{label}</span>
                 </NavLink>
               );

@@ -17,6 +17,9 @@ dist-ssr
 .env.local
 .env.production.local
 
+# Local Firebase Android config downloaded from the Firebase console
+android/app/google-services.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

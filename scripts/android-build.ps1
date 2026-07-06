@@ -43,12 +43,20 @@ function Resolve-AndroidSdk {
     throw "ANDROID_SDK_ROOT is not set and the default Android SDK path was not found."
 }
 
+function Warn-MissingGoogleServices {
+    $googleServicesPath = Join-Path $repoRoot "android\app\google-services.json"
+    if (-not (Test-Path $googleServicesPath)) {
+        Write-Warning "android/app/google-services.json is local-only and missing. Download it from Firebase Console, or copy android/app/google-services.example.json and fill in the Firebase Android app values before testing native Google sign-in."
+    }
+}
+
 $env:JAVA_HOME = Resolve-JavaHome
 $env:ANDROID_SDK_ROOT = Resolve-AndroidSdk
 $env:ANDROID_HOME = $env:ANDROID_SDK_ROOT
 
 Write-Host "Using JAVA_HOME=$env:JAVA_HOME"
 Write-Host "Using ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
+Warn-MissingGoogleServices
 
 Push-Location $repoRoot
 try {

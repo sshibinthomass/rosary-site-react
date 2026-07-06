@@ -165,7 +165,7 @@ export default function CartPage() {
   });
 
   const [sameAsPhone, setSameAsPhone] = useState(false);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [saveDetailsForNextOrder, setSaveDetailsForNextOrder] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -254,63 +254,37 @@ export default function CartPage() {
     }
 
     setShowCheckout(false);
-    setShowSaveConfirm(false);
   };
 
   const handleCheckoutClick = async () => {
-    // If not logged in, proceed directly
-    if (!user) {
-      try {
-        const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, null, promoInfo);
-        await finalizeCheckoutResult(checkoutResult);
-      } catch (err) {
-        console.error('Checkout failed:', err);
-        error('Failed to create order. Please try again.');
-      }
-      return;
-    }
-    // If logged in, ask to save
-    setShowSaveConfirm(true);
-  };
-
-  const handleConfirmSave = async () => {
+    if (isSaving) return;
     setIsSaving(true);
+
     try {
-      // Save all checkout fields to profile
-      await saveUserProfile(user.uid, {
-        name: checkoutInfo.name,
-        phone: checkoutInfo.phone,
-        whatsapp: checkoutInfo.whatsapp,
-        address: checkoutInfo.address,
-        pincode: checkoutInfo.pincode,
-        district: checkoutInfo.district,
-        state: checkoutInfo.state
-      });
-      success('Profile updated!');
-    } catch (err) {
-      console.error('Error saving profile:', err);
-      error('Failed to save profile, but proceeding with order');
-    }
-    
-    // Proceed with order
-    try {
-      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user.uid, promoInfo);
+      if (user && saveDetailsForNextOrder) {
+        try {
+          await saveUserProfile(user.uid, {
+            name: checkoutInfo.name,
+            phone: checkoutInfo.phone,
+            whatsapp: checkoutInfo.whatsapp,
+            address: checkoutInfo.address,
+            pincode: checkoutInfo.pincode,
+            district: checkoutInfo.district,
+            state: checkoutInfo.state
+          });
+        } catch (profileError) {
+          console.error('Error saving profile:', profileError);
+          error('Could not save your details, but continuing with your order request.');
+        }
+      }
+
+      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
       await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
       console.error('Checkout failed:', err);
       error('Failed to create order. Please try again.');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleSkipSave = async () => {
-    try {
-      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
-      await finalizeCheckoutResult(checkoutResult);
-    } catch (err) {
-      console.error('Checkout failed:', err);
-      error('Failed to create order. Please try again.');
     }
   };
 
@@ -520,9 +494,9 @@ export default function CartPage() {
           </div>
         )}
 
-        <div className="flex justify-between text-[var(--text-secondary)] text-sm">
-          <span>Shipping</span>
-          <span>Calculated at checkout</span>
+        <div className="flex justify-between gap-3 text-[var(--text-secondary)] text-sm">
+          <span>Delivery charge</span>
+          <span className="text-right">Delivery charge will be confirmed on WhatsApp before payment</span>
         </div>
         <hr className="border-[var(--border-color)]" />
         <div className="flex justify-between text-[var(--text-primary)] text-lg">
@@ -547,7 +521,7 @@ export default function CartPage() {
             }}
             className="btn btn-primary w-full mt-4"
           >
-            Proceed to Checkout
+            Enter delivery details
           </button>
         ) : (
           <div ref={checkoutRef} className="space-y-4 mt-4 animate-fade-in border-t-2 border-[var(--color-forest)]/20 pt-4">
@@ -680,57 +654,50 @@ export default function CartPage() {
               </div>
             </div>
             
+            {user && (
+              <label className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/40 px-3 py-2">
+                <input
+                  type="checkbox"
+                  checked={saveDetailsForNextOrder}
+                  onChange={(e) => setSaveDetailsForNextOrder(e.target.checked)}
+                  className="rounded text-[var(--text-primary)] focus:ring-[var(--color-forest)]"
+                />
+                <span className="text-xs text-[var(--text-primary)]/80">
+                  Save these details for next order
+                </span>
+              </label>
+            )}
+
+            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/50 p-3">
+              <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-2">What happens next</h4>
+              <ol className="space-y-1 text-xs text-[var(--text-secondary)] list-decimal list-inside">
+                <li>Send your cart on WhatsApp</li>
+                <li>We confirm availability and delivery charge</li>
+                <li>You pay after confirmation</li>
+                <li>Will be dispatched on nearest dispatch date.</li>
+              </ol>
+            </div>
+
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setShowCheckout(false)}
-                className="btn btn-secondary flex-1"
+                disabled={isSaving}
+                className="btn btn-secondary flex-1 disabled:opacity-50"
               >
                 Back
               </button>
               <button
                 onClick={handleCheckoutClick}
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+                disabled={isSaving}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <span>💬</span> Order via WhatsApp
+                {isSaving ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <span>💬</span>
+                )}
+                {isSaving ? 'Opening WhatsApp...' : 'Send order request on WhatsApp'}
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Save Confirmation Modal */}
-        {showSaveConfirm && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
-            <div className="relative w-full max-w-sm bg-[var(--bg-secondary)] rounded-xl p-6 animate-scale-up space-y-4 shadow-xl">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-[var(--color-forest)]/10 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                  💾
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Save for next time?</h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  Do you want to update your profile with these details for faster checkout next time?
-                </p>
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleSkipSave}
-                  className="flex-1 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors text-sm font-medium"
-                >
-                  No, just order
-                </button>
-                <button
-                  onClick={handleConfirmSave}
-                  disabled={isSaving}
-                  className="flex-1 btn btn-primary flex items-center justify-center gap-2"
-                >
-                  {isSaving ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    'Yes, Save & Order'
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         )}

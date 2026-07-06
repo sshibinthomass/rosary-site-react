@@ -1,7 +1,6 @@
 import { 
   collection, 
   doc, 
-  addDoc,
   getDoc,
   getDocs,
   updateDoc,
@@ -13,14 +12,16 @@ import {
   serverTimestamp,
   setDoc
 } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
 import { db } from '../config/firebase';
+import { getShareableSiteBaseUrl, ROSARY_SITE_BASE_URL } from '../utils/nativeAppSupport';
 
 const COLLECTION_NAME = 'orders';
 
 /**
  * Generate a unique order ID (e.g., RPH-20260118-ABC123)
  */
-function generateOrderId() {
+export function generateOrderId() {
   const date = new Date();
   const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -34,7 +35,7 @@ function generateOrderId() {
  */
 export async function createOrder(orderData) {
   try {
-    const orderId = generateOrderId();
+    const orderId = orderData.orderId || generateOrderId();
     
     const docRef = doc(collection(db, COLLECTION_NAME));
     const orderUrl = getOrderUrl(docRef.id);
@@ -302,21 +303,13 @@ export async function updateOrderItems(orderId, items) {
  * Generate order page URL
  */
 export function getOrderUrl(docId) {
-  // Using window.location.origin for dynamic base URL
-  const baseUrl = typeof window !== 'undefined'
-    ? window.location.origin
-    : '';
+  const baseUrl = getShareableSiteBaseUrl(
+    typeof window !== 'undefined' ? window.location : {},
+    Capacitor,
+    import.meta.env.VITE_PUBLIC_SITE_URL || ROSARY_SITE_BASE_URL
+  );
 
-  // Detect if app is served from a sub-path (e.g. /rosary-site-react on GitHub Pages)
-  let basePath = '';
-  if (typeof window !== 'undefined') {
-    const path = window.location.pathname || '';
-    if (path.startsWith('/rosary-site-react')) {
-      basePath = '/rosary-site-react';
-    }
-  }
-
-  return `${baseUrl}${basePath}/order/${docId}`;
+  return `${baseUrl}/order/${docId}`;
 }
 
 /**

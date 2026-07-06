@@ -15,6 +15,7 @@ import LoginPopup from './components/LoginPopup';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
+import AppLifecycle from './components/AppLifecycle';
 
 // Lazy-load page components so only the home page is fetched on first visit
 import HomePage from './pages/HomePage';
@@ -304,6 +305,7 @@ function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <AppLifecycle />
       <ScrollToTop />
       <ThemeProvider>
         <SettingsProvider>

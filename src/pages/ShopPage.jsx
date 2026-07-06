@@ -3,8 +3,25 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { CATEGORIES } from '../config/constants';
 import SEO from '../components/SEO';
+import { CATALOG_REFRESH_EVENT } from '../utils/catalogRefresh';
+import { matchesShopSearch } from '../utils/shopSearch';
+import { mergeProductWithLocalEnrichment } from '../utils/productSeo';
 
 const BATCH_SIZE = 24;
+const SMART_SEARCH_EXAMPLES = Object.freeze([
+  'low water',
+  'low light',
+  'flowering',
+  'cactus',
+  'under 60',
+]);
+const SEARCH_PLACEHOLDER = 'Search plants by name, category, care need, or budget...';
+const TYPEWRITER_HINT_DELAYS = Object.freeze({
+  type: 80,
+  hold: 1000,
+  delete: 40,
+  next: 240,
+});
 const SHOP_CATEGORY_BACKGROUNDS = Object.freeze({
   'All': '/shop/category-backgrounds/all.jpg',
   'Limited': '/shop/category-backgrounds/limited.jpg',
@@ -57,6 +74,10 @@ export default function ShopPage() {
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef(null);
   const backgroundLoadCancelRef = useRef(null);
+  const searchEnrichmentPromiseRef = useRef(null);
+  const [searchEnrichmentById, setSearchEnrichmentById] = useState(null);
+  const [typewriterHint, setTypewriterHint] = useState({ index: 0, charCount: 0, deleting: false });
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // Determine selected category from URL or default to 'All'
   const selectedCategory = categoryName || 'All';
@@ -75,6 +96,12 @@ export default function ShopPage() {
     backgroundPosition: 'center',
     backgroundSize: 'cover',
   };
+  const activeTypewriterExample = SMART_SEARCH_EXAMPLES[typewriterHint.index] || SMART_SEARCH_EXAMPLES[0];
+  const animatedSearchPlaceholder = searchQuery.trim()
+    ? SEARCH_PLACEHOLDER
+    : prefersReducedMotion
+      ? `Try ${SMART_SEARCH_EXAMPLES[0]}`
+      : `Try ${activeTypewriterExample.slice(0, typewriterHint.charCount)}|`;
 
   const scheduleBackgroundLoad = useCallback((callback) => {
     if (backgroundLoadCancelRef.current) {
@@ -162,6 +189,96 @@ export default function ShopPage() {
     }
   }, [selectedCategory, scheduleBackgroundLoad]);
 
+  const loadSearchEnrichment = useCallback(() => {
+    if (searchEnrichmentById) return Promise.resolve(searchEnrichmentById);
+    if (searchEnrichmentPromiseRef.current) return searchEnrichmentPromiseRef.current;
+    if (typeof fetch !== 'function') return Promise.resolve(null);
+
+    searchEnrichmentPromiseRef.current = fetch('/product-seo-index.json', { cache: 'force-cache' })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((localProducts) => {
+        const localProductsById = new Map(
+          (Array.isArray(localProducts) ? localProducts : [])
+            .filter((product) => product?.id)
+            .map((product) => [String(product.id), product])
+        );
+        setSearchEnrichmentById(localProductsById);
+        return localProductsById;
+      })
+      .catch((error) => {
+        console.warn('Could not load local product search enrichment:', error);
+        searchEnrichmentPromiseRef.current = null;
+        return null;
+      });
+
+    return searchEnrichmentPromiseRef.current;
+  }, [searchEnrichmentById]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleCatalogRefresh = () => {
+      loadProducts();
+    };
+
+    window.addEventListener(CATALOG_REFRESH_EVENT, handleCatalogRefresh);
+    return () => window.removeEventListener(CATALOG_REFRESH_EVENT, handleCatalogRefresh);
+  }, [loadProducts]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
+    updateMotionPreference();
+
+    if (typeof motionQuery.addEventListener === 'function') {
+      motionQuery.addEventListener('change', updateMotionPreference);
+      return () => motionQuery.removeEventListener('change', updateMotionPreference);
+    }
+
+    motionQuery.addListener(updateMotionPreference);
+    return () => motionQuery.removeListener(updateMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || prefersReducedMotion || searchQuery.trim()) return undefined;
+
+    const delay = typewriterHint.deleting
+      ? typewriterHint.charCount === 0
+        ? TYPEWRITER_HINT_DELAYS.next
+        : TYPEWRITER_HINT_DELAYS.delete
+      : typewriterHint.charCount >= activeTypewriterExample.length
+        ? TYPEWRITER_HINT_DELAYS.hold
+        : TYPEWRITER_HINT_DELAYS.type;
+
+    const timeoutId = window.setTimeout(() => {
+      setTypewriterHint((previousHint) => {
+        const previousExample = SMART_SEARCH_EXAMPLES[previousHint.index] || SMART_SEARCH_EXAMPLES[0];
+
+        if (!previousHint.deleting && previousHint.charCount < previousExample.length) {
+          return { ...previousHint, charCount: previousHint.charCount + 1 };
+        }
+
+        if (!previousHint.deleting) {
+          return { ...previousHint, deleting: true };
+        }
+
+        if (previousHint.charCount > 0) {
+          return { ...previousHint, charCount: previousHint.charCount - 1 };
+        }
+
+        return {
+          index: (previousHint.index + 1) % SMART_SEARCH_EXAMPLES.length,
+          charCount: 0,
+          deleting: false,
+        };
+      });
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeTypewriterExample.length, prefersReducedMotion, searchQuery, typewriterHint]);
+
   // Load products when category changes
   useEffect(() => {
     let frameId = null;
@@ -192,6 +309,11 @@ export default function ShopPage() {
       }
     };
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2 || searchEnrichmentById) return;
+    loadSearchEnrichment();
+  }, [loadSearchEnrichment, searchEnrichmentById, searchQuery]);
 
   const handleCategoryClick = useCallback((category) => {
     if (category === 'All') {
@@ -229,10 +351,22 @@ export default function ShopPage() {
     // Search condition
     let passesSearch = true;
     if (searchQuery.trim()) {
-      const name = (p.title || p.name || p.commonName || '').toLowerCase();
-      const category = (p.category || '').toLowerCase();
+      const localProduct = searchEnrichmentById?.get(String(p.id));
+      const searchableProduct = localProduct ? mergeProductWithLocalEnrichment(p, localProduct) : p;
+      const name = (
+        searchableProduct.title ||
+        searchableProduct.name ||
+        searchableProduct.commonName ||
+        searchableProduct.schema?.name ||
+        ''
+      ).toLowerCase();
+      const category = (
+        searchableProduct.category ||
+        searchableProduct.careGuide?.siteCategory ||
+        ''
+      ).toLowerCase();
       const q = searchQuery.trim().toLowerCase();
-      passesSearch = name.includes(q) || category.includes(q);
+      passesSearch = name.includes(q) || category.includes(q) || matchesShopSearch(searchableProduct, searchQuery);
     }
 
     return passesSearch;
@@ -344,12 +478,15 @@ export default function ShopPage() {
           </div>
 
           {/* Offer banner */}
-          <div className="relative z-10 mt-4 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold leading-5 text-emerald-200 md:flex md:items-center md:justify-between">
+          <div className="relative z-10 mt-4 space-y-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold leading-5 text-emerald-200">
             <p>
               Purchase above INR 1000 and get a complimentary plant.
             </p>
             <p>
               Post an Instagram story from your previous order, tag us and get a complimentary plant.
+            </p>
+            <p>
+              No Pot included until mentioned
             </p>
           </div>
         </div>
@@ -366,8 +503,8 @@ export default function ShopPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search plants by name or category..."
-              aria-label="Search plants by name or category"
+              placeholder={animatedSearchPlaceholder}
+              aria-label="Search plants by name or category, care need, or budget"
               className="input h-12 pr-11 text-sm md:h-14 md:text-base"
               style={{ paddingLeft: '2.75rem' }}
             />
@@ -383,6 +520,20 @@ export default function ShopPage() {
                 </svg>
               </button>
             )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]" aria-label="Smart search examples">
+            <span className="font-semibold text-[var(--text-primary)]">Try:</span>
+            {SMART_SEARCH_EXAMPLES.map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => setSearchQuery(example)}
+                className="rounded-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-1.5 font-medium text-[var(--text-secondary)] transition hover:border-[var(--color-forest)] hover:text-[var(--color-forest)] focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]/20"
+              >
+                {example}
+              </button>
+            ))}
           </div>
 
           <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2 py-2">

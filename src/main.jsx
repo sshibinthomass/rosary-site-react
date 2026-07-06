@@ -1,18 +1,26 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.jsx'
+import { isNativeAppRuntime } from './utils/nativeAppSupport.js'
 
 import { HelmetProvider } from 'react-helmet-async'
+
+const enableVercelInsights = !isNativeAppRuntime(Capacitor)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HelmetProvider>
       <App />
-      <Analytics />
-      <SpeedInsights />
+      {enableVercelInsights && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </HelmetProvider>
   </StrictMode>,
 )

@@ -13,6 +13,11 @@ import {
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import { mergeProductWithLocalEnrichment } from '../utils/productSeo';
+import {
+  clearProductCacheStorage,
+  readProductCache,
+  writeProductCache,
+} from '../utils/productCache';
 
 const COLLECTION_NAME = 'products';
 let localProductsByIdPromise = null;
@@ -42,49 +47,23 @@ async function getLocalProductById(productId) {
   return localProductsById.get(String(productId));
 }
 
-// Cache key prefix for localStorage persistence
-const CACHE_PREFIX = 'rosary_products_';
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
+function getProductCacheStorage() {
+  return typeof localStorage === 'undefined' ? null : localStorage;
+}
 
 /** Call this after adding/updating/deleting products to keep the cache fresh. */
 export function clearProductCache() {
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(CACHE_PREFIX)) {
-      localStorage.removeItem(key);
-    }
-  }
+  clearProductCacheStorage(getProductCacheStorage());
 }
 
 /** Internal helper: Gets valid parsed cache or null */
 function getLocalCache(cacheKey) {
-  try {
-    const raw = localStorage.getItem(CACHE_PREFIX + cacheKey);
-    if (!raw) return null;
-    const { timestamp, data } = JSON.parse(raw);
-    const isValid = Date.now() - timestamp < CACHE_TTL_MS;
-    if (isValid && Array.isArray(data)) {
-      return data;
-    } else {
-      // Clean up expired cache
-      localStorage.removeItem(CACHE_PREFIX + cacheKey);
-    }
-  } catch (e) {
-    console.warn('Failed to read product cache:', e);
-  }
-  return null;
+  return readProductCache(getProductCacheStorage(), cacheKey);
 }
 
 /** Internal helper: Sets cache */
 function setLocalCache(cacheKey, data) {
-  try {
-    localStorage.setItem(
-      CACHE_PREFIX + cacheKey,
-      JSON.stringify({ timestamp: Date.now(), data })
-    );
-  } catch (e) {
-    console.warn('Failed to write product cache:', e);
-  }
+  writeProductCache(getProductCacheStorage(), cacheKey, data);
 }
 
 

@@ -3,14 +3,7 @@ import {
   SITE_POLICY,
   SITE_URL,
 } from './sitePolicy.js';
-import {
-  getProductRobots,
-  getSeoReviewSeed,
-  getSeoStatus,
-  isAvailableForPublicSale,
-  isIdentityVerified,
-  isSeoIndexable,
-} from './seoPolicy.js';
+import { isAvailableForPublicSale } from './seoPolicy.js';
 import { CATEGORIES } from '../config/constants.js';
 
 export const DEFAULT_SEO_IMAGE_PATH = '/og-image.jpg';
@@ -183,40 +176,6 @@ function buildMerchantReturnPolicySchema() {
       SITE_POLICY.damageSupport.refund,
       SITE_POLICY.damageSupport.exclusions,
     ].join(' '),
-  };
-}
-
-function buildOfferShippingDetailsSchema() {
-  return {
-    '@type': 'OfferShippingDetails',
-    name: 'Standard live plant shipping',
-    shippingLabel: 'Standard live plant shipping',
-    description: [
-      `Dispatch days: ${SITE_POLICY.shipping.dispatchDays}.`,
-      SITE_POLICY.shipping.dispatchTiming,
-      `Service area: ${SITE_POLICY.shipping.serviceArea}.`,
-      SITE_POLICY.shipping.deliveryCharge,
-      SITE_POLICY.shipping.courier,
-    ].join(' '),
-    shippingDestination: [
-      { '@type': 'DefinedRegion', addressCountry: 'IN', addressRegion: 'South India' },
-      { '@type': 'DefinedRegion', addressCountry: 'IN', name: 'Major cities in North India' },
-    ],
-    deliveryTime: {
-      '@type': 'ShippingDeliveryTime',
-      transitTime: {
-        '@type': 'QuantitativeValue',
-        minValue: 1,
-        maxValue: 5,
-        unitCode: 'DAY',
-      },
-      handlingTime: {
-        '@type': 'QuantitativeValue',
-        minValue: 0,
-        maxValue: 7,
-        unitCode: 'DAY',
-      },
-    },
   };
 }
 
@@ -441,7 +400,6 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
         name: SITE_NAME,
       },
       hasMerchantReturnPolicy: buildMerchantReturnPolicySchema(),
-      shippingDetails: buildOfferShippingDetailsSchema(),
     };
   }
 

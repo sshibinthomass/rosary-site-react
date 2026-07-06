@@ -227,9 +227,6 @@ test('product structured data includes merchant offer details and canonical URL'
   assert.equal(schema.offers.seller['@id'], 'https://rosaryplanthouse.com/#organization');
   assert.equal(schema.offers.hasMerchantReturnPolicy['@id'], 'https://rosaryplanthouse.com/policies#transit-damage-policy');
   assert.equal(schema.offers.hasMerchantReturnPolicy.merchantReturnDays, 2);
-  assert.equal(schema.offers.shippingDetails['@type'], 'OfferShippingDetails');
-  assert.match(schema.offers.shippingDetails.description, /South India/);
-  assert.match(schema.offers.shippingDetails.description, /major cities in North India/);
-  assert.equal(schema.offers.shippingDetails.deliveryTime.transitTime.maxValue, 5);
+  assert.equal('shippingDetails' in schema.offers, false);
   assert.equal(schema.brand.name, 'Rosary Plant House');
 });

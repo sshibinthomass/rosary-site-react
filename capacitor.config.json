@@ -1,0 +1,11 @@
+{
+  "appId": "com.rosaryplants.app",
+  "appName": "Rosary Plants",
+  "webDir": "dist",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": ["google.com"]
+    }
+  }
+}

@@ -44,6 +44,51 @@ test('shop page copy no longer promises filter controls', () => {
   assert.doesNotMatch(shopPageSource, /Search, filter and choose/i);
 });
 
+test('shop smart search placeholder does not mention retired suggestion labels', () => {
+  assert.doesNotMatch(shopPageSource, /Search plants by name or category, low water, beginner/i);
+});
+
+test('shop page does not render retired smart search suggestion chips', () => {
+  assert.doesNotMatch(shopPageSource, /aria-label="Smart search suggestions"/);
+  assert.match(shopPageSource, /const SEARCH_PLACEHOLDER = 'Search plants by name, category, care need, or budget\.\.\.'/);
+  assert.doesNotMatch(shopPageSource, /placeholder="Search plants by name, category, cactus, indoor, under 100\.\.\."/);
+  assert.doesNotMatch(shopPageSource, />\s*indoor\s*</i);
+  assert.doesNotMatch(shopPageSource, />\s*hanging\s*</i);
+  assert.doesNotMatch(shopPageSource, />\s*under 100\s*</i);
+  assert.doesNotMatch(shopPageSource, />\s*gift under 60\s*</i);
+});
+
+test('shop search shows five verified example queries below the input', () => {
+  assert.match(shopPageSource, /const SMART_SEARCH_EXAMPLES = Object\.freeze\(\[/);
+  assert.match(shopPageSource, /aria-label="Smart search examples"/);
+  assert.match(shopPageSource, />\s*Try:\s*</);
+  assert.match(shopPageSource, /onClick=\{\(\) => setSearchQuery\(example\)\}/);
+
+  for (const example of ['low water', 'low light', 'flowering', 'cactus', 'under 60']) {
+    assert.match(shopPageSource, new RegExp(`['"]${example}['"]`));
+    assert.match(shopPageSource, new RegExp(`>\\s*\\{example\\}\\s*<`));
+  }
+
+  assert.doesNotMatch(shopPageSource, /['"]gift under 60['"]/);
+});
+
+test('shop search animates an empty-input typewriter placeholder from verified examples', () => {
+  assert.match(shopPageSource, /const SEARCH_PLACEHOLDER = 'Search plants by name, category, care need, or budget\.\.\.'/);
+  assert.match(shopPageSource, /const TYPEWRITER_HINT_DELAYS = Object\.freeze\(\{/);
+  assert.match(shopPageSource, /const \[typewriterHint, setTypewriterHint\] = useState/);
+  assert.match(shopPageSource, /const \[prefersReducedMotion, setPrefersReducedMotion\] = useState\(false\)/);
+  assert.match(shopPageSource, /const animatedSearchPlaceholder = searchQuery\.trim\(\)/);
+  assert.match(shopPageSource, /placeholder=\{animatedSearchPlaceholder\}/);
+  assert.match(shopPageSource, /setTypewriterHint\(\(previousHint\) =>/);
+  assert.match(shopPageSource, /SMART_SEARCH_EXAMPLES\[typewriterHint\.index\]/);
+});
+
+test('shop search loads local enrichment for care-need queries', () => {
+  assert.match(shopPageSource, /mergeProductWithLocalEnrichment/);
+  assert.match(shopPageSource, /fetch\('\/product-seo-index\.json'/);
+  assert.match(shopPageSource, /searchEnrichmentById/);
+});
+
 test('shop hero has a generated background for every selectable category', () => {
   assert.match(shopPageSource, /const SHOP_CATEGORY_BACKGROUNDS = Object\.freeze\(\{/);
   assert.match(shopPageSource, /const shopHeroBackground = SHOP_CATEGORY_BACKGROUNDS\[selectedCategory\]/);

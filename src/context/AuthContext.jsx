@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ADMIN_EMAILS } from '../config/constants';
+import { getGoogleSignInStrategy } from '../utils/nativeAppSupport';
+import { getNativeGoogleCredentialTokens, getNativeGoogleSignInErrorMessage } from '../utils/nativeGoogleAuth';
 
 const AuthContext = createContext(null);
 let firebaseAuthApiPromise = null;
@@ -12,8 +15,10 @@ async function loadFirebaseAuthApi() {
     ]).then(([authApi, firebaseConfig]) => ({
       auth: firebaseConfig.auth,
       googleProvider: firebaseConfig.googleProvider,
+      GoogleAuthProvider: authApi.GoogleAuthProvider,
       getRedirectResult: authApi.getRedirectResult,
       onAuthStateChanged: authApi.onAuthStateChanged,
+      signInWithCredential: authApi.signInWithCredential,
       signInWithPopup: authApi.signInWithPopup,
       signInWithRedirect: authApi.signInWithRedirect,
       signOut: authApi.signOut,
@@ -23,6 +28,7 @@ async function loadFirebaseAuthApi() {
   return firebaseAuthApiPromise;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -126,9 +132,31 @@ export function AuthProvider({ children }) {
     let authApi;
     try {
       authApi = await loadFirebaseAuthApi();
-      const { auth, googleProvider, signInWithPopup } = authApi;
+      const {
+        auth,
+        googleProvider,
+        GoogleAuthProvider,
+        signInWithCredential,
+        signInWithPopup,
+      } = authApi;
 
       loggingInRef.current = true;
+      if (getGoogleSignInStrategy(Capacitor) === 'native') {
+        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+        const nativeResult = await FirebaseAuthentication.signInWithGoogle({
+          skipNativeAuth: true,
+          scopes: ['email', 'profile'],
+        });
+        const { idToken, accessToken } = getNativeGoogleCredentialTokens(nativeResult);
+        const credential = GoogleAuthProvider.credential(idToken, accessToken);
+        const result = await signInWithCredential(auth, credential);
+        sessionStorage.setItem('isFreshLogin', 'true');
+        loggingInRef.current = false;
+        setUser(result.user);
+        setIsAdmin(ADMIN_EMAILS.includes(result.user?.email));
+        return result;
+      }
+
       // Try popup first (works better on desktop & bypasses tracking prevention)
       const result = await signInWithPopup(auth, googleProvider);
       // Popup success - manually set user state if listener lags
@@ -153,7 +181,7 @@ export function AuthProvider({ children }) {
         }
       } else {
         loggingInRef.current = false;
-        alert(`Sign-in failed: ${error.message}`);
+        alert(`Sign-in failed: ${getNativeGoogleSignInErrorMessage(error)}`);
         throw error;
       }
     }
@@ -163,6 +191,12 @@ export function AuthProvider({ children }) {
     try {
       const { auth, signOut } = await loadFirebaseAuthApi();
       await signOut(auth);
+      if (getGoogleSignInStrategy(Capacitor) === 'native') {
+        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+        await FirebaseAuthentication.signOut().catch((error) => {
+          console.warn('Native sign-out warning:', error);
+        });
+      }
       setUser(null);
       setIsAdmin(false);
     } catch (error) {

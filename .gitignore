@@ -29,3 +29,9 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Capacitor Android generated build output
+android/.gradle
+android/**/build
+android/app/src/main/assets/public
+android/local.properties

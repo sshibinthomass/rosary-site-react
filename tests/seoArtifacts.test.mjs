@@ -229,7 +229,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
   assert.match(html, /"price":69/);
   assert.match(html, /"seller":\{"@id":"https:\/\/rosaryplanthouse\.com\/#organization"/);
   assert.match(html, /"hasMerchantReturnPolicy":\{"@type":"MerchantReturnPolicy"/);
-  assert.match(html, /"shippingDetails":\{"@type":"OfferShippingDetails"/);
+  assert.doesNotMatch(html, /"shippingDetails":\{"@type":"OfferShippingDetails"/);
   assert.match(html, /<main class="seo-product-page"/);
   assert.match(html, /<h2>Placement and light<\/h2>/);
   assert.match(html, /<dt>Best placement<\/dt>\s*<dd>Covered balcony\.<\/dd>/);

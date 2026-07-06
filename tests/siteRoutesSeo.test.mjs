@@ -186,6 +186,7 @@ test('shop hero links to support, Instagram, and customer reviews', () => {
   assert.match(shopSource, /href="https:\/\/wa\.me\/917904050237"[\s\S]*Ask before ordering/);
   assert.match(shopSource, /href="https:\/\/instagram\.com\/rosary_plant_house"[\s\S]*Follow on Instagram/);
   assert.match(shopSource, /to="\/reviews"[\s\S]*Reviews/);
+  assert.match(shopSource, /No Pot included until mentioned/);
 });
 
 test('category shop pages promote the selected category in the primary heading', () => {

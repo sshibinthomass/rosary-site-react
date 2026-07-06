@@ -10,6 +10,7 @@ import { getLimitedById } from '../services/limitedService';
 import { validatePromoCode } from '../services/promoService';
 import { useSettings } from '../context/SettingsContext';
 import { CURRENCY } from '../config/constants';
+import { CATALOG_REFRESH_EVENT } from '../utils/catalogRefresh';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import SEO from '../components/SEO';
@@ -23,25 +24,43 @@ export default function CartPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productStockMap, setProductStockMap] = useState({});
 
-  useEffect(() => {
-    if (cart.length === 0) return;
-    const fetchStockData = async () => {
-      const map = {};
-      await Promise.all(
-        cart.map(async (item) => {
-          try {
-            const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
-            const product = isLimited
-              ? await getLimitedById(item.productId)
-              : await getProductById(item.productId);
-            if (product) map[item.productId] = product;
-          } catch {}
-        })
-      );
-      setProductStockMap(map);
-    };
-    fetchStockData();
+  const refreshCartStockData = useCallback(async () => {
+    if (cart.length === 0) {
+      setProductStockMap({});
+      return;
+    }
+
+    const map = {};
+    await Promise.all(
+      cart.map(async (item) => {
+        try {
+          const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
+          const product = isLimited
+            ? await getLimitedById(item.productId)
+            : await getProductById(item.productId);
+          if (product) map[item.productId] = product;
+        } catch (stockError) {
+          console.warn('Could not refresh cart stock for item:', item.productId, stockError);
+        }
+      })
+    );
+    setProductStockMap(map);
   }, [cart]);
+
+  useEffect(() => {
+    refreshCartStockData();
+  }, [refreshCartStockData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleCatalogRefresh = () => {
+      refreshCartStockData();
+    };
+
+    window.addEventListener(CATALOG_REFRESH_EVENT, handleCatalogRefresh);
+    return () => window.removeEventListener(CATALOG_REFRESH_EVENT, handleCatalogRefresh);
+  }, [refreshCartStockData]);
 
   const isItemOutOfStock = useCallback((item) => {
     const product = productStockMap[item.productId];
@@ -226,15 +245,26 @@ export default function CartPage() {
 
   // ... (existing helper functions)
 
+  const finalizeCheckoutResult = async (checkoutResult) => {
+    if (checkoutResult?.savedToFirestore) {
+      await clearCart();
+      success('Order created successfully!');
+    } else {
+      success('WhatsApp opened with your cart details. Your cart is still saved.');
+    }
+
+    setShowCheckout(false);
+    setShowSaveConfirm(false);
+  };
+
   const handleCheckoutClick = async () => {
     // If not logged in, proceed directly
     if (!user) {
       try {
-        await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, null, promoInfo);
-        clearCart();
-        setShowCheckout(false);
-        success('Order created successfully!');
+        const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, null, promoInfo);
+        await finalizeCheckoutResult(checkoutResult);
       } catch (err) {
+        console.error('Checkout failed:', err);
         error('Failed to create order. Please try again.');
       }
       return;
@@ -264,12 +294,10 @@ export default function CartPage() {
     
     // Proceed with order
     try {
-      await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user.uid, promoInfo);
-      clearCart();
-      setShowCheckout(false);
-      setShowSaveConfirm(false);
-      success('Order created successfully!');
+      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user.uid, promoInfo);
+      await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
+      console.error('Checkout failed:', err);
       error('Failed to create order. Please try again.');
     } finally {
       setIsSaving(false);
@@ -278,12 +306,10 @@ export default function CartPage() {
 
   const handleSkipSave = async () => {
     try {
-      await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
-      clearCart();
-      setShowCheckout(false);
-      setShowSaveConfirm(false);
-      success('Order created successfully!');
+      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
+      await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
+      console.error('Checkout failed:', err);
       error('Failed to create order. Please try again.');
     }
   };
@@ -300,6 +326,7 @@ export default function CartPage() {
         setSelectedProduct({ id: item.productId, ...item });
       }
     } catch (err) {
+      console.warn('Could not load full cart product details:', err);
       setSelectedProduct({ id: item.productId, ...item });
     }
   };

@@ -4,7 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
+import { openExternalUrl } from '../utils/externalNavigation';
+import { buildWhatsAppUrlForOrder } from '../utils/orderWhatsApp';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
+import { getOrdersByUserId, getOrderUrl } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { validatePromoCode } from '../services/promoService';
@@ -167,6 +170,10 @@ export default function CartPage() {
   const [sameAsPhone, setSameAsPhone] = useState(false);
   const [saveDetailsForNextOrder, setSaveDetailsForNextOrder] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [checkoutConfirmation, setCheckoutConfirmation] = useState(null);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [pendingOrdersLoading, setPendingOrdersLoading] = useState(false);
+  const [openingPendingOrderId, setOpeningPendingOrderId] = useState(null);
 
 
   // Load saved profile when checkout opens
@@ -182,6 +189,29 @@ export default function CartPage() {
       setCheckoutInfo(prev => ({ ...prev, whatsapp: prev.phone }));
     }
   }, [checkoutInfo.phone, sameAsPhone]);
+
+  const loadPendingOrders = useCallback(async () => {
+    if (!user) {
+      setPendingOrders([]);
+      return;
+    }
+
+    setPendingOrdersLoading(true);
+    try {
+      const userOrders = await getOrdersByUserId(user.uid);
+      setPendingOrders((userOrders || []).filter(
+        order => order.status?.toLowerCase() === 'pending'
+      ));
+    } catch (pendingError) {
+      console.error('Failed to load pending WhatsApp orders:', pendingError);
+    } finally {
+      setPendingOrdersLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadPendingOrders();
+  }, [loadPendingOrders]);
 
   const loadSavedProfile = async () => {
     try {
@@ -230,15 +260,160 @@ export default function CartPage() {
     }
   };
 
+  const handleOpenWhatsAppAgain = async () => {
+    if (!checkoutConfirmation?.whatsappUrl) return;
+
+    try {
+      await openExternalUrl(checkoutConfirmation.whatsappUrl);
+    } catch (openError) {
+      console.error('Failed to reopen WhatsApp checkout:', openError);
+      error('Could not reopen WhatsApp. Please try again.');
+    }
+  };
+
+  const formatPendingOrderDate = (timestamp) => {
+    if (!timestamp) return 'Date unavailable';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Date unavailable';
+    return date.toLocaleString('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+  };
+
+  const handleSendPendingOrderOnWhatsApp = async (order) => {
+    const orderId = order.id || order.orderId;
+    const orderUrl = order.orderUrl || getOrderUrl(order.id);
+
+    setOpeningPendingOrderId(orderId);
+    try {
+      await openExternalUrl(buildWhatsAppUrlForOrder(order, orderUrl));
+      success('WhatsApp opened. Please tap Send there to confirm.');
+    } catch (openError) {
+      console.error('Failed to open pending order on WhatsApp:', openError);
+      error('Could not open WhatsApp. Please try again.');
+    } finally {
+      setOpeningPendingOrderId(null);
+    }
+  };
+
+  const checkoutConfirmationPanel = checkoutConfirmation ? (
+    <div className="mb-4 rounded-lg border border-[var(--color-forest)]/25 bg-[var(--color-forest)]/5 p-4 text-left shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-forest)] text-xs font-semibold text-white">
+          OK
+        </span>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Order request opened in WhatsApp</h2>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+              Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <NavLink to="/" className="btn btn-secondary justify-center">
+              Continue shopping
+            </NavLink>
+            <button
+              type="button"
+              onClick={handleOpenWhatsAppAgain}
+              disabled={!checkoutConfirmation.whatsappUrl}
+              className="btn btn-primary justify-center disabled:opacity-50"
+            >
+              Open WhatsApp again
+            </button>
+            {checkoutConfirmation.orderUrl && (
+              <a href={checkoutConfirmation.orderUrl} className="btn btn-secondary justify-center">
+                View order
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const pendingOrdersPanel = user && (pendingOrdersLoading || pendingOrders.length > 0) ? (
+    <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50/80 p-4 text-left shadow-sm dark:border-yellow-900/50 dark:bg-yellow-900/20">
+      <div className="mb-3">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Pending WhatsApp orders</h2>
+        <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+          These order requests are saved, but not placed yet. Send them on WhatsApp to confirm.
+        </p>
+      </div>
+
+      {pendingOrdersLoading && pendingOrders.length === 0 ? (
+        <div className="rounded-lg border border-yellow-200/80 bg-white/60 p-3 text-sm text-[var(--text-secondary)] dark:border-yellow-900/50 dark:bg-black/10">
+          Checking pending orders...
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {pendingOrders.map(order => {
+            const orderKey = order.id || order.orderId;
+            const orderUrl = order.orderUrl || getOrderUrl(order.id);
+            const orderTotal = (Number(order.totalAmount) || 0)
+              + (Number(order.deliveryCharge) || 0)
+              - (Number(order.manualDiscount) || 0);
+
+            return (
+              <div
+                key={orderKey}
+                className="rounded-lg border border-yellow-200/80 bg-white/70 p-3 dark:border-yellow-900/50 dark:bg-black/10"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
+                      {order.orderId || order.id}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      {formatPendingOrderDate(order.createdAt)} - {order.totalItems || order.items?.length || 0} items - {CURRENCY}{orderTotal.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <NavLink to={`/order/${order.id}`} className="btn btn-secondary justify-center text-sm">
+                      View order
+                    </NavLink>
+                    <button
+                      type="button"
+                      onClick={() => handleSendPendingOrderOnWhatsApp(order)}
+                      disabled={openingPendingOrderId === orderKey}
+                      className="btn btn-primary justify-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      {openingPendingOrderId === orderKey && (
+                        <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      )}
+                      <span>Send on WhatsApp</span>
+                    </button>
+                  </div>
+                </div>
+                {orderUrl && (
+                  <p className="mt-2 text-[11px] text-[var(--text-secondary)]">
+                    This link will be included in the WhatsApp message.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  ) : null;
+
   if (cart.length === 0) {
     return (
-      <div className="animate-fade-in text-center py-12">
-        <span className="text-5xl">🛒</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Your cart is empty</h2>
-        <p className="text-[var(--text-secondary)] mt-2">Add some beautiful plants!</p>
-        <NavLink to="/" className="btn btn-primary mt-4">
-          Browse Plants
-        </NavLink>
+      <div className="animate-fade-in">
+        {checkoutConfirmationPanel}
+        {pendingOrdersPanel}
+        {!checkoutConfirmation && (
+          <div className="text-center py-12">
+            <span className="text-5xl">🛒</span>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Your cart is empty</h2>
+            <p className="text-[var(--text-secondary)] mt-2">Add some beautiful plants!</p>
+            <NavLink to="/" className="btn btn-primary mt-4">
+              Browse Plants
+            </NavLink>
+          </div>
+        )}
       </div>
     );
   }
@@ -246,11 +421,20 @@ export default function CartPage() {
   // ... (existing helper functions)
 
   const finalizeCheckoutResult = async (checkoutResult) => {
+    setCheckoutConfirmation({
+      orderUrl: checkoutResult?.orderUrl || checkoutResult?.order?.orderUrl || '',
+      whatsappUrl: checkoutResult?.whatsappUrl || '',
+      savedToFirestore: Boolean(checkoutResult?.savedToFirestore)
+    });
+
     if (checkoutResult?.savedToFirestore) {
+      if (checkoutResult.order) {
+        setPendingOrders(prev => [
+          checkoutResult.order,
+          ...prev.filter(order => order.id !== checkoutResult.order.id)
+        ]);
+      }
       await clearCart();
-      success('Order created successfully!');
-    } else {
-      success('WhatsApp opened with your cart details. Your cart is still saved.');
     }
 
     setShowCheckout(false);
@@ -308,6 +492,8 @@ export default function CartPage() {
   return (
     <div className="animate-fade-in">
       <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
+      {checkoutConfirmationPanel}
+      {pendingOrdersPanel}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Your Cart ({inStockItems.length})

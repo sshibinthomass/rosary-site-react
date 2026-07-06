@@ -43,3 +43,24 @@ test('cart saves delivery details with an inline checkbox instead of a modal', (
   assert.doesNotMatch(cartPageSource, /No, just order/);
   assert.doesNotMatch(cartPageSource, /Yes, Save & Order/);
 });
+
+test('cart shows a persistent confirmation panel after opening WhatsApp', () => {
+  assert.match(cartPageSource, /checkoutConfirmation/);
+  assert.match(cartPageSource, /setCheckoutConfirmation\(\{/);
+  assert.match(
+    cartPageSource,
+    /Your order request was opened in WhatsApp\. Please tap Send there to confirm\. No payment has been collected on this site\./
+  );
+  assert.match(cartPageSource, />\s*Continue shopping\s*</);
+  assert.match(cartPageSource, />\s*Open WhatsApp again\s*</);
+  assert.match(cartPageSource, />\s*View order\s*</);
+  assert.match(cartPageSource, /openExternalUrl\(checkoutConfirmation\.whatsappUrl\)/);
+
+  const confirmationPanelIndex = cartPageSource.indexOf('checkoutConfirmationPanel');
+  const emptyCartIndex = cartPageSource.indexOf('Your cart is empty');
+  assert.ok(confirmationPanelIndex !== -1, 'CartPage should define a reusable confirmation panel');
+  assert.ok(
+    confirmationPanelIndex < emptyCartIndex,
+    'confirmation panel should be prepared before the empty-cart return so saved orders do not show only an empty cart'
+  );
+});

@@ -1,8 +1,7 @@
-import { WHATSAPP_NUMBER, CURRENCY } from '../config/constants';
 import { createOrder, generateOrderId, getOrderUrl } from './orderService';
 import { incrementPromoUsage } from './promoService';
 import { openExternalUrl } from '../utils/externalNavigation';
-import { buildWhatsAppCheckoutMessage } from '../utils/whatsappCheckoutMessage';
+import { generateWhatsAppOrderRequestUrl } from '../utils/orderWhatsApp';
 
 const ORDER_SAVE_TIMEOUT_MS = 8000;
 
@@ -17,18 +16,7 @@ const ORDER_SAVE_TIMEOUT_MS = 8000;
  * @returns {string} WhatsApp URL
  */
 export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, orderUrl = '', orderId = '', promoInfo = null) {
-  const message = buildWhatsAppCheckoutMessage(
-    cartItems,
-    total,
-    userInfo,
-    orderUrl,
-    orderId,
-    promoInfo,
-    CURRENCY
-  );
-
-  const encodedMessage = encodeURIComponent(message);
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+  return generateWhatsAppOrderRequestUrl(cartItems, total, userInfo, orderUrl, orderId, promoInfo);
 }
 
 /**

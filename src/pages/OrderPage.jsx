@@ -3,10 +3,12 @@ import { createPortal } from 'react-dom';
 import { useParams, NavLink } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
-import { getOrderById, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateManualDiscount, updateOrderItems } from '../services/orderService';
+import { getOrderById, getOrderUrl, updateOrderStatus, updateOrderCustomer, updateDeliveryCharge, updateManualDiscount, updateOrderItems } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { resolveImageUrl } from '../utils/imageCompressor';
+import { openExternalUrl } from '../utils/externalNavigation';
+import { buildWhatsAppUrlForOrder } from '../utils/orderWhatsApp';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY } from '../config/constants';
@@ -56,6 +58,7 @@ export default function OrderPage() {
 
   // Thank You Popup State
   const [showThanksPopup, setShowThanksPopup] = useState(false);
+  const [sendingOrderRequest, setSendingOrderRequest] = useState(false);
 
   useEffect(() => {
     if (orderId) {
@@ -64,7 +67,7 @@ export default function OrderPage() {
   }, [orderId]);
 
   useEffect(() => {
-    if (order && !isAdmin) { // Only show popup to customers
+    if (order && !isAdmin && order.status?.toLowerCase() !== 'pending') { // Only show popup to customers after WhatsApp confirmation
       const isDismissed = sessionStorage.getItem(`thanksPopupDismissed_${orderId}`) === 'true';
       if (!isDismissed) {
         // Show after a short delay
@@ -79,6 +82,22 @@ export default function OrderPage() {
   const handleCloseThanksPopup = () => {
     sessionStorage.setItem(`thanksPopupDismissed_${orderId}`, 'true');
     setShowThanksPopup(false);
+  };
+
+  const handleSendPendingOrderOnWhatsApp = async () => {
+    if (!order) return;
+    const pendingOrderUrl = order.orderUrl || getOrderUrl(order.id);
+
+    setSendingOrderRequest(true);
+    try {
+      await openExternalUrl(buildWhatsAppUrlForOrder(order, pendingOrderUrl));
+      success('WhatsApp opened. Please tap Send there to confirm.');
+    } catch (err) {
+      console.error('Failed to open pending order on WhatsApp:', err);
+      showError('Could not open WhatsApp. Please try again.');
+    } finally {
+      setSendingOrderRequest(false);
+    }
   };
 
 
@@ -351,6 +370,8 @@ export default function OrderPage() {
     }
   };
 
+  const isPendingOrder = order.status?.toLowerCase() === 'pending';
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto relative">
       {/* Thank You & Promo Popup */}
@@ -475,6 +496,30 @@ export default function OrderPage() {
           Placed on: {formatDate(order.createdAt)}
         </p>
       </div>
+
+      {isPendingOrder && (
+        <div className="card p-4 mb-4 border border-yellow-200 bg-yellow-50/80 dark:border-yellow-900/50 dark:bg-yellow-900/20">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="font-semibold text-[var(--text-primary)]">Send this order request</h2>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                This order is not placed yet. Please tap Send there to confirm in WhatsApp. No payment has been collected on this site.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSendPendingOrderOnWhatsApp}
+              disabled={sendingOrderRequest}
+              className="btn btn-primary shrink-0 justify-center gap-2 disabled:opacity-50"
+            >
+              {sendingOrderRequest && (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              )}
+              <span>Send order on WhatsApp</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Admin: Update Status */}
       {isAdmin && (

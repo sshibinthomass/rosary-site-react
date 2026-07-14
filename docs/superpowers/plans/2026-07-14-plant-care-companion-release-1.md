@@ -1,5 +1,7 @@
 # Plant Care Companion Release 1 Implementation Plan
 
+> **Status:** Superseded by `../specs/2026-07-14-single-app-plant-care-integration-design.md`. The completed standalone code is a migration source for the approved single-app implementation, not the final deployment architecture.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a separate India-first React/TypeScript PWA and Capacitor Android application that guides check-first plant care, works locally for guests, syncs signed-in gardens, and grants server-verified Rosary purchase benefits.

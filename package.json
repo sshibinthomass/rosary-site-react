@@ -14,6 +14,7 @@
     "test": "node --test tests/*.test.mjs",
     "test:care": "vitest run --config vite.config.js",
     "test:care-catalog": "node --test scripts/plant-care/build-species-catalog.test.mjs",
+    "test:e2e:care": "playwright test --config playwright.care.config.ts",
     "typecheck:care": "tsc -p tsconfig.care.json --noEmit",
     "import:seo": "node scripts/import-enriched-products.cjs",
     "seo:image-audit": "node scripts/seo/image-audit.mjs",

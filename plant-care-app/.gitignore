@@ -1,9 +1,0 @@
-node_modules/
-dist/
-*.tsbuildinfo
-android/.gradle/
-android/build/
-android/app/build/
-android/app/google-services.json
-playwright-report/
-test-results/

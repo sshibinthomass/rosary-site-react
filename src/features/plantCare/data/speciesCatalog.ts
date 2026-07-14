@@ -25,11 +25,16 @@ export function getPublishedSpecies(): PlantSpeciesProfile[] {
 
 export function searchSpecies(query: string): PlantSpeciesProfile[] {
   const normalized = query.trim().toLocaleLowerCase('en-IN');
-  if (!normalized) return species;
-
-  return species.filter((profile) => (
+  const candidates = normalized ? species.filter((profile) => (
     profile.name.toLocaleLowerCase('en-IN').includes(normalized) ||
     profile.scientificName.toLocaleLowerCase('en-IN').includes(normalized) ||
     profile.commonNames.some((name) => name.toLocaleLowerCase('en-IN').includes(normalized))
-  ));
+  )) : species;
+  const names = new Set<string>();
+  return candidates.filter((profile) => {
+    const name = profile.name.trim().toLocaleLowerCase('en-IN');
+    if (names.has(name)) return false;
+    names.add(name);
+    return true;
+  });
 }

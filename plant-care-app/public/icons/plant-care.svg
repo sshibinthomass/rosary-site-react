@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rosary Plant Care">
-  <rect width="512" height="512" rx="112" fill="#173d30"/>
-  <circle cx="256" cy="255" r="172" fill="none" stroke="#f7f3e9" stroke-width="10" stroke-dasharray="8 20"/>
-  <path d="M255 397V203" fill="none" stroke="#f7f3e9" stroke-width="22" stroke-linecap="round"/>
-  <path d="M251 281C164 281 128 222 135 139c82 6 123 49 116 142Z" fill="#b8d96b" stroke="#f7f3e9" stroke-width="10"/>
-  <path d="M260 315c88 0 124-60 117-142-83 6-124 49-117 142Z" fill="#c86646" stroke="#f7f3e9" stroke-width="10"/>
-  <circle cx="256" cy="397" r="18" fill="#b8d96b"/>
-</svg>

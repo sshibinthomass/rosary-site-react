@@ -1,36 +1,34 @@
 # Rosary Plant House
 
-This repository contains two related applications:
+This repository contains one Rosary Plant House app for shopping and plant care. Plant Care is public at `/care`, works for guests with local private storage, and adds cloud sync plus verified-order benefits through the existing Rosary account.
 
-- The root React/Vite project is the Rosary Plant House ecommerce storefront.
-- `plant-care-app/` is Rosary Plant Care, a separate public PWA and Android companion app with additional verified-customer benefits.
-
-The applications have independent packages, builds, and tests. The companion app consumes the storefront's verified catalogue at build time but does not share its runtime bundle.
-
-## Storefront
+## Web app
 
 ```powershell
 npm.cmd install
 npm.cmd run dev
 npm.cmd test
+npm.cmd run test:care
+npm.cmd run test:e2e:care
 npm.cmd run build
 ```
 
-## Plant Care companion
+Plant Care catalogue data is generated from the verified storefront catalogue:
 
 ```powershell
-cd plant-care-app
-npm.cmd install
-npm.cmd run dev
-npm.cmd test
-npm.cmd run build
-npm.cmd run e2e
+npm.cmd run catalog:care
+npm.cmd run test:care-catalog
 ```
 
-See `plant-care-app/README.md` for Firebase sync, Functions, PWA, Android, privacy, and release-boundary details.
+The same build is the installable PWA. The same root project also produces the Android app:
+
+```powershell
+npm.cmd run build:android
+npm.cmd run android:debug
+```
 
 ## Android Firebase configuration
 
-The storefront package ID is `com.rosaryplants.app`; the companion package ID is `com.rosaryplants.care`. Their real `google-services.json` files are local-only and ignored by Git. Use each app's checked-in example file and download the corresponding Firebase configuration before testing native Google sign-in.
+The single package ID is `com.rosaryplants.app`. Its real `android/app/google-services.json` is local-only and ignored by Git. Use the checked-in example file and download the matching Firebase configuration before testing native Google sign-in.
 
 If a Google API key was previously exposed, rotate or restrict it in Google Cloud/Firebase before dismissing an alert. Removing a file from future commits does not invalidate an exposed key.

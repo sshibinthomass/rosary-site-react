@@ -44,7 +44,7 @@ it('records a moist-soil observation and shows the next check', async () => {
   };
   render(
     <AuthProvider driver={authDriver}>
-      <GardenProvider repository={new TodayRepository()} now={() => new Date('2026-07-14T08:00:00.000Z')}>
+      <GardenProvider repository={new TodayRepository()} now={() => new Date('2026-07-14T08:00:00.000Z')} weatherProvider={null}>
         <TodayPage />
       </GardenProvider>
     </AuthProvider>,

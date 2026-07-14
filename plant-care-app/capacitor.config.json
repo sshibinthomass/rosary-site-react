@@ -1,0 +1,15 @@
+{
+  "appId": "com.rosaryplants.care",
+  "appName": "Rosary Plant Care",
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_leaf",
+      "iconColor": "#b8d96b"
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": ["google.com"]
+    }
+  }
+}

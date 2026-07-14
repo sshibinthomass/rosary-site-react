@@ -1,17 +1,33 @@
 import { useState } from 'react';
 
 import { firebaseIsConfigured } from '../../integrations/firebaseConfig';
+import { reconcileNotifications, requestPermissionAfterFirstTask } from '../../integrations/notifications/NotificationScheduler';
+import { createNotificationDriver } from '../../integrations/notifications/createNotificationDriver';
 import { useAuth } from '../auth/AuthProvider';
 import { useGarden } from '../garden/GardenProvider';
 
 export default function ProfilePage() {
   const { user, loading, error: authError, signInWithGoogle, signOut } = useAuth();
-  const { plants, locations, syncState } = useGarden();
+  const { plants, locations, tasks, syncState } = useGarden();
   const [message, setMessage] = useState<string>();
+  const [remindersEnabled, setRemindersEnabled] = useState(() => localStorage.getItem('plant-care-reminders') === 'enabled');
 
   async function signIn() {
     try { await signInWithGoogle(); }
     catch (caught) { setMessage(caught instanceof Error ? caught.message : 'Google sign-in could not start.'); }
+  }
+
+  async function enableReminders() {
+    const driver = await createNotificationDriver();
+    const permission = await requestPermissionAfterFirstTask(driver);
+    if (permission !== 'granted') {
+      setMessage('Reminders are off. You can continue using every care feature without them.');
+      return;
+    }
+    await reconcileNotifications(tasks, plants, driver, 9);
+    localStorage.setItem('plant-care-reminders', 'enabled');
+    setRemindersEnabled(true);
+    setMessage('Inspection reminders are scheduled for 9:00 AM local time.');
   }
 
   return (
@@ -43,6 +59,12 @@ export default function ProfilePage() {
           <h2>Your purchases grow with you.</h2>
           <ul><li>Unlimited verified Rosary plants</li><li>One-tap order imports</li><li>90 days of enhanced benefits after delivery</li></ul>
           {!user && <p className="fine-print">Sign in with the Google account used for your Rosary order to verify benefits.</p>}
+        </article>
+        <article className="benefit-card reminder-card">
+          <p className="eyebrow">Gentle reminders</p>
+          <h2>Prompts to check, never commands to water.</h2>
+          <p>Reminder permission is optional and requested only when you choose it.</p>
+          <button className="secondary-button" onClick={() => void enableReminders()}>{remindersEnabled ? 'Reschedule reminders' : 'Enable reminders'}</button>
         </article>
       </div>
     </section>

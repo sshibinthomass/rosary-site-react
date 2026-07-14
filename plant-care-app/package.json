@@ -15,8 +15,8 @@
     "test:catalog": "node --test scripts/build-species-catalog.test.mjs",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "android:sync": "npm run build && cap sync android",
-    "android:debug": "npm run android:sync && cd android && gradlew.bat --no-daemon --console=plain assembleDebug"
+    "android:sync": "powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 -Mode sync",
+    "android:debug": "powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 -Mode debug"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",

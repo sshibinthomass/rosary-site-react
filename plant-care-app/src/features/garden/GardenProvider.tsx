@@ -6,6 +6,7 @@ import type { GardenRepository } from '../../data/gardenRepository';
 import { IndexedDbGardenRepository } from '../../data/indexedDbGardenRepository';
 import { firebaseIsConfigured } from '../../integrations/firebaseConfig';
 import { OpenMeteoProvider } from '../../integrations/weather/openMeteoProvider';
+import type { WeatherProvider } from '../../integrations/weather/WeatherProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { GardenService } from './GardenService';
 
@@ -28,12 +29,16 @@ const GardenContext = createContext<GardenContextValue | undefined>(undefined);
 interface GardenProviderProps extends PropsWithChildren {
   repository?: GardenRepository;
   now?: () => Date;
+  weatherProvider?: WeatherProvider | null;
 }
 
-export function GardenProvider({ children, repository, now }: GardenProviderProps) {
+export function GardenProvider({ children, repository, now, weatherProvider: providedWeatherProvider }: GardenProviderProps) {
   const { user } = useAuth();
   const repo = useMemo(() => repository ?? new IndexedDbGardenRepository(), [repository]);
-  const weatherProvider = useMemo(() => new OpenMeteoProvider(), []);
+  const weatherProvider = useMemo(
+    () => providedWeatherProvider === undefined ? new OpenMeteoProvider() : providedWeatherProvider ?? undefined,
+    [providedWeatherProvider],
+  );
   const service = useMemo(() => new GardenService(repo, now, undefined, weatherProvider), [repo, now, weatherProvider]);
   const [locations, setLocations] = useState<GrowingLocation[]>([]);
   const [plants, setPlants] = useState<UserPlant[]>([]);

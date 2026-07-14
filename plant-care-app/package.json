@@ -9,6 +9,7 @@
   "scripts": {
     "catalog": "node scripts/build-species-catalog.mjs",
     "dev": "npm run catalog && vite",
+    "preview": "vite preview",
     "prebuild": "npm run catalog",
     "build": "tsc -b && vite build",
     "test": "vitest run",

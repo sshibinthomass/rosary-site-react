@@ -35,4 +35,16 @@ describe('Rosary benefits', () => {
     const order = { id: 'delivered-1', status: 'delivered', items: [] };
     expect(buildEntitlement(order, existing, now)).toEqual(existing);
   });
+
+  it('starts a new entitlement at the recorded delivery transition', () => {
+    const now = new Date('2026-07-14T08:00:00.000Z');
+    const order = {
+      id: 'delivered-1',
+      status: 'delivered',
+      items: [],
+      updatedAt: { toDate: () => new Date('2026-07-01T08:00:00.000Z') },
+    };
+
+    expect(buildEntitlement(order, undefined, now)?.expiresAt).toBe('2026-09-29T08:00:00.000Z');
+  });
 });

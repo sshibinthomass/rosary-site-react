@@ -1,7 +1,7 @@
 # Rosary Plant Care Companion Design
 
 Date: 2026-07-14
-Status: Approved product design; Release 1 implementation planning pending
+Status: Release 1 implemented on `codex/plant-care-companion`
 Internal project name: `plant-care-app`
 
 ## Executive summary

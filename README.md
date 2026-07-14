@@ -1,22 +1,36 @@
-# React + Vite
+# Rosary Plant House
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repository contains two related applications:
 
-Currently, two official plugins are available:
+- The root React/Vite project is the Rosary Plant House ecommerce storefront.
+- `plant-care-app/` is Rosary Plant Care, a separate public PWA and Android companion app with additional verified-customer benefits.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The applications have independent packages, builds, and tests. The companion app consumes the storefront's verified catalogue at build time but does not share its runtime bundle.
 
-## React Compiler
+## Storefront
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```powershell
+npm.cmd install
+npm.cmd run dev
+npm.cmd test
+npm.cmd run build
+```
 
-## Android Firebase config
+## Plant Care companion
 
-`android/app/google-services.json` is intentionally local-only and ignored by Git. For Android builds that need native Google sign-in, download a fresh `google-services.json` for the `com.rosaryplants.app` Android app from Firebase Console, or copy `android/app/google-services.example.json` to `android/app/google-services.json` and replace the placeholder values.
+```powershell
+cd plant-care-app
+npm.cmd install
+npm.cmd run dev
+npm.cmd test
+npm.cmd run build
+npm.cmd run e2e
+```
 
-If GitHub reports a leaked Google API key, rotate or restrict the exposed key in Google Cloud/Firebase before dismissing the alert. Removing the file from future commits does not invalidate a key that was already exposed.
+See `plant-care-app/README.md` for Firebase sync, Functions, PWA, Android, privacy, and release-boundary details.
 
-## Expanding the ESLint configuration
+## Android Firebase configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The storefront package ID is `com.rosaryplants.app`; the companion package ID is `com.rosaryplants.care`. Their real `google-services.json` files are local-only and ignored by Git. Use each app's checked-in example file and download the corresponding Firebase configuration before testing native Google sign-in.
+
+If a Google API key was previously exposed, rotate or restrict it in Google Cloud/Firebase before dismissing an alert. Removing a file from future commits does not invalidate an exposed key.

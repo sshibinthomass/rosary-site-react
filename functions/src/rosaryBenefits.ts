@@ -20,6 +20,19 @@ const eligibleStatuses = new Set(['confirmed', 'processing', 'shipped', 'deliver
 const deliveredStatuses = new Set(['delivered', 'completed']);
 const dayMs = 86_400_000;
 
+function transitionTime(value: unknown, fallback: Date) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
+    const parsed = value.toDate().getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback.getTime();
+}
+
 export function buildImportSuggestions(orders: RosaryOrder[], links: Map<string, ProductLink>): ImportSuggestion[] {
   const suggestions: ImportSuggestion[] = [];
   for (const order of orders.filter((item) => eligibleStatuses.has(String(item.status)))) {
@@ -48,10 +61,11 @@ export function buildImportSuggestions(orders: RosaryOrder[], links: Map<string,
 
 export function buildEntitlement(order: RosaryOrder, existing: Entitlement | undefined, now: Date): Entitlement | undefined {
   if (!deliveredStatuses.has(String(order.status))) return existing;
-  const current = existing ?? { expiresAt: now.toISOString(), creditedOrderIds: [] };
+  const deliveredAt = transitionTime(order.updatedAt, now);
+  const current = existing ?? { expiresAt: new Date(deliveredAt).toISOString(), creditedOrderIds: [] };
   if (current.creditedOrderIds.includes(order.id)) return current;
   const existingExpiry = new Date(current.expiresAt).getTime();
-  const base = Math.max(now.getTime(), Number.isFinite(existingExpiry) ? existingExpiry : now.getTime());
+  const base = Math.max(deliveredAt, Number.isFinite(existingExpiry) ? existingExpiry : deliveredAt);
   const cap = now.getTime() + 365 * dayMs;
   const expiresAt = new Date(Math.min(cap, base + 90 * dayMs)).toISOString();
   return { expiresAt, creditedOrderIds: [...current.creditedOrderIds, order.id] };

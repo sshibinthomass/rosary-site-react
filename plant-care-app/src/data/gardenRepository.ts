@@ -1,4 +1,4 @@
-import type { CareEvent, CareTask, GrowingLocation, UserPlant } from '../domain/models';
+import type { CareEvent, CareTask, GrowingLocation, PlantPhoto, UserPlant } from '../domain/models';
 
 export interface GardenRepository {
   listLocations(): Promise<GrowingLocation[]>;
@@ -10,5 +10,7 @@ export interface GardenRepository {
   saveTask(task: CareTask): Promise<void>;
   listEvents(plantId?: string): Promise<CareEvent[]>;
   appendEvent(event: CareEvent): Promise<void>;
+  listPhotos?(plantId?: string): Promise<PlantPhoto[]>;
+  savePhoto?(photo: PlantPhoto): Promise<void>;
   clearGuestData(): Promise<void>;
 }

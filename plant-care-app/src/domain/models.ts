@@ -89,6 +89,17 @@ export interface CareEvent {
   photoPath?: string;
 }
 
+export interface PlantPhoto {
+  id: string;
+  plantId: string;
+  createdAt: string;
+  updatedAt: string;
+  note?: string;
+  blob?: Blob;
+  storagePath?: string;
+  syncState: 'local' | 'synced' | 'pending' | 'error';
+}
+
 export interface CareEngineInput {
   now: Date;
   plant: UserPlant;

@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
-import type { CareEvent, CareTask, GrowingLocation, UserPlant } from '../domain/models';
+import type { CareEvent, CareTask, GrowingLocation, PlantPhoto, UserPlant } from '../domain/models';
 import type { GardenRepository } from './gardenRepository';
 
 interface PlantCareDatabase extends DBSchema {
@@ -8,7 +8,7 @@ interface PlantCareDatabase extends DBSchema {
   plants: { key: string; value: UserPlant };
   tasks: { key: string; value: CareTask; indexes: { 'by-plant': string; 'by-status': string } };
   events: { key: string; value: CareEvent; indexes: { 'by-plant': string; 'by-date': string } };
-  photos: { key: string; value: { id: string; plantId: string; blob: Blob; createdAt: string }; indexes: { 'by-plant': string } };
+  photos: { key: string; value: PlantPhoto; indexes: { 'by-plant': string } };
 }
 
 function openGardenDatabase() {
@@ -47,6 +47,11 @@ export class IndexedDbGardenRepository implements GardenRepository {
     return plantId ? database.getAllFromIndex('events', 'by-plant', plantId) : database.getAll('events');
   }
   async appendEvent(event: CareEvent) { await (await this.database).add('events', event); }
+  async listPhotos(plantId?: string) {
+    const database = await this.database;
+    return plantId ? database.getAllFromIndex('photos', 'by-plant', plantId) : database.getAll('photos');
+  }
+  async savePhoto(photo: PlantPhoto) { await (await this.database).put('photos', photo); }
 
   async clearGuestData() {
     const database = await this.database;

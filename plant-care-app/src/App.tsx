@@ -9,9 +9,9 @@ import GardenPage from './features/garden/GardenPage';
 import PlantDetailPage from './features/garden/PlantDetailPage';
 import TodayPage from './features/today/TodayPage';
 import ProfilePage from './features/profile/ProfilePage';
-import { JournalPreview } from './app/routes';
 
 const RosaryImportsPage = lazy(() => import('./features/rosary/RosaryImportsPage'));
+const JournalPage = lazy(() => import('./features/journal/JournalPage'));
 
 export default function App() {
   return (
@@ -23,7 +23,7 @@ export default function App() {
             <Route path="today" element={<TodayPage />} />
             <Route path="garden" element={<GardenPage />} />
             <Route path="add" element={<AddPlantPage />} />
-            <Route path="journal" element={<JournalPreview />} />
+            <Route path="journal" element={<Suspense fallback={<p className="loading-line">Opening journal…</p>}><JournalPage /></Suspense>} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="rosary" element={<Suspense fallback={<p className="loading-line">Opening Rosary benefits…</p>}><RosaryImportsPage /></Suspense>} />
             <Route path="plants/:plantId" element={<PlantDetailPage />} />

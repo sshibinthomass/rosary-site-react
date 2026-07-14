@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, onSnapshot, writeBatch, type DocumentData } from 'firebase/firestore';
 
-import type { CareEvent, CareTask, GrowingLocation, UserPlant } from '../domain/models';
+import type { CareEvent, CareTask, GrowingLocation, PlantPhoto, UserPlant } from '../domain/models';
 import { getFirebaseDb } from '../integrations/firebase';
 import type { GardenRepository } from './gardenRepository';
 
@@ -61,6 +61,11 @@ export async function startGardenSync(uid: string, repository: GardenRepository,
       onSnapshot(collection(database, `${base}/plants`), (snapshot) => { void Promise.all(fromDocuments<UserPlant>(snapshot.docs).map((item) => repository.savePlant(item))); }),
       onSnapshot(collection(database, `${base}/tasks`), (snapshot) => { void Promise.all(fromDocuments<CareTask>(snapshot.docs).map((item) => repository.saveTask(item))); }),
     ];
+    if (repository.savePhoto) {
+      unsubscribers.push(onSnapshot(collection(database, `${base}/photos`), (snapshot) => {
+        void Promise.all(fromDocuments<PlantPhoto>(snapshot.docs).map((item) => repository.savePhoto!(item)));
+      }));
+    }
     onState('synced');
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   } catch (error) {

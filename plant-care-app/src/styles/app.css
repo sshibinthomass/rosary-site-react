@@ -127,6 +127,15 @@
 .imports-list { display: grid; gap: .8rem; }
 .imports-list > article:not(.empty-care-card) { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-strong); }
 .imports-list h2 { margin: .35rem 0 0; font-family: 'Fraunces', Georgia, serif; }
+.journal-form { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(220px, 1.3fr) auto auto; gap: .8rem; align-items: end; padding: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-strong); }
+.selected-file { color: var(--ink-soft); font-size: .75rem; align-self: center; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.photo-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-strong); }
+.photo-card img, .photo-loading { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--mist); }
+.photo-loading { display: grid; place-items: center; color: var(--ink-soft); font-size: .8rem; }
+.photo-card > div:last-child { padding: 1rem; }
+.photo-card h2 { margin: .4rem 0; font-family: 'Fraunces', Georgia, serif; }
+.photo-card span { color: var(--ink-soft); font-size: .75rem; }
 .bottom-nav { position: fixed; z-index: 30; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5, minmax(60px, 105px)); padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 24px; background: rgba(23,61,48,.95); box-shadow: 0 14px 50px rgba(23,61,48,.28); backdrop-filter: blur(18px); }
 .nav-item { display: grid; justify-items: center; gap: 4px; min-height: 55px; align-content: center; border-radius: 17px; color: rgba(255,255,255,.68); font-size: .68rem; font-weight: 500; text-decoration: none; transition: background .2s ease, color .2s ease, transform .2s ease; }
 .nav-item svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -145,6 +154,7 @@
   .care-facts { grid-template-columns: 1fr; }
   .plant-hero { grid-template-columns: 1fr; }
   .profile-grid { grid-template-columns: 1fr; }
+  .journal-form { grid-template-columns: 1fr; }
   .plant-silhouette.large { transform: scale(.8); transform-origin: left center; margin-bottom: -2rem; }
 }
 @media (prefers-reduced-motion: reduce) {

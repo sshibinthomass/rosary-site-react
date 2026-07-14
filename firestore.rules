@@ -105,6 +105,10 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
 
+      match /photos/{photoId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
       match /rosaryImports/{importId} {
         allow read: if isSignedIn() && request.auth.uid == uid;
         allow write: if false;

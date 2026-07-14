@@ -47,6 +47,7 @@ const InstaReviewsPage = lazy(() => import('./pages/InstaReviewsPage'));
 const GuidesPage = lazy(() => import('./pages/GuidesPage'));
 const ContentHubPage = lazy(() => import('./pages/ContentHubPage'));
 const ProductModalWrapper = lazy(() => import('./components/ProductModalWrapper'));
+const PlantCareFeature = lazy(() => import('./features/plantCare/PlantCareFeature'));
 
 function PageLoader() {
   return (
@@ -75,6 +76,7 @@ function AppRoutes() {
           <Route path="/cart.html" element={<CartPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/wishlist.html" element={<WishlistPage />} />
+          <Route path="/care/*" element={<PlantCareFeature />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/account.html" element={<AccountPage />} />
           <Route 

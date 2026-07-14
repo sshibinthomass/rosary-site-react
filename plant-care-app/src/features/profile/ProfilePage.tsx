@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { firebaseIsConfigured } from '../../integrations/firebaseConfig';
 import { reconcileNotifications, requestPermissionAfterFirstTask } from '../../integrations/notifications/NotificationScheduler';
@@ -59,6 +60,7 @@ export default function ProfilePage() {
           <h2>Your purchases grow with you.</h2>
           <ul><li>Unlimited verified Rosary plants</li><li>One-tap order imports</li><li>90 days of enhanced benefits after delivery</li></ul>
           {!user && <p className="fine-print">Sign in with the Google account used for your Rosary order to verify benefits.</p>}
+          <Link className="text-link" to="/rosary">Open Rosary benefits →</Link>
         </article>
         <article className="benefit-card reminder-card">
           <p className="eyebrow">Gentle reminders</p>

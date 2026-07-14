@@ -37,7 +37,10 @@ export async function mergeGuestGarden(uid: string, repository: GardenRepository
   const events = [...eventMap.values()];
   const batch = writeBatch(database);
   for (const item of locations) { batch.set(doc(database, `${base}/locations/${item.id}`), item); await repository.saveLocation(item); }
-  for (const item of plants) { batch.set(doc(database, `${base}/plants/${item.id}`), item); await repository.savePlant(item); }
+  for (const item of plants) {
+    if (item.provenance.kind !== 'rosary') batch.set(doc(database, `${base}/plants/${item.id}`), item);
+    await repository.savePlant(item);
+  }
   for (const item of tasks) { batch.set(doc(database, `${base}/tasks/${item.id}`), item); await repository.saveTask(item); }
   const existingEventIds = new Set(localEvents.map((event) => event.id));
   for (const item of events) {

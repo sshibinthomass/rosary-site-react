@@ -1,0 +1,23 @@
+{
+  "name": "rosary-site-functions",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "22" },
+  "main": "lib/index.js",
+  "scripts": {
+    "links": "node scripts/build-product-links.mjs",
+    "prebuild": "npm run links",
+    "build": "tsc",
+    "pretest": "npm run links",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

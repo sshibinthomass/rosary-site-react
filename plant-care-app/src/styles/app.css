@@ -119,6 +119,14 @@
 .benefit-card ul { padding-left: 1.2rem; color: var(--ink-soft); line-height: 1.9; }
 .benefit-card.rosary { background: var(--mist); }
 .fine-print { color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.text-link { color: var(--leaf); font-weight: 700; }
+.google-button.dark { width: fit-content; background: var(--ink); color: white; }
+.entitlement-banner { padding: 1.4rem; border-radius: var(--radius-md); background: var(--leaf-bright); }
+.entitlement-banner h2 { margin: .5rem 0 0; font-family: 'Fraunces', Georgia, serif; }
+.import-location { max-width: 420px; }
+.imports-list { display: grid; gap: .8rem; }
+.imports-list > article:not(.empty-care-card) { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-strong); }
+.imports-list h2 { margin: .35rem 0 0; font-family: 'Fraunces', Georgia, serif; }
 .bottom-nav { position: fixed; z-index: 30; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5, minmax(60px, 105px)); padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 24px; background: rgba(23,61,48,.95); box-shadow: 0 14px 50px rgba(23,61,48,.28); backdrop-filter: blur(18px); }
 .nav-item { display: grid; justify-items: center; gap: 4px; min-height: 55px; align-content: center; border-radius: 17px; color: rgba(255,255,255,.68); font-size: .68rem; font-weight: 500; text-decoration: none; transition: background .2s ease, color .2s ease, transform .2s ease; }
 .nav-item svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }

@@ -59,7 +59,9 @@ service cloud.firestore {
 
     // Orders
     match /orders/{orderId} {
-      allow create: if true;
+      allow create: if request.resource.data.status == 'pending'
+        && (request.resource.data.customer.userId == null
+            || (isSignedIn() && request.resource.data.customer.userId == request.auth.uid));
 
       // Anyone with the unique order link can view a single order.
       // Listing all orders (e.g. admin dashboard) stays restricted.
@@ -72,7 +74,9 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isSignedIn()
             && resource.data.customer.userId != null
-            && resource.data.customer.userId == request.auth.uid);
+            && resource.data.customer.userId == request.auth.uid
+            && resource.data.status == 'pending'
+            && request.resource.data.status == 'pending');
 
       allow delete: if isAdmin();
     }
@@ -86,7 +90,11 @@ service cloud.firestore {
       }
 
       match /plants/{plantId} {
-        allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.provenance.kind != 'rosary';
+        allow delete: if isSignedIn() && request.auth.uid == uid;
       }
 
       match /tasks/{taskId} {
@@ -96,6 +104,20 @@ service cloud.firestore {
       match /events/{eventId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+
+      match /rosaryImports/{importId} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
+
+      match /entitlements/{entitlementId} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
+    match /plantCareProductLinks/{productId} {
+      allow read, write: if isAdmin();
     }
 
     // Admin fallback for any other collection

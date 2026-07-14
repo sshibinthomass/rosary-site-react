@@ -1,0 +1,1254 @@
+{
+  "1": {
+    "speciesId": "rph-1",
+    "category": "succulent"
+  },
+  "2": {
+    "speciesId": "rph-2",
+    "category": "succulent"
+  },
+  "3": {
+    "speciesId": "rph-3",
+    "category": "succulent"
+  },
+  "4": {
+    "speciesId": "rph-4",
+    "category": "succulent"
+  },
+  "5": {
+    "speciesId": "rph-5",
+    "category": "cactus"
+  },
+  "6": {
+    "speciesId": "rph-6",
+    "category": "succulent"
+  },
+  "7": {
+    "speciesId": "rph-7",
+    "category": "succulent"
+  },
+  "8": {
+    "speciesId": "rph-8",
+    "category": "succulent"
+  },
+  "9": {
+    "speciesId": "rph-9",
+    "category": "succulent"
+  },
+  "10": {
+    "speciesId": "rph-10",
+    "category": "succulent"
+  },
+  "11": {
+    "speciesId": "rph-11",
+    "category": "succulent"
+  },
+  "12": {
+    "speciesId": "rph-12",
+    "category": "houseplant"
+  },
+  "13": {
+    "speciesId": "rph-13",
+    "category": "succulent"
+  },
+  "14": {
+    "speciesId": "rph-14",
+    "category": "succulent"
+  },
+  "15": {
+    "speciesId": "rph-15",
+    "category": "succulent"
+  },
+  "16": {
+    "speciesId": "rph-16",
+    "category": "succulent"
+  },
+  "17": {
+    "speciesId": "rph-17",
+    "category": "succulent"
+  },
+  "18": {
+    "speciesId": "rph-18",
+    "category": "succulent"
+  },
+  "19": {
+    "speciesId": "rph-19",
+    "category": "succulent"
+  },
+  "20": {
+    "speciesId": "rph-20",
+    "category": "cactus"
+  },
+  "21": {
+    "speciesId": "rph-21",
+    "category": "cactus"
+  },
+  "22": {
+    "speciesId": "rph-22",
+    "category": "succulent"
+  },
+  "23": {
+    "speciesId": "rph-23",
+    "category": "succulent"
+  },
+  "24": {
+    "speciesId": "rph-24",
+    "category": "cactus"
+  },
+  "25": {
+    "speciesId": "rph-25",
+    "category": "succulent"
+  },
+  "26": {
+    "speciesId": "rph-26",
+    "category": "succulent"
+  },
+  "27": {
+    "speciesId": "rph-27",
+    "category": "succulent"
+  },
+  "28": {
+    "speciesId": "rph-28",
+    "category": "succulent"
+  },
+  "29": {
+    "speciesId": "rph-29",
+    "category": "succulent"
+  },
+  "30": {
+    "speciesId": "rph-30",
+    "category": "succulent"
+  },
+  "31": {
+    "speciesId": "rph-31",
+    "category": "cactus"
+  },
+  "32": {
+    "speciesId": "rph-32",
+    "category": "succulent"
+  },
+  "33": {
+    "speciesId": "rph-33",
+    "category": "succulent"
+  },
+  "34": {
+    "speciesId": "rph-34",
+    "category": "succulent"
+  },
+  "35": {
+    "speciesId": "rph-35",
+    "category": "succulent"
+  },
+  "36": {
+    "speciesId": "rph-36",
+    "category": "succulent"
+  },
+  "37": {
+    "speciesId": "rph-37",
+    "category": "succulent"
+  },
+  "38": {
+    "speciesId": "rph-38",
+    "category": "succulent"
+  },
+  "39": {
+    "speciesId": "rph-39",
+    "category": "succulent"
+  },
+  "40": {
+    "speciesId": "rph-40",
+    "category": "succulent"
+  },
+  "41": {
+    "speciesId": "rph-41",
+    "category": "succulent"
+  },
+  "42": {
+    "speciesId": "rph-42",
+    "category": "balcony"
+  },
+  "43": {
+    "speciesId": "rph-43",
+    "category": "cactus"
+  },
+  "44": {
+    "speciesId": "rph-44",
+    "category": "succulent"
+  },
+  "45": {
+    "speciesId": "rph-45",
+    "category": "succulent"
+  },
+  "46": {
+    "speciesId": "rph-46",
+    "category": "cactus"
+  },
+  "47": {
+    "speciesId": "rph-47",
+    "category": "balcony"
+  },
+  "48": {
+    "speciesId": "rph-48",
+    "category": "balcony"
+  },
+  "49": {
+    "speciesId": "rph-49",
+    "category": "balcony"
+  },
+  "50": {
+    "speciesId": "rph-50",
+    "category": "balcony"
+  },
+  "51": {
+    "speciesId": "rph-51",
+    "category": "balcony"
+  },
+  "52": {
+    "speciesId": "rph-52",
+    "category": "succulent"
+  },
+  "53": {
+    "speciesId": "rph-53",
+    "category": "succulent"
+  },
+  "54": {
+    "speciesId": "rph-54",
+    "category": "succulent"
+  },
+  "55": {
+    "speciesId": "rph-55",
+    "category": "succulent"
+  },
+  "56": {
+    "speciesId": "rph-56",
+    "category": "cactus"
+  },
+  "57": {
+    "speciesId": "rph-57",
+    "category": "balcony"
+  },
+  "58": {
+    "speciesId": "rph-58",
+    "category": "succulent"
+  },
+  "59": {
+    "speciesId": "rph-59",
+    "category": "succulent"
+  },
+  "60": {
+    "speciesId": "rph-60",
+    "category": "balcony"
+  },
+  "61": {
+    "speciesId": "rph-61",
+    "category": "cactus"
+  },
+  "62": {
+    "speciesId": "rph-62",
+    "category": "succulent"
+  },
+  "63": {
+    "speciesId": "rph-63",
+    "category": "cactus"
+  },
+  "64": {
+    "speciesId": "rph-64",
+    "category": "cactus"
+  },
+  "65": {
+    "speciesId": "rph-65",
+    "category": "balcony"
+  },
+  "66": {
+    "speciesId": "rph-66",
+    "category": "succulent"
+  },
+  "67": {
+    "speciesId": "rph-67",
+    "category": "succulent"
+  },
+  "68": {
+    "speciesId": "rph-68",
+    "category": "succulent"
+  },
+  "69": {
+    "speciesId": "rph-69",
+    "category": "succulent"
+  },
+  "70": {
+    "speciesId": "rph-70",
+    "category": "succulent"
+  },
+  "71": {
+    "speciesId": "rph-71",
+    "category": "succulent"
+  },
+  "72": {
+    "speciesId": "rph-72",
+    "category": "succulent"
+  },
+  "73": {
+    "speciesId": "rph-73",
+    "category": "balcony"
+  },
+  "74": {
+    "speciesId": "rph-74",
+    "category": "succulent"
+  },
+  "75": {
+    "speciesId": "rph-75",
+    "category": "succulent"
+  },
+  "76": {
+    "speciesId": "rph-76",
+    "category": "succulent"
+  },
+  "77": {
+    "speciesId": "rph-77",
+    "category": "succulent"
+  },
+  "78": {
+    "speciesId": "rph-78",
+    "category": "balcony"
+  },
+  "79": {
+    "speciesId": "rph-79",
+    "category": "succulent"
+  },
+  "80": {
+    "speciesId": "rph-80",
+    "category": "succulent"
+  },
+  "81": {
+    "speciesId": "rph-81",
+    "category": "balcony"
+  },
+  "82": {
+    "speciesId": "rph-82",
+    "category": "balcony"
+  },
+  "83": {
+    "speciesId": "rph-83",
+    "category": "balcony"
+  },
+  "84": {
+    "speciesId": "rph-84",
+    "category": "succulent"
+  },
+  "85": {
+    "speciesId": "rph-85",
+    "category": "succulent"
+  },
+  "86": {
+    "speciesId": "rph-86",
+    "category": "succulent"
+  },
+  "87": {
+    "speciesId": "rph-87",
+    "category": "succulent"
+  },
+  "88": {
+    "speciesId": "rph-88",
+    "category": "succulent"
+  },
+  "89": {
+    "speciesId": "rph-89",
+    "category": "succulent"
+  },
+  "90": {
+    "speciesId": "rph-90",
+    "category": "succulent"
+  },
+  "91": {
+    "speciesId": "rph-91",
+    "category": "succulent"
+  },
+  "92": {
+    "speciesId": "rph-92",
+    "category": "cactus"
+  },
+  "93": {
+    "speciesId": "rph-93",
+    "category": "balcony"
+  },
+  "94": {
+    "speciesId": "rph-94",
+    "category": "succulent"
+  },
+  "95": {
+    "speciesId": "rph-95",
+    "category": "balcony"
+  },
+  "96": {
+    "speciesId": "rph-96",
+    "category": "succulent"
+  },
+  "97": {
+    "speciesId": "rph-97",
+    "category": "succulent"
+  },
+  "98": {
+    "speciesId": "rph-98",
+    "category": "cactus"
+  },
+  "99": {
+    "speciesId": "rph-99",
+    "category": "succulent"
+  },
+  "100": {
+    "speciesId": "rph-100",
+    "category": "succulent"
+  },
+  "101": {
+    "speciesId": "rph-101",
+    "category": "succulent"
+  },
+  "102": {
+    "speciesId": "rph-102",
+    "category": "balcony"
+  },
+  "103": {
+    "speciesId": "rph-103",
+    "category": "succulent"
+  },
+  "104": {
+    "speciesId": "rph-104",
+    "category": "cactus"
+  },
+  "105": {
+    "speciesId": "rph-105",
+    "category": "balcony"
+  },
+  "106": {
+    "speciesId": "rph-106",
+    "category": "balcony"
+  },
+  "107": {
+    "speciesId": "rph-107",
+    "category": "succulent"
+  },
+  "108": {
+    "speciesId": "rph-108",
+    "category": "succulent"
+  },
+  "109": {
+    "speciesId": "rph-109",
+    "category": "succulent"
+  },
+  "110": {
+    "speciesId": "rph-110",
+    "category": "succulent"
+  },
+  "111": {
+    "speciesId": "rph-111",
+    "category": "succulent"
+  },
+  "112": {
+    "speciesId": "rph-112",
+    "category": "succulent"
+  },
+  "113": {
+    "speciesId": "rph-113",
+    "category": "balcony"
+  },
+  "114": {
+    "speciesId": "rph-114",
+    "category": "balcony"
+  },
+  "115": {
+    "speciesId": "rph-115",
+    "category": "balcony"
+  },
+  "116": {
+    "speciesId": "rph-116",
+    "category": "succulent"
+  },
+  "117": {
+    "speciesId": "rph-117",
+    "category": "succulent"
+  },
+  "118": {
+    "speciesId": "rph-118",
+    "category": "succulent"
+  },
+  "119": {
+    "speciesId": "rph-119",
+    "category": "balcony"
+  },
+  "120": {
+    "speciesId": "rph-120",
+    "category": "balcony"
+  },
+  "121": {
+    "speciesId": "rph-121",
+    "category": "balcony"
+  },
+  "122": {
+    "speciesId": "rph-122",
+    "category": "balcony"
+  },
+  "123": {
+    "speciesId": "rph-123",
+    "category": "balcony"
+  },
+  "124": {
+    "speciesId": "rph-124",
+    "category": "balcony"
+  },
+  "125": {
+    "speciesId": "rph-125",
+    "category": "balcony"
+  },
+  "126": {
+    "speciesId": "rph-126",
+    "category": "balcony"
+  },
+  "127": {
+    "speciesId": "rph-127",
+    "category": "succulent"
+  },
+  "128": {
+    "speciesId": "rph-128",
+    "category": "succulent"
+  },
+  "129": {
+    "speciesId": "rph-129",
+    "category": "succulent"
+  },
+  "130": {
+    "speciesId": "rph-130",
+    "category": "succulent"
+  },
+  "131": {
+    "speciesId": "rph-131",
+    "category": "succulent"
+  },
+  "132": {
+    "speciesId": "rph-132",
+    "category": "balcony"
+  },
+  "133": {
+    "speciesId": "rph-133",
+    "category": "succulent"
+  },
+  "134": {
+    "speciesId": "rph-134",
+    "category": "succulent"
+  },
+  "135": {
+    "speciesId": "rph-135",
+    "category": "succulent"
+  },
+  "136": {
+    "speciesId": "rph-136",
+    "category": "balcony"
+  },
+  "137": {
+    "speciesId": "rph-137",
+    "category": "balcony"
+  },
+  "138": {
+    "speciesId": "rph-138",
+    "category": "succulent"
+  },
+  "139": {
+    "speciesId": "rph-139",
+    "category": "succulent"
+  },
+  "140": {
+    "speciesId": "rph-140",
+    "category": "succulent"
+  },
+  "141": {
+    "speciesId": "rph-141",
+    "category": "succulent"
+  },
+  "142": {
+    "speciesId": "rph-142",
+    "category": "succulent"
+  },
+  "143": {
+    "speciesId": "rph-143",
+    "category": "succulent"
+  },
+  "144": {
+    "speciesId": "rph-144",
+    "category": "succulent"
+  },
+  "145": {
+    "speciesId": "rph-145",
+    "category": "succulent"
+  },
+  "146": {
+    "speciesId": "rph-146",
+    "category": "balcony"
+  },
+  "147": {
+    "speciesId": "rph-147",
+    "category": "succulent"
+  },
+  "148": {
+    "speciesId": "rph-148",
+    "category": "balcony"
+  },
+  "149": {
+    "speciesId": "rph-149",
+    "category": "balcony"
+  },
+  "150": {
+    "speciesId": "rph-150",
+    "category": "succulent"
+  },
+  "151": {
+    "speciesId": "rph-151",
+    "category": "balcony"
+  },
+  "152": {
+    "speciesId": "rph-152",
+    "category": "balcony"
+  },
+  "153": {
+    "speciesId": "rph-153",
+    "category": "succulent"
+  },
+  "154": {
+    "speciesId": "rph-154",
+    "category": "succulent"
+  },
+  "155": {
+    "speciesId": "rph-155",
+    "category": "cactus"
+  },
+  "156": {
+    "speciesId": "rph-156",
+    "category": "succulent"
+  },
+  "157": {
+    "speciesId": "rph-157",
+    "category": "succulent"
+  },
+  "158": {
+    "speciesId": "rph-158",
+    "category": "succulent"
+  },
+  "159": {
+    "speciesId": "rph-159",
+    "category": "succulent"
+  },
+  "160": {
+    "speciesId": "rph-160",
+    "category": "succulent"
+  },
+  "161": {
+    "speciesId": "rph-161",
+    "category": "balcony"
+  },
+  "162": {
+    "speciesId": "rph-162",
+    "category": "succulent"
+  },
+  "163": {
+    "speciesId": "rph-163",
+    "category": "succulent"
+  },
+  "164": {
+    "speciesId": "rph-164",
+    "category": "succulent"
+  },
+  "165": {
+    "speciesId": "rph-165",
+    "category": "cactus"
+  },
+  "166": {
+    "speciesId": "rph-166",
+    "category": "succulent"
+  },
+  "167": {
+    "speciesId": "rph-167",
+    "category": "balcony"
+  },
+  "168": {
+    "speciesId": "rph-168",
+    "category": "succulent"
+  },
+  "169": {
+    "speciesId": "rph-169",
+    "category": "succulent"
+  },
+  "170": {
+    "speciesId": "rph-170",
+    "category": "cactus"
+  },
+  "171": {
+    "speciesId": "rph-171",
+    "category": "succulent"
+  },
+  "172": {
+    "speciesId": "rph-172",
+    "category": "succulent"
+  },
+  "173": {
+    "speciesId": "rph-173",
+    "category": "cactus"
+  },
+  "174": {
+    "speciesId": "rph-174",
+    "category": "succulent"
+  },
+  "175": {
+    "speciesId": "rph-175",
+    "category": "succulent"
+  },
+  "176": {
+    "speciesId": "rph-176",
+    "category": "balcony"
+  },
+  "177": {
+    "speciesId": "rph-177",
+    "category": "succulent"
+  },
+  "178": {
+    "speciesId": "rph-178",
+    "category": "cactus"
+  },
+  "179": {
+    "speciesId": "rph-179",
+    "category": "succulent"
+  },
+  "180": {
+    "speciesId": "rph-180",
+    "category": "succulent"
+  },
+  "181": {
+    "speciesId": "rph-181",
+    "category": "succulent"
+  },
+  "182": {
+    "speciesId": "rph-182",
+    "category": "succulent"
+  },
+  "183": {
+    "speciesId": "rph-183",
+    "category": "succulent"
+  },
+  "184": {
+    "speciesId": "rph-184",
+    "category": "succulent"
+  },
+  "185": {
+    "speciesId": "rph-185",
+    "category": "succulent"
+  },
+  "186": {
+    "speciesId": "rph-186",
+    "category": "succulent"
+  },
+  "187": {
+    "speciesId": "rph-187",
+    "category": "succulent"
+  },
+  "188": {
+    "speciesId": "rph-188",
+    "category": "balcony"
+  },
+  "189": {
+    "speciesId": "rph-189",
+    "category": "succulent"
+  },
+  "190": {
+    "speciesId": "rph-190",
+    "category": "succulent"
+  },
+  "191": {
+    "speciesId": "rph-191",
+    "category": "cactus"
+  },
+  "192": {
+    "speciesId": "rph-192",
+    "category": "cactus"
+  },
+  "193": {
+    "speciesId": "rph-193",
+    "category": "succulent"
+  },
+  "194": {
+    "speciesId": "rph-194",
+    "category": "succulent"
+  },
+  "195": {
+    "speciesId": "rph-195",
+    "category": "succulent"
+  },
+  "196": {
+    "speciesId": "rph-196",
+    "category": "succulent"
+  },
+  "197": {
+    "speciesId": "rph-197",
+    "category": "succulent"
+  },
+  "198": {
+    "speciesId": "rph-198",
+    "category": "balcony"
+  },
+  "199": {
+    "speciesId": "rph-199",
+    "category": "balcony"
+  },
+  "200": {
+    "speciesId": "rph-200",
+    "category": "balcony"
+  },
+  "201": {
+    "speciesId": "rph-201",
+    "category": "succulent"
+  },
+  "202": {
+    "speciesId": "rph-202",
+    "category": "balcony"
+  },
+  "203": {
+    "speciesId": "rph-203",
+    "category": "succulent"
+  },
+  "204": {
+    "speciesId": "rph-204",
+    "category": "balcony"
+  },
+  "205": {
+    "speciesId": "rph-205",
+    "category": "balcony"
+  },
+  "206": {
+    "speciesId": "rph-206",
+    "category": "succulent"
+  },
+  "207": {
+    "speciesId": "rph-207",
+    "category": "balcony"
+  },
+  "208": {
+    "speciesId": "rph-208",
+    "category": "balcony"
+  },
+  "209": {
+    "speciesId": "rph-209",
+    "category": "cactus"
+  },
+  "210": {
+    "speciesId": "rph-210",
+    "category": "succulent"
+  },
+  "211": {
+    "speciesId": "rph-211",
+    "category": "cactus"
+  },
+  "212": {
+    "speciesId": "rph-212",
+    "category": "cactus"
+  },
+  "213": {
+    "speciesId": "rph-213",
+    "category": "cactus"
+  },
+  "214": {
+    "speciesId": "rph-214",
+    "category": "cactus"
+  },
+  "215": {
+    "speciesId": "rph-215",
+    "category": "cactus"
+  },
+  "216": {
+    "speciesId": "rph-216",
+    "category": "succulent"
+  },
+  "217": {
+    "speciesId": "rph-217",
+    "category": "succulent"
+  },
+  "218": {
+    "speciesId": "rph-218",
+    "category": "balcony"
+  },
+  "219": {
+    "speciesId": "rph-219",
+    "category": "succulent"
+  },
+  "220": {
+    "speciesId": "rph-220",
+    "category": "balcony"
+  },
+  "221": {
+    "speciesId": "rph-221",
+    "category": "succulent"
+  },
+  "222": {
+    "speciesId": "rph-222",
+    "category": "balcony"
+  },
+  "223": {
+    "speciesId": "rph-223",
+    "category": "succulent"
+  },
+  "224": {
+    "speciesId": "rph-224",
+    "category": "succulent"
+  },
+  "225": {
+    "speciesId": "rph-225",
+    "category": "balcony"
+  },
+  "226": {
+    "speciesId": "rph-226",
+    "category": "balcony"
+  },
+  "227": {
+    "speciesId": "rph-227",
+    "category": "balcony"
+  },
+  "228": {
+    "speciesId": "rph-228",
+    "category": "succulent"
+  },
+  "229": {
+    "speciesId": "rph-229",
+    "category": "succulent"
+  },
+  "230": {
+    "speciesId": "rph-230",
+    "category": "succulent"
+  },
+  "231": {
+    "speciesId": "rph-231",
+    "category": "succulent"
+  },
+  "232": {
+    "speciesId": "rph-232",
+    "category": "succulent"
+  },
+  "233": {
+    "speciesId": "rph-233",
+    "category": "succulent"
+  },
+  "234": {
+    "speciesId": "rph-234",
+    "category": "succulent"
+  },
+  "235": {
+    "speciesId": "rph-235",
+    "category": "balcony"
+  },
+  "236": {
+    "speciesId": "rph-236",
+    "category": "succulent"
+  },
+  "237": {
+    "speciesId": "rph-237",
+    "category": "succulent"
+  },
+  "238": {
+    "speciesId": "rph-238",
+    "category": "succulent"
+  },
+  "239": {
+    "speciesId": "rph-239",
+    "category": "succulent"
+  },
+  "240": {
+    "speciesId": "rph-240",
+    "category": "succulent"
+  },
+  "241": {
+    "speciesId": "rph-241",
+    "category": "succulent"
+  },
+  "242": {
+    "speciesId": "rph-242",
+    "category": "succulent"
+  },
+  "243": {
+    "speciesId": "rph-243",
+    "category": "succulent"
+  },
+  "244": {
+    "speciesId": "rph-244",
+    "category": "balcony"
+  },
+  "245": {
+    "speciesId": "rph-245",
+    "category": "succulent"
+  },
+  "246": {
+    "speciesId": "rph-246",
+    "category": "succulent"
+  },
+  "247": {
+    "speciesId": "rph-247",
+    "category": "succulent"
+  },
+  "248": {
+    "speciesId": "rph-248",
+    "category": "succulent"
+  },
+  "249": {
+    "speciesId": "rph-249",
+    "category": "succulent"
+  },
+  "250": {
+    "speciesId": "rph-250",
+    "category": "succulent"
+  },
+  "251": {
+    "speciesId": "rph-251",
+    "category": "balcony"
+  },
+  "252": {
+    "speciesId": "rph-252",
+    "category": "succulent"
+  },
+  "253": {
+    "speciesId": "rph-253",
+    "category": "succulent"
+  },
+  "254": {
+    "speciesId": "rph-254",
+    "category": "balcony"
+  },
+  "255": {
+    "speciesId": "rph-255",
+    "category": "succulent"
+  },
+  "256": {
+    "speciesId": "rph-256",
+    "category": "succulent"
+  },
+  "257": {
+    "speciesId": "rph-257",
+    "category": "cactus"
+  },
+  "258": {
+    "speciesId": "rph-258",
+    "category": "succulent"
+  },
+  "259": {
+    "speciesId": "rph-259",
+    "category": "succulent"
+  },
+  "260": {
+    "speciesId": "rph-260",
+    "category": "balcony"
+  },
+  "261": {
+    "speciesId": "rph-261",
+    "category": "succulent"
+  },
+  "262": {
+    "speciesId": "rph-262",
+    "category": "succulent"
+  },
+  "263": {
+    "speciesId": "rph-263",
+    "category": "succulent"
+  },
+  "264": {
+    "speciesId": "rph-264",
+    "category": "succulent"
+  },
+  "265": {
+    "speciesId": "rph-265",
+    "category": "cactus"
+  },
+  "266": {
+    "speciesId": "rph-266",
+    "category": "balcony"
+  },
+  "267": {
+    "speciesId": "rph-267",
+    "category": "balcony"
+  },
+  "268": {
+    "speciesId": "rph-268",
+    "category": "succulent"
+  },
+  "269": {
+    "speciesId": "rph-269",
+    "category": "succulent"
+  },
+  "270": {
+    "speciesId": "rph-270",
+    "category": "succulent"
+  },
+  "271": {
+    "speciesId": "rph-271",
+    "category": "succulent"
+  },
+  "272": {
+    "speciesId": "rph-272",
+    "category": "cactus"
+  },
+  "273": {
+    "speciesId": "rph-273",
+    "category": "balcony"
+  },
+  "274": {
+    "speciesId": "rph-274",
+    "category": "succulent"
+  },
+  "275": {
+    "speciesId": "rph-275",
+    "category": "succulent"
+  },
+  "276": {
+    "speciesId": "rph-276",
+    "category": "succulent"
+  },
+  "277": {
+    "speciesId": "rph-277",
+    "category": "succulent"
+  },
+  "278": {
+    "speciesId": "rph-278",
+    "category": "balcony"
+  },
+  "279": {
+    "speciesId": "rph-279",
+    "category": "succulent"
+  },
+  "280": {
+    "speciesId": "rph-280",
+    "category": "cactus"
+  },
+  "281": {
+    "speciesId": "rph-281",
+    "category": "balcony"
+  },
+  "282": {
+    "speciesId": "rph-282",
+    "category": "succulent"
+  },
+  "283": {
+    "speciesId": "rph-283",
+    "category": "succulent"
+  },
+  "284": {
+    "speciesId": "rph-284",
+    "category": "balcony"
+  },
+  "285": {
+    "speciesId": "rph-285",
+    "category": "cactus"
+  },
+  "286": {
+    "speciesId": "rph-286",
+    "category": "balcony"
+  },
+  "287": {
+    "speciesId": "rph-287",
+    "category": "succulent"
+  },
+  "288": {
+    "speciesId": "rph-288",
+    "category": "succulent"
+  },
+  "289": {
+    "speciesId": "rph-289",
+    "category": "cactus"
+  },
+  "290": {
+    "speciesId": "rph-290",
+    "category": "succulent"
+  },
+  "291": {
+    "speciesId": "rph-291",
+    "category": "cactus"
+  },
+  "292": {
+    "speciesId": "rph-292",
+    "category": "succulent"
+  },
+  "293": {
+    "speciesId": "rph-293",
+    "category": "succulent"
+  },
+  "294": {
+    "speciesId": "rph-294",
+    "category": "succulent"
+  },
+  "295": {
+    "speciesId": "rph-295",
+    "category": "succulent"
+  },
+  "296": {
+    "speciesId": "rph-296",
+    "category": "succulent"
+  },
+  "297": {
+    "speciesId": "rph-297",
+    "category": "succulent"
+  },
+  "298": {
+    "speciesId": "rph-298",
+    "category": "succulent"
+  },
+  "299": {
+    "speciesId": "rph-299",
+    "category": "succulent"
+  },
+  "300": {
+    "speciesId": "rph-300",
+    "category": "succulent"
+  },
+  "301": {
+    "speciesId": "rph-301",
+    "category": "succulent"
+  },
+  "302": {
+    "speciesId": "rph-302",
+    "category": "succulent"
+  },
+  "303": {
+    "speciesId": "rph-303",
+    "category": "succulent"
+  },
+  "304": {
+    "speciesId": "rph-304",
+    "category": "succulent"
+  },
+  "305": {
+    "speciesId": "rph-305",
+    "category": "succulent"
+  },
+  "306": {
+    "speciesId": "rph-306",
+    "category": "succulent"
+  },
+  "307": {
+    "speciesId": "rph-307",
+    "category": "succulent"
+  },
+  "308": {
+    "speciesId": "rph-308",
+    "category": "cactus"
+  },
+  "309": {
+    "speciesId": "rph-309",
+    "category": "succulent"
+  },
+  "310": {
+    "speciesId": "rph-310",
+    "category": "succulent"
+  },
+  "311": {
+    "speciesId": "rph-311",
+    "category": "succulent"
+  },
+  "312": {
+    "speciesId": "rph-312",
+    "category": "succulent"
+  },
+  "313": {
+    "speciesId": "rph-313",
+    "category": "succulent"
+  }
+}

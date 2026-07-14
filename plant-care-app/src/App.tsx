@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import AppShell from './app/AppShell';
@@ -9,6 +10,8 @@ import PlantDetailPage from './features/garden/PlantDetailPage';
 import TodayPage from './features/today/TodayPage';
 import ProfilePage from './features/profile/ProfilePage';
 import { JournalPreview } from './app/routes';
+
+const RosaryImportsPage = lazy(() => import('./features/rosary/RosaryImportsPage'));
 
 export default function App() {
   return (
@@ -22,6 +25,7 @@ export default function App() {
             <Route path="add" element={<AddPlantPage />} />
             <Route path="journal" element={<JournalPreview />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="rosary" element={<Suspense fallback={<p className="loading-line">Opening Rosary benefits…</p>}><RosaryImportsPage /></Suspense>} />
             <Route path="plants/:plantId" element={<PlantDetailPage />} />
           </Route>
         </Routes>

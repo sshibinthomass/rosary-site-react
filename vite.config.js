@@ -5,6 +5,12 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    include: ['src/features/plantCare/**/*.test.{ts,tsx}'],
+    environment: 'jsdom',
+    setupFiles: './src/features/plantCare/test/setup.ts',
+    css: true,
+  },
   base: '/',
   build: {
     rollupOptions: {

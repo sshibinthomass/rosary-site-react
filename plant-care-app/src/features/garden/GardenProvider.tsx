@@ -5,6 +5,7 @@ import type { PlantCategory } from '../../data/speciesCatalog';
 import type { GardenRepository } from '../../data/gardenRepository';
 import { IndexedDbGardenRepository } from '../../data/indexedDbGardenRepository';
 import { firebaseIsConfigured } from '../../integrations/firebaseConfig';
+import { OpenMeteoProvider } from '../../integrations/weather/openMeteoProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { GardenService } from './GardenService';
 
@@ -32,7 +33,8 @@ interface GardenProviderProps extends PropsWithChildren {
 export function GardenProvider({ children, repository, now }: GardenProviderProps) {
   const { user } = useAuth();
   const repo = useMemo(() => repository ?? new IndexedDbGardenRepository(), [repository]);
-  const service = useMemo(() => new GardenService(repo, now), [repo, now]);
+  const weatherProvider = useMemo(() => new OpenMeteoProvider(), []);
+  const service = useMemo(() => new GardenService(repo, now, undefined, weatherProvider), [repo, now, weatherProvider]);
   const [locations, setLocations] = useState<GrowingLocation[]>([]);
   const [plants, setPlants] = useState<UserPlant[]>([]);
   const [tasks, setTasks] = useState<CareTask[]>([]);

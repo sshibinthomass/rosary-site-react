@@ -10,6 +10,7 @@ import type {
 } from '../../domain/models';
 import type { PlantCategory } from '../../data/speciesCatalog';
 import type { GardenRepository } from '../../data/gardenRepository';
+import type { WeatherProvider } from '../../integrations/weather/WeatherProvider';
 
 export class GardenLimitError extends Error {
   constructor(message: string) {
@@ -44,7 +45,27 @@ export class GardenService {
     private repository: GardenRepository,
     private now: () => Date = () => new Date(),
     private createId: () => string = defaultId,
+    private weatherProvider?: WeatherProvider,
   ) {}
+
+  private async weatherFor(location: GrowingLocation) {
+    if (!this.weatherProvider || !location.city) return undefined;
+    try {
+      let latitude = location.latitude;
+      let longitude = location.longitude;
+      let cityId = `${location.city}-${location.climateZone}`;
+      if (latitude === undefined || longitude === undefined) {
+        const city = (await this.weatherProvider.searchIndianCities(location.city))[0];
+        if (!city) return undefined;
+        latitude = city.latitude;
+        longitude = city.longitude;
+        cityId = city.id;
+      }
+      return this.weatherProvider.getDailyWeather({ id: cityId, name: location.city, countryCode: 'IN', latitude, longitude });
+    } catch {
+      return undefined;
+    }
+  }
 
   async addLocation(input: AddLocationInput): Promise<GrowingLocation> {
     const existing = await this.repository.listLocations();
@@ -87,6 +108,7 @@ export class GardenService {
       plant,
       location,
       season: getIndianSeason(date, location.climateZone),
+      weather: await this.weatherFor(location),
     });
     for (const draft of drafts) {
       await this.repository.saveTask({
@@ -124,6 +146,7 @@ export class GardenService {
       plant,
       location,
       season: getIndianSeason(date, location.climateZone),
+      weather: await this.weatherFor(location),
       task,
       outcome,
     });

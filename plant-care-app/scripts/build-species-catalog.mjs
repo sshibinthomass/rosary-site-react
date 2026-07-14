@@ -43,19 +43,11 @@ export function buildSpeciesCatalog(products) {
         commonNames: Array.isArray(care.commonNames) ? care.commonNames : [],
         category: categoryFor(care),
         difficulty: clean(care.difficulty) || 'Moderate',
-        summary: clean(care.shortDescription) || clean(care.quickAnswer),
         sunlight: clean(care.sunlight),
-        placement: clean(care.bestPlacement),
         watering: clean(care.watering),
-        summerWatering: clean(care.summerWatering),
-        monsoonWatering: clean(care.monsoonWatering),
-        winterWatering: clean(care.winterWatering),
         soil: clean(care.soil),
-        humidity: clean(care.humidity),
-        fertilizer: clean(care.fertilizer),
         northIndiaNote: clean(care.northIndiaNote),
         southIndiaNote: clean(care.southIndiaNote),
-        image: clean(product.image) || clean(product.images?.[0]),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));

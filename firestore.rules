@@ -77,6 +77,27 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Rosary Plant Care: private per-user garden data
+    match /plantAppUsers/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+
+      match /locations/{locationId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /plants/{plantId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /tasks/{taskId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /events/{eventId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+
     // Admin fallback for any other collection
     match /{document=**} {
       allow read, write: if isAdmin();

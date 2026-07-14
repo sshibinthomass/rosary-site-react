@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 
 import type { CareEvent, CareTask, GrowingLocation, UserPlant } from '../../domain/models';
 import type { GardenRepository } from '../../data/gardenRepository';
+import { AuthProvider, type AuthDriver } from '../auth/AuthProvider';
 import { GardenProvider } from '../garden/GardenProvider';
 import TodayPage from './TodayPage';
 
@@ -37,10 +38,16 @@ class TodayRepository implements GardenRepository {
 
 it('records a moist-soil observation and shows the next check', async () => {
   const user = userEvent.setup();
+  const authDriver: AuthDriver = {
+    subscribe(callback) { callback(null); return () => undefined; },
+    async popup() {}, async redirect() {}, async native() {}, async signOut() {}, isNative: false,
+  };
   render(
-    <GardenProvider repository={new TodayRepository()} now={() => new Date('2026-07-14T08:00:00.000Z')}>
-      <TodayPage />
-    </GardenProvider>,
+    <AuthProvider driver={authDriver}>
+      <GardenProvider repository={new TodayRepository()} now={() => new Date('2026-07-14T08:00:00.000Z')}>
+        <TodayPage />
+      </GardenProvider>
+    </AuthProvider>,
   );
 
   expect(await screen.findByRole('heading', { name: 'Today' })).toBeVisible();

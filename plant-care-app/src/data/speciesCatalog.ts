@@ -10,19 +10,11 @@ export interface PlantSpeciesProfile {
   commonNames: string[];
   category: PlantCategory;
   difficulty: string;
-  summary: string;
   sunlight: string;
-  placement: string;
   watering: string;
-  summerWatering: string;
-  monsoonWatering: string;
-  winterWatering: string;
   soil: string;
-  humidity: string;
-  fertilizer: string;
   northIndiaNote: string;
   southIndiaNote: string;
-  image: string;
 }
 
 const species = profiles as PlantSpeciesProfile[];

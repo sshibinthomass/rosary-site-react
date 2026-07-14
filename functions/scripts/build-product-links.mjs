@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const functionsRoot = path.resolve(directory, '..');
-const catalogPath = path.resolve(functionsRoot, '..', 'plant-care-app', 'src', 'data', 'species.generated.json');
+const catalogPath = path.resolve(functionsRoot, '..', 'src', 'features', 'plantCare', 'data', 'species.generated.json');
 const outputPath = path.resolve(functionsRoot, 'src', 'productLinks.generated.json');
 const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
 const links = Object.fromEntries(catalog.map((plant) => [String(plant.productId), { speciesId: plant.id, category: plant.category }]));

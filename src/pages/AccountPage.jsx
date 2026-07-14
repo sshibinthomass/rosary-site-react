@@ -69,6 +69,13 @@ const ACCOUNT_ICON_PATHS = Object.freeze({
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" />
     </>
+  ),
+  sprout: (
+    <>
+      <path d="M12 21v-9" />
+      <path d="M12 15c-4.5 0-7-2.8-7-7 4.5 0 7 2.5 7 7Z" />
+      <path d="M12 12c4.5 0 7-2.8 7-7-4.5 0-7 2.5-7 7Z" />
+    </>
   )
 });
 
@@ -461,6 +468,28 @@ export default function AccountPage() {
           </div>
         </div>
       )}
+
+      {/* Plant Care shortcuts */}
+      <div className="grid sm:grid-cols-2 gap-3 mt-4">
+        <NavLink to="/care" className="card p-4 flex items-start gap-3 hover:border-[var(--color-forest)] transition-colors">
+          <span className="p-2 rounded-xl bg-[var(--color-forest)]/10">
+            <AccountIcon name="sprout" className="h-7 w-7" />
+          </span>
+          <span>
+            <strong className="block text-[var(--text-primary)]">Open Plant Care</strong>
+            <span className="block text-xs text-[var(--text-secondary)] mt-1">Today’s checks, your garden, and private progress journal.</span>
+          </span>
+        </NavLink>
+        <NavLink to="/care/benefits" className="card p-4 flex items-start gap-3 hover:border-[var(--color-terracotta)] transition-colors">
+          <span className="p-2 rounded-xl bg-[var(--color-terracotta)]/10">
+            <AccountIcon name="star" className="h-7 w-7" />
+          </span>
+          <span>
+            <strong className="block text-[var(--text-primary)]">Rosary customer benefits</strong>
+            <span className="block text-xs text-[var(--text-secondary)] mt-1">Import verified purchases and unlock customer extras.</span>
+          </span>
+        </NavLink>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mt-4">

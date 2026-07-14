@@ -208,6 +208,12 @@
 .care-facts h2 { font-size: 1rem; line-height: 1.5; margin: 0; }
 .care-benefit-grid > article.rosary { border-top: 3px solid var(--care-clay); }
 .care-benefit-grid ul { color: var(--care-muted); display: grid; gap: 0.45rem; line-height: 1.5; padding-left: 1.1rem; }
+.care-entitlement { background: color-mix(in srgb, var(--care-clay) 9%, var(--care-paper)); border-left: 3px solid var(--care-clay); border-radius: 0 1rem 1rem 0; padding: 1.25rem; }
+.care-entitlement h2 { font-size: 1.2rem; margin: 0; }
+.care-import-location { max-width: 24rem; }
+.care-imports-list { display: grid; gap: 0.75rem; }
+.care-imports-list > article:not(.care-empty-card) { align-items: center; background: var(--care-paper); border: 1px solid var(--care-line); border-radius: 1rem; display: grid; gap: 1rem; grid-template-columns: auto 1fr auto; padding: 1rem; }
+.care-imports-list h2 { font-size: 1.1rem; margin: 0; }
 
 .care-journal-form { align-items: end; display: grid; gap: 0.75rem; grid-template-columns: minmax(10rem, 0.7fr) minmax(12rem, 1fr) auto auto; }
 .care-selected-file { color: var(--care-muted); font-size: 0.7rem; grid-column: 3 / -1; }

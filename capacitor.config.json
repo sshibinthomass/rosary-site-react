@@ -3,6 +3,10 @@
   "appName": "Rosary Plants",
   "webDir": "dist",
   "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_leaf",
+      "iconColor": "#0f766e"
+    },
     "FirebaseAuthentication": {
       "skipNativeAuth": true,
       "providers": ["google.com"]

@@ -9,7 +9,7 @@
     "prebuild": "npm run links",
     "build": "tsc",
     "pretest": "npm run links",
-    "test": "vitest run"
+    "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "firebase-admin": "^13.10.0",

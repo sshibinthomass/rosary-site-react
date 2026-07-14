@@ -6,6 +6,7 @@ import type { GardenRepository } from './data/gardenRepository';
 import { IndexedDbGardenRepository } from './data/indexedDbGardenRepository';
 import { SyncRetryQueue } from './data/syncRetryQueue';
 import { firebaseIsConfigured } from './integrations/firebase';
+import { OpenMeteoProvider } from './integrations/weather/openMeteoProvider';
 import type { WeatherProvider } from './integrations/weather/WeatherProvider';
 import { GardenService } from './services/GardenService';
 
@@ -37,7 +38,7 @@ export interface PlantCareProviderProps extends PropsWithChildren {
 export function PlantCareProvider({ children, user, repository, now, weatherProvider: providedWeatherProvider }: PlantCareProviderProps) {
   const repo = useMemo(() => repository ?? new IndexedDbGardenRepository(), [repository]);
   const weatherProvider = useMemo(
-    () => providedWeatherProvider ?? undefined,
+    () => providedWeatherProvider === null ? undefined : providedWeatherProvider ?? new OpenMeteoProvider(),
     [providedWeatherProvider],
   );
   const service = useMemo(() => new GardenService(repo, now, undefined, weatherProvider), [repo, now, weatherProvider]);

@@ -495,6 +495,49 @@ test('static category pages expose category-specific titles, links, and ItemList
   assert.match(html, /"@type":"ItemList"/);
 });
 
+test('static category pages expose public products beyond position fifty', () => {
+  const products = Array.from({ length: 51 }, (_, index) => ({
+    id: String(index + 1),
+    title: `Succulent ${index + 1}`,
+    category: 'Succulent',
+    available: true,
+    seoStatus: 'published',
+    identityVerified: true,
+    seo: { slug: `succulent-${index + 1}` },
+  }));
+
+  const html = buildStaticCategoryHtml({
+    indexHtml: appShellHtml,
+    category: 'Succulent',
+    products,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<a href="\/plant\/51-succulent\/">Succulent 51<\/a>/);
+  assert.match(html, /"position":51,"name":"Succulent 51","url":"https:\/\/rosaryplanthouse\.com\/plant\/51-succulent\/"/);
+});
+
+test('static product pages expose direct related product links', () => {
+  const product = {
+    ...storefrontProduct,
+    seo: {
+      slug: 'sempervivum-tectorum',
+      relatedProducts: [
+        { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
+      ],
+    },
+  };
+
+  const html = buildStaticProductHtml({
+    indexHtml: appShellHtml,
+    product,
+    baseUrl: 'https://rosaryplanthouse.com',
+  });
+
+  assert.match(html, /<h3>Related products<\/h3>/);
+  assert.match(html, /<a href="\/plant\/2-second-rosette\/">Second Rosette<\/a>/);
+});
+
 test('top static category pages include crawlable guidance, FAQs, guide links, and product links', () => {
   const cases = [
     {

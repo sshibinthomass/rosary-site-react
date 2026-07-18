@@ -582,10 +582,12 @@ function renderRelatedLinkGroup(title, links) {
 
 function renderRelatedSeoLinks(product) {
   const links = getProductRelatedSeoLinks(product);
-  if (links.plants.length === 0 && links.careGuides.length === 0 && links.problemGuides.length === 0) return '';
+  const relatedProducts = Array.isArray(product.seo?.relatedProducts) ? product.seo.relatedProducts : [];
+  if (relatedProducts.length === 0 && links.plants.length === 0 && links.careGuides.length === 0 && links.problemGuides.length === 0) return '';
 
   return `<section class="seo-product-related-links">
   <h2>Related plant pages and guides</h2>
+  ${renderRelatedLinkGroup('Related products', relatedProducts)}
   ${renderRelatedLinkGroup('Related plants', links.plants)}
   ${renderRelatedLinkGroup('Related care guides', links.careGuides)}
   ${renderRelatedLinkGroup('Related problem guides', links.problemGuides)}
@@ -1276,7 +1278,7 @@ export function buildStaticCategoryHtml({
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    itemListElement: categoryProducts.slice(0, 50).map((product, index) => ({
+    itemListElement: categoryProducts.map((product, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       name: getProductDisplayName(product),
@@ -1286,7 +1288,7 @@ export function buildStaticCategoryHtml({
   const faqSchema = buildCategoryFaqSchema(categoryContent.faqs);
   const breadcrumbSchema = buildCategoryBreadcrumbSchema(category, publicBase);
   const schemaItems = [itemList, faqSchema, breadcrumbSchema].filter(Boolean);
-  const productLinks = categoryProducts.slice(0, 50)
+  const productLinks = categoryProducts
     .map((product) => `<li><a href="${escapeHtml(getProductCanonicalUrl(product, publicBase).replace(publicBase, ''))}">${escapeHtml(getProductDisplayName(product))}</a></li>`)
     .join('\n');
   const body = `<main class="seo-category-page">

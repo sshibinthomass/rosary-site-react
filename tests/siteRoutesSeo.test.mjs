@@ -62,6 +62,14 @@ test('Vercel leaves unknown paths to the filesystem custom 404 response', () => 
   assert.equal(vercelConfig.rewrites.some((entry) => entry.source === '/(.*)'), false);
 });
 
+test('SEO artifact generation writes only canonical product directories', () => {
+  const generatorSource = readText('scripts/generate-seo-artifacts.js');
+
+  assert.match(generatorSource, /const canonicalPath = getProductPath\(product\)/);
+  assert.doesNotMatch(generatorSource, /const legacyPath = `plant\/\$\{product\.id\}`/);
+  assert.doesNotMatch(generatorSource, /legacyDir/);
+});
+
 test('unknown client routes render the noindex not-found page instead of redirecting home', () => {
   const appSource = readText('src/App.jsx');
 

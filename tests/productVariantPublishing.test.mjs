@@ -13,6 +13,7 @@ test('browser product surfaces use the shared variety and size identity helpers'
   assert.match(productPageSource, /getProductVariantSummary\(product\)/);
   assert.match(productCardSource, /getProductDisplayName/);
   assert.match(productCardSource, /const name = getProductDisplayName\(product\)/);
+  assert.doesNotMatch(productCardSource, /\{product\.size\s*&&/);
 });
 
 test('production SEO generation rejects authoritative duplicate product identities', () => {

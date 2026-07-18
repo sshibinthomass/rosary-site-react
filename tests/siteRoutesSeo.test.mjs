@@ -251,6 +251,17 @@ test('product pages render related SEO links on the standalone page', () => {
   assert.match(relatedLinksSource, /Related plants/);
   assert.match(relatedLinksSource, /Related care guides/);
   assert.match(relatedLinksSource, /Related problem guides/);
+  assert.match(relatedLinksSource, /Related products/);
+});
+
+test('product cards expose semantic product links without wrapping purchase controls', () => {
+  const productCardSource = readText('src/components/ProductCard.jsx');
+
+  assert.match(productCardSource, /import \{ Link, useLocation \} from 'react-router-dom';/);
+  assert.match(productCardSource, /const productPath = getProductPath/);
+  assert.match(productCardSource, /<Link[\s\S]*to=\{productPath\}/);
+  assert.doesNotMatch(productCardSource, /onClick=\{\(\) => navigate\(getProductPath/);
+  assert.match(productCardSource, /<button[\s\S]*onClick=\{handleAddToCart\}/);
 });
 
 test('mobile drawer uses inline icons instead of emoji menu markers', () => {

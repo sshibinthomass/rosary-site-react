@@ -11,6 +11,7 @@ import {
   getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
+  getRelatedProductLinks,
   getProductRelatedSeoLinks,
 } from '../src/utils/contentHubs.js';
 
@@ -100,6 +101,10 @@ test('product related SEO links resolve known plant categories, care guides, and
   const links = getProductRelatedSeoLinks({
     seo: {
       relatedPlants: ['echeveria', 'haworthia', 'jade-plant', 'unknown-family'],
+      relatedProducts: [
+        { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
+        { label: 'Second Rosette duplicate', path: '/plant/2-second-rosette/' },
+      ],
       relatedCareGuides: ['succulent-care-guide', 'monsoon-succulent-care'],
       relatedProblemGuides: ['succulent-root-rot', 'succulent-sunburn'],
     },
@@ -117,5 +122,70 @@ test('product related SEO links resolve known plant categories, care guides, and
   assert.deepEqual(links.problemGuides, [
     { label: 'Root Rot in Succulents: Signs and Recovery', path: '/guides/root-rot-succulent-care' },
     { label: 'Indoor Succulent Care for Indian Apartments', path: '/guides/indoor-succulent-care' },
+  ]);
+  assert.deepEqual(links.products, [
+    { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
+  ]);
+});
+
+test('related product links prefer matching subcategories and exclude non-public products', () => {
+  const published = {
+    available: true,
+    seoStatus: 'published',
+    identityVerified: true,
+    category: 'Succulent',
+  };
+  const subject = {
+    ...published,
+    id: '10',
+    title: 'Subject Rosette',
+    seo: { slug: 'subject-rosette' },
+    careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+  };
+  const candidates = [
+    subject,
+    {
+      ...published,
+      id: '4',
+      title: 'Category Fallback',
+      seo: { slug: 'category-fallback' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Trailing succulent' },
+    },
+    {
+      ...published,
+      id: '3',
+      title: 'Matching Variety',
+      seo: { slug: 'matching-variety' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+    {
+      ...published,
+      id: '2',
+      title: 'Unavailable Match',
+      available: false,
+      seo: { slug: 'unavailable-match' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+    {
+      ...published,
+      id: '1',
+      title: 'Unverified Match',
+      identityVerified: false,
+      seo: { slug: 'unverified-match' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+    {
+      ...published,
+      id: '5',
+      title: 'Different Category',
+      category: 'Cactus',
+      seo: { slug: 'different-category' },
+      careGuide: { siteCategory: 'Cactus', subcategory: 'Columnar cactus' },
+    },
+  ];
+
+  assert.deepEqual(getRelatedProductLinks(subject, candidates, 2), [
+    { label: 'Matching Variety', path: '/plant/3-matching-variety/' },
+    { label: 'Category Fallback', path: '/plant/4-category-fallback/' },
   ]);
 });

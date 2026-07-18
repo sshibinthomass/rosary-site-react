@@ -24,7 +24,7 @@ function LinkGroup({ title, links }) {
 
 export default function ProductRelatedLinks({ product }) {
   const links = getProductRelatedSeoLinks(product);
-  const hasLinks = links.plants.length > 0 || links.careGuides.length > 0 || links.problemGuides.length > 0;
+  const hasLinks = links.products.length > 0 || links.plants.length > 0 || links.careGuides.length > 0 || links.problemGuides.length > 0;
 
   if (!hasLinks) return null;
 
@@ -32,6 +32,7 @@ export default function ProductRelatedLinks({ product }) {
     <section className="mt-8 border-t border-[var(--border-color)] pt-6" aria-label="Related plant pages and guides">
       <h2 className="text-xl font-bold text-[var(--text-primary)]">Related plant pages and guides</h2>
       <div className="mt-4 grid gap-5">
+        <LinkGroup title="Related products" links={links.products} />
         <LinkGroup title="Related plants" links={links.plants} />
         <LinkGroup title="Related care guides" links={links.careGuides} />
         <LinkGroup title="Related problem guides" links={links.problemGuides} />

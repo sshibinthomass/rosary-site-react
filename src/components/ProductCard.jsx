@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -7,7 +7,6 @@ import { resolveImageUrl } from '../utils/imageCompressor';
 import { getProductDisplayName, getProductPath } from '../utils/productSeo';
 
 export default function ProductCard({ product, index }) {
-  const navigate = useNavigate();
   const location = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [heartAnim, setHeartAnim] = useState(false);
@@ -16,6 +15,8 @@ export default function ProductCard({ product, index }) {
 
   // Normalize product fields (handle both old and new schema)
   const name = getProductDisplayName(product);
+  const productPath = getProductPath({ ...product, title: name });
+  const productLinkState = { backgroundLocation: location, product };
   const price = product.salesPrice || product.price;
   const originalPrice = product.originalPrice;
   const inStock = product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock);
@@ -56,10 +57,7 @@ export default function ProductCard({ product, index }) {
   );
 
   return (
-    <div 
-      className="card cursor-pointer group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col relative"
-      onClick={() => navigate(getProductPath({ ...product, title: name }), { state: { backgroundLocation: location, product } })}
-    >
+    <div className="card group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col relative">
       {/* Image */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--bg-tertiary)]">
         <img
@@ -69,6 +67,21 @@ export default function ProductCard({ product, index }) {
           loading={index < 3 ? 'eager' : 'lazy'}
           fetchPriority={index === 0 ? 'high' : undefined}
         />
+
+        <Link
+          to={productPath}
+          state={productLinkState}
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+          aria-label={`View ${name}`}
+        >
+          <span className="btn bg-white/95 text-[var(--color-forest)] hover:bg-white scale-95 group-hover:scale-100 transition-all font-semibold shadow-xl border-none text-sm px-5 py-2 rounded-full flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Quick View
+          </span>
+        </Link>
         
         {/* Discount Badge — top right */}
         {hasDiscount && (
@@ -100,7 +113,7 @@ export default function ProductCard({ product, index }) {
         <button
           onClick={handleToggleWishlist}
           className={`
-            absolute bottom-2 right-2 w-9 h-9 md:w-8 md:h-8 rounded-full flex items-center justify-center
+            absolute z-20 bottom-2 right-2 w-9 h-9 md:w-8 md:h-8 rounded-full flex items-center justify-center
             transition-all duration-200 shadow-md
             ${heartAnim ? 'animate-heart-pop' : ''}
             ${inWishlist 
@@ -115,36 +128,23 @@ export default function ProductCard({ product, index }) {
           </svg>
         </button>
 
-        {/* Quick View Button (Hover only) */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <button 
-            className="pointer-events-auto btn bg-white/95 text-[var(--color-forest)] hover:bg-white scale-95 group-hover:scale-100 transition-all font-semibold shadow-xl border-none text-sm px-5 py-2 rounded-full flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Quick View
-          </button>
-        </div>
       </div>
 
       {/* Content */}
       <div className="p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 bg-[var(--bg-primary)]">
-        {/* Line 1: Name with id and size on left, Price on right */}
+        {/* Line 1: Product identity on left, price on right */}
         <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5 min-w-0">
             <p className="text-xs md:text-sm font-medium text-[var(--text-secondary)]">
               #{plantId}
             </p>
-            <p className="leading-snug break-words">
+            <Link
+              to={productPath}
+              state={productLinkState}
+              className="leading-snug break-words hover:text-[var(--color-forest)] transition-colors"
+            >
               {name}
-              {product.size && (
-                <span className="ml-1 text-[var(--text-secondary)] text-xs md:text-sm font-normal">
-                  {product.size}
-                </span>
-              )}
-            </p>
+            </Link>
           </div>
           <div className="flex items-baseline gap-1 md:gap-2 flex-shrink-0">
             <span className="text-base md:text-lg font-bold">

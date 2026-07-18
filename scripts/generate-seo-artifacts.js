@@ -20,6 +20,7 @@ import {
   buildStaticPolicyHtml,
   buildStaticPublicPageHtml,
   buildStaticProductHtml,
+  enrichSeoIndexWithRelatedProducts,
   hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
   mergeMerchantFeedStorefrontData,
@@ -330,8 +331,12 @@ async function main() {
   const merchantFeedProducts = await readExistingMerchantFeedProducts();
   const firebaseProducts = await readFirebaseProducts();
   const mergedStorefrontProducts = mergeFirebaseStorefrontData(localProducts, firebaseProducts);
-  const artifactProducts = mergeMerchantFeedStorefrontData(mergedStorefrontProducts, merchantFeedProducts);
-  const seoIndexProducts = stripFirebaseOwnedFieldsForSeoIndex(localProducts);
+  const mergedArtifactProducts = mergeMerchantFeedStorefrontData(mergedStorefrontProducts, merchantFeedProducts);
+  const artifactProducts = enrichSeoIndexWithRelatedProducts(mergedArtifactProducts, mergedArtifactProducts);
+  const seoIndexProducts = enrichSeoIndexWithRelatedProducts(
+    stripFirebaseOwnedFieldsForSeoIndex(localProducts),
+    mergedArtifactProducts
+  );
 
   if (firebaseProducts.length > 0) {
     const duplicateIdentities = findDuplicateProductSeoIdentities(artifactProducts);

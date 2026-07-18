@@ -13,6 +13,7 @@ import {
   buildStaticPublicPageHtml,
   buildSitemapXml,
   buildStaticProductHtml,
+  enrichSeoIndexWithRelatedProducts,
   hasMerchantFeedProductRows,
   mergeFirebaseStorefrontData,
   mergeMerchantFeedStorefrontData,
@@ -49,6 +50,44 @@ const storefrontProduct = {
 };
 
 const appShellHtml = '<!doctype html><html lang="en"><head><title>Rosary Plant House</title><meta name="description" content="Generic" /><meta property="og:image" content="/og-image.jpg" /></head><body><div id="root"></div><script type="module" src="/assets/app.js"></script></body></html>';
+
+test('SEO index enrichment adds public related products without mutating existing SEO fields', () => {
+  const seoIndexProducts = [
+    {
+      ...storefrontProduct,
+      seo: { slug: 'sempervivum-tectorum', metaTitle: 'Keep this title' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+    {
+      ...storefrontProduct,
+      id: '2',
+      title: 'Second Rosette',
+      commonName: 'Second Rosette',
+      size: '',
+      seo: { slug: 'second-rosette' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+  ];
+  const publicProducts = [
+    ...seoIndexProducts,
+    {
+      ...storefrontProduct,
+      id: '3',
+      title: 'Unavailable Rosette',
+      available: false,
+      seo: { slug: 'unavailable-rosette' },
+      careGuide: { siteCategory: 'Succulent', subcategory: 'Rosette succulent' },
+    },
+  ];
+
+  const enriched = enrichSeoIndexWithRelatedProducts(seoIndexProducts, publicProducts);
+
+  assert.equal(enriched[0].seo.metaTitle, 'Keep this title');
+  assert.deepEqual(enriched[0].seo.relatedProducts, [
+    { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
+  ]);
+  assert.equal(seoIndexProducts[0].seo.relatedProducts, undefined);
+});
 
 test('Excel enrichment never overwrites protected storefront fields', () => {
   const [merged] = mergeEnrichmentRows([storefrontProduct], [{

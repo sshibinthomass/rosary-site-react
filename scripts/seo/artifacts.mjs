@@ -35,6 +35,7 @@ import {
   getContentHubImageAlt,
   getContentHubPath,
   getContentHubProducts,
+  getRelatedProductLinks,
   getProductRelatedSeoLinks,
   getGuidesIndexCanonicalUrl,
   getRelatedContentHubs,
@@ -296,6 +297,23 @@ export function stripFirebaseOwnedFieldsForSeoIndex(products = []) {
       delete stripped[field];
     }
     return stripped;
+  });
+}
+
+export function enrichSeoIndexWithRelatedProducts(seoIndexProducts = [], publicProducts = []) {
+  const publicById = new Map(publicProducts.map((product) => [String(product?.id || ''), product]));
+
+  return seoIndexProducts.map((product) => {
+    const publicProduct = publicById.get(String(product?.id || ''));
+    if (!publicProduct || !isSeoIndexable(publicProduct)) return { ...product };
+
+    return {
+      ...product,
+      seo: {
+        ...(product.seo || {}),
+        relatedProducts: getRelatedProductLinks(publicProduct, publicProducts),
+      },
+    };
   });
 }
 

@@ -3,6 +3,8 @@ import {
   getAbsoluteImageUrl,
   getProductCanonicalUrl,
   getProductDisplayName,
+  getProductPath,
+  getProductPublicCategory,
   isSeoIndexable,
 } from './productSeo.js';
 import { CATEGORIES } from '../config/constants.js';
@@ -918,6 +920,39 @@ function uniqueLinks(links) {
     seen.add(link.path);
     return true;
   });
+}
+
+export function getRelatedProductLinks(product = {}, products = [], limit = 6) {
+  const productId = String(product.id || '');
+  const category = normalizeText(getProductPublicCategory(product));
+  const subcategory = normalizeText(product.careGuide?.subcategory);
+  const maxLinks = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 6;
+
+  if (!productId || !category || maxLinks === 0 || !Array.isArray(products)) return [];
+
+  const candidates = products
+    .filter((candidate) => String(candidate?.id || '') !== productId)
+    .filter(isSeoIndexable)
+    .filter((candidate) => normalizeText(getProductPublicCategory(candidate)) === category)
+    .map((candidate) => ({
+      product: candidate,
+      subcategoryMatch: Boolean(
+        subcategory && normalizeText(candidate.careGuide?.subcategory) === subcategory
+      ),
+    }))
+    .sort((left, right) => {
+      if (left.subcategoryMatch !== right.subcategoryMatch) {
+        return left.subcategoryMatch ? -1 : 1;
+      }
+      const numericDifference = numericProductId(left.product) - numericProductId(right.product);
+      if (numericDifference !== 0) return numericDifference;
+      return String(left.product.id).localeCompare(String(right.product.id));
+    });
+
+  return uniqueLinks(candidates.map(({ product: candidate }) => ({
+    label: getProductDisplayName(candidate),
+    path: getProductPath(candidate),
+  }))).slice(0, maxLinks);
 }
 
 function resolveRelatedCategoryLink(value) {

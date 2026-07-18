@@ -170,6 +170,19 @@ test('product SEO identity does not append a size already present in the common 
   }), 'Zebra Haworthia Large Cluster');
 });
 
+test('variant summary keeps a fallback merchant name separate from its size', () => {
+  const product = {
+    merchant: { title: 'Zebra Haworthia' },
+    size: 'Large Cluster',
+  };
+
+  assert.equal(getProductDisplayName(product), 'Zebra Haworthia – Large Cluster');
+  assert.equal(
+    getProductVariantSummary(product),
+    'Variety: Zebra Haworthia. Offered size: Large Cluster.'
+  );
+});
+
 test('product SEO identity retains safe fallbacks and canonical paths', () => {
   const product = { id: '53', title: 'Zebra Haworthia', seo: { slug: 'zebra-haworthia-53' } };
 

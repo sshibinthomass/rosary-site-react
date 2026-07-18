@@ -152,8 +152,8 @@ function includesIdentityPart(value, part) {
   return value.toLocaleLowerCase('en-IN').includes(part.toLocaleLowerCase('en-IN'));
 }
 
-export function getProductDisplayName(product = {}) {
-  const variety = normalizeIdentityPart(
+function getProductVarietyName(product = {}) {
+  return normalizeIdentityPart(
     product.commonName ||
     product.title ||
     product.name ||
@@ -164,15 +164,17 @@ export function getProductDisplayName(product = {}) {
     product.careGuide?.plantName ||
     'Plant'
   );
+}
+
+export function getProductDisplayName(product = {}) {
+  const variety = getProductVarietyName(product);
   const size = normalizeIdentityPart(product.size);
 
   return size && !includesIdentityPart(variety, size) ? `${variety} – ${size}` : variety;
 }
 
 export function getProductVariantSummary(product = {}) {
-  const variety = normalizeIdentityPart(
-    product.commonName || product.title || product.name || getProductDisplayName(product)
-  );
+  const variety = getProductVarietyName(product);
   const size = normalizeIdentityPart(product.size);
 
   return size ? `Variety: ${variety}. Offered size: ${size}.` : `Variety: ${variety}.`;

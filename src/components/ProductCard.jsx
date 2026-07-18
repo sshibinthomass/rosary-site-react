@@ -132,7 +132,7 @@ export default function ProductCard({ product, index }) {
 
       {/* Content */}
       <div className="p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 bg-[var(--bg-primary)]">
-        {/* Line 1: Name with id and size on left, Price on right */}
+        {/* Line 1: Product identity on left, price on right */}
         <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5 min-w-0">
             <p className="text-xs md:text-sm font-medium text-[var(--text-secondary)]">
@@ -144,11 +144,6 @@ export default function ProductCard({ product, index }) {
               className="leading-snug break-words hover:text-[var(--color-forest)] transition-colors"
             >
               {name}
-              {product.size && (
-                <span className="ml-1 text-[var(--text-secondary)] text-xs md:text-sm font-normal">
-                  {product.size}
-                </span>
-              )}
             </Link>
           </div>
           <div className="flex items-baseline gap-1 md:gap-2 flex-shrink-0">

@@ -71,7 +71,7 @@ export default function ProductCard({ product, index }) {
         <Link
           to={productPath}
           state={productLinkState}
-          className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
           aria-label={`View ${name}`}
         >
           <span className="btn bg-white/95 text-[var(--color-forest)] hover:bg-white scale-95 group-hover:scale-100 transition-all font-semibold shadow-xl border-none text-sm px-5 py-2 rounded-full flex items-center gap-2">

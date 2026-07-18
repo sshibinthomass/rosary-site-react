@@ -582,12 +582,11 @@ function renderRelatedLinkGroup(title, links) {
 
 function renderRelatedSeoLinks(product) {
   const links = getProductRelatedSeoLinks(product);
-  const relatedProducts = Array.isArray(product.seo?.relatedProducts) ? product.seo.relatedProducts : [];
-  if (relatedProducts.length === 0 && links.plants.length === 0 && links.careGuides.length === 0 && links.problemGuides.length === 0) return '';
+  if (links.products.length === 0 && links.plants.length === 0 && links.careGuides.length === 0 && links.problemGuides.length === 0) return '';
 
   return `<section class="seo-product-related-links">
   <h2>Related plant pages and guides</h2>
-  ${renderRelatedLinkGroup('Related products', relatedProducts)}
+  ${renderRelatedLinkGroup('Related products', links.products)}
   ${renderRelatedLinkGroup('Related plants', links.plants)}
   ${renderRelatedLinkGroup('Related care guides', links.careGuides)}
   ${renderRelatedLinkGroup('Related problem guides', links.problemGuides)}

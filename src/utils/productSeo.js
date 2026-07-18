@@ -3,7 +3,7 @@ import {
   SITE_POLICY,
   SITE_URL,
 } from './sitePolicy.js';
-import { isAvailableForPublicSale } from './seoPolicy.js';
+import { isAvailableForPublicSale, isSeoIndexable } from './seoPolicy.js';
 import { CATEGORIES } from '../config/constants.js';
 
 export const DEFAULT_SEO_IMAGE_PATH = '/og-image.jpg';
@@ -140,21 +140,56 @@ export function getPrimaryProductImage(product = {}) {
   return normalizePublicImagePath(imagePath);
 }
 
-export function getProductDisplayName(product = {}) {
-  return product.title || product.name || product.commonName || product.schema?.name || 'Plant';
-}
-
 function compactText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
-function getProductShoppingName(product = {}) {
-  return compactText(
+function normalizeIdentityPart(value) {
+  return compactText(value).replace(/^[\s–—,:;-]+|[\s–—,:;-]+$/g, '');
+}
+
+function includesIdentityPart(value, part) {
+  return value.toLocaleLowerCase('en-IN').includes(part.toLocaleLowerCase('en-IN'));
+}
+
+export function getProductDisplayName(product = {}) {
+  const variety = normalizeIdentityPart(
+    product.commonName ||
+    product.title ||
+    product.name ||
     product.merchant?.title ||
     product.careGuide?.seoProductName ||
     product.schema?.name ||
-    getProductDisplayName(product)
+    product.seo?.h1 ||
+    product.careGuide?.plantName ||
+    'Plant'
   );
+  const size = normalizeIdentityPart(product.size);
+
+  return size && !includesIdentityPart(variety, size) ? `${variety} – ${size}` : variety;
+}
+
+export function getProductVariantSummary(product = {}) {
+  const variety = normalizeIdentityPart(
+    product.commonName || product.title || product.name || getProductDisplayName(product)
+  );
+  const size = normalizeIdentityPart(product.size);
+
+  return size ? `Variety: ${variety}. Offered size: ${size}.` : `Variety: ${variety}.`;
+}
+
+export function findDuplicateProductSeoIdentities(products = []) {
+  const groups = new Map();
+
+  for (const product of products.filter(isSeoIndexable)) {
+    const identity = getProductDisplayName(product);
+    const key = identity.toLocaleLowerCase('en-IN');
+    const group = groups.get(key) || { identity, productIds: [] };
+    group.productIds.push(String(product.id));
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].filter((group) => group.productIds.length > 1);
 }
 
 export function getProductPrice(product = {}) {
@@ -181,19 +216,26 @@ function buildMerchantReturnPolicySchema() {
 
 export function getProductMetaTitle(product = {}) {
   if (isAvailableForPublicSale(product) && getProductPrice(product) !== null) {
-    return `Buy ${getProductShoppingName(product)} Online`;
+    return `Buy ${getProductDisplayName(product)} Online`;
   }
 
   return product.seo?.metaTitle || product.seo?.h1 || getProductDisplayName(product);
 }
 
 export function getProductMetaDescription(product = {}) {
-  return (
+  const description = (
     product.seo?.metaDescription ||
     product.schema?.description ||
     product.careGuide?.shortDescription ||
     `Buy ${getProductDisplayName(product)} online from Rosary Plant House. Quality plants delivered across India.`
   );
+  const identity = getProductDisplayName(product);
+
+  if ((!product.commonName && !product.size) || includesIdentityPart(description, identity)) {
+    return description;
+  }
+
+  return `${identity}: ${description}`;
 }
 
 export function getProductLongDescription(product = {}) {
@@ -366,7 +408,7 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
   const url = product.seo?.canonicalUrl || getProductCanonicalUrl(product, baseUrl);
   const image = getAbsoluteImageUrl(getPrimaryProductImage(product), baseUrl);
   const price = getProductPrice(product);
-  const name = product.schema?.name || product.seo?.productName || getProductDisplayName(product);
+  const name = getProductDisplayName(product);
   const description = product.schema?.description || getProductMetaDescription(product);
 
   const structuredData = {
@@ -383,6 +425,9 @@ export function buildProductStructuredData(product = {}, { baseUrl = SITE_URL } 
     category: getProductPublicCategory(product),
     url,
   };
+
+  const size = normalizeIdentityPart(product.size);
+  if (size) structuredData.size = size;
 
   if (price !== null) {
     structuredData.offers = {

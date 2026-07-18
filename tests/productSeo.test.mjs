@@ -5,11 +5,15 @@ import {
   buildProductCareSections,
   buildProductStructuredData,
   extractProductIdFromParam,
+  findDuplicateProductSeoIdentities,
+  getProductCanonicalUrl,
+  getProductDisplayName,
   getProductLongDescription,
   getProductMetaDescription,
   getProductMetaTitle,
   getProductPath,
   getProductPublicCategory,
+  getProductVariantSummary,
   mergeProductWithLocalEnrichment,
 } from '../src/utils/productSeo.js';
 
@@ -132,7 +136,71 @@ test('saleable product meta titles lead with buying intent', () => {
     merchant: {
       title: 'Sempervivum tectorum Plant',
     },
-  }), 'Buy Sempervivum tectorum Plant Online');
+  }), 'Buy Sempervivum tectorum Online');
+});
+
+test('product SEO identity uses storefront common name and offered size', () => {
+  const large = {
+    id: '53',
+    commonName: 'Haworthia attenuata Wide Stripe',
+    size: 'Large Cluster',
+    title: 'Zebra Haworthia',
+    available: true,
+    salesPrice: 79,
+    merchant: { title: 'Zebra Haworthia' },
+    schema: { name: 'Zebra Haworthia' },
+    seo: { slug: 'zebra-haworthia-53', metaDescription: 'Shared care description.' },
+  };
+  const small = { ...large, id: '67', size: 'Small Rosette' };
+
+  assert.equal(getProductDisplayName(large), 'Haworthia attenuata Wide Stripe – Large Cluster');
+  assert.notEqual(getProductDisplayName(large), getProductDisplayName(small));
+  assert.equal(getProductMetaTitle(large), 'Buy Haworthia attenuata Wide Stripe – Large Cluster Online');
+  assert.match(getProductMetaDescription(large), /Haworthia attenuata Wide Stripe – Large Cluster/);
+  assert.equal(
+    getProductVariantSummary(large),
+    'Variety: Haworthia attenuata Wide Stripe. Offered size: Large Cluster.'
+  );
+});
+
+test('product SEO identity does not append a size already present in the common name', () => {
+  assert.equal(getProductDisplayName({
+    commonName: 'Zebra Haworthia Large Cluster',
+    size: 'Large Cluster',
+  }), 'Zebra Haworthia Large Cluster');
+});
+
+test('product SEO identity retains safe fallbacks and canonical paths', () => {
+  const product = { id: '53', title: 'Zebra Haworthia', seo: { slug: 'zebra-haworthia-53' } };
+
+  assert.equal(getProductDisplayName(product), 'Zebra Haworthia');
+  assert.equal(getProductVariantSummary(product), 'Variety: Zebra Haworthia.');
+  assert.equal(
+    getProductCanonicalUrl(product),
+    'https://rosaryplanthouse.com/plant/53-zebra-haworthia/'
+  );
+});
+
+test('duplicate SEO identity detection reports colliding indexable products', () => {
+  const duplicates = findDuplicateProductSeoIdentities([
+    {
+      id: '53', commonName: 'Zebra Haworthia', size: 'Large', seoStatus: 'published',
+      identityVerified: true, available: true, salesPrice: 79,
+    },
+    {
+      id: '67', commonName: 'Zebra Haworthia', size: 'Large', seoStatus: 'published',
+      identityVerified: true, available: true, salesPrice: 69,
+    },
+    {
+      id: '68', commonName: 'Zebra Haworthia', size: 'Small', seoStatus: 'published',
+      identityVerified: true, available: true, salesPrice: 59,
+    },
+  ]);
+
+  assert.deepEqual(duplicates, [{
+    identity: 'Zebra Haworthia – Large',
+    productIds: ['53', '67'],
+  }]);
 });
 
 test('product care sections organize enriched care and troubleshooting fields', () => {
@@ -206,6 +274,7 @@ test('product structured data includes merchant offer details and canonical URL'
     id: '1',
     title: 'Sempervivum tectorum',
     commonName: 'Red tip',
+    size: 'Large Rosette',
     imageUrl: 'https://example.com/1.jpg',
     salesPrice: 69,
     available: true,
@@ -229,4 +298,6 @@ test('product structured data includes merchant offer details and canonical URL'
   assert.equal(schema.offers.hasMerchantReturnPolicy.merchantReturnDays, 2);
   assert.equal('shippingDetails' in schema.offers, false);
   assert.equal(schema.brand.name, 'Rosary Plant House');
+  assert.equal(schema.name, 'Red tip – Large Rosette');
+  assert.equal(schema.size, 'Large Rosette');
 });

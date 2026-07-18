@@ -1,8 +1,10 @@
 # Rosary Plant Care Companion Design
 
 Date: 2026-07-14
-Status: Approved product design; Release 1 implementation planning pending
+Status: Superseded by `2026-07-14-single-app-plant-care-integration-design.md`
 Internal project name: `plant-care-app`
+
+> This document describes the initial separate-app direction. The approved product now integrates Plant Care into the existing Rosary application, with one runtime, deployment, PWA, and Android package.
 
 ## Executive summary
 

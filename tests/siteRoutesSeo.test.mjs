@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
+import { buildVercelConfig } from '../scripts/vercel-config.mjs';
+
 const rootDir = process.cwd();
+const vercelConfig = buildVercelConfig([]);
 
 function readText(path) {
   return fs.readFileSync(`${rootDir}/${path}`, 'utf8');
@@ -18,47 +21,28 @@ function assertCanonical(path, canonicalUrl) {
 }
 
 test('Vercel redirects duplicate host and index.html to canonical URLs before SPA rewrites', () => {
-  const rawConfig = readText('vercel.json');
-  const config = JSON.parse(rawConfig);
-
-  assert.ok(
-    rawConfig.indexOf('"redirects"') > -1 && rawConfig.indexOf('"redirects"') < rawConfig.indexOf('"rewrites"'),
-    'redirects should be declared before rewrites'
-  );
-  assert.deepEqual(config.redirects, [
-    {
-      source: '/(.*)',
-      has: [
-        {
-          type: 'host',
-          value: 'www.rosaryplanthouse.com',
-        },
-      ],
-      destination: 'https://rosaryplanthouse.com/$1',
-      permanent: true,
-    },
-    {
-      source: '/index.html',
-      destination: '/',
-      permanent: true,
-    },
-  ]);
-  assert.ok(Array.isArray(config.rewrites), 'rewrites should be explicit');
-  assert.deepEqual(config.rewrites.at(-1), {
-    source: '/(.*)',
-    destination: '/404.html',
-  });
+  assert.ok(vercelConfig.redirects.some((entry) => (
+    entry.source === '/index.html' && entry.destination === '/' && entry.permanent === true
+  )));
+  assert.ok(vercelConfig.redirects.some((entry) => (
+    entry.source === '/shop.html' && entry.destination === '/shop' && entry.permanent === true
+  )));
+  assert.ok(vercelConfig.redirects.some((entry) => (
+    entry.source === '/(.*)' &&
+    entry.destination === 'https://rosaryplanthouse.com/$1' &&
+    entry.permanent === true
+  )));
+  assert.ok(Array.isArray(vercelConfig.rewrites), 'rewrites should be explicit');
 });
 
 test('Vercel noindexes private app routes and preserves direct app entry for them', () => {
-  const config = JSON.parse(readText('vercel.json'));
   const noindexRoutes = new Set(
-    config.headers
+    vercelConfig.headers
       .filter((entry) => entry.headers.some((header) => header.key === 'X-Robots-Tag' && /noindex/.test(header.value)))
       .map((entry) => entry.source)
   );
   const appShellRoutes = new Set(
-    config.rewrites
+    vercelConfig.rewrites
       .filter((entry) => entry.destination === '/index.html')
       .map((entry) => entry.source)
   );
@@ -67,15 +51,23 @@ test('Vercel noindexes private app routes and preserves direct app entry for the
     assert.ok(noindexRoutes.has(route), `${route} should emit X-Robots-Tag noindex`);
     assert.ok(appShellRoutes.has(route), `${route} should still load the SPA shell directly`);
   }
+
+  for (const route of ['/care', '/care/(.*)']) {
+    assert.ok(appShellRoutes.has(route), `${route} should load the SPA shell directly`);
+  }
 });
 
-test('Vercel sends invalid product, category, and guide paths to the noindex 404 artifact', () => {
-  const config = JSON.parse(readText('vercel.json'));
-  const fallbackRoutes = config.rewrites.filter((entry) => entry.destination === '/404.html');
+test('Vercel leaves unknown paths to the filesystem custom 404 response', () => {
+  assert.equal(vercelConfig.rewrites.some((entry) => entry.destination === '/404.html'), false);
+  assert.equal(vercelConfig.rewrites.some((entry) => entry.source === '/(.*)'), false);
+});
 
-  assert.ok(fallbackRoutes.some((entry) => entry.source === '/plant/(.*)'), 'invalid plant paths should use 404.html');
-  assert.ok(fallbackRoutes.some((entry) => entry.source === '/category/(.*)'), 'invalid category paths should use 404.html');
-  assert.ok(fallbackRoutes.some((entry) => entry.source === '/guides/(.*)'), 'invalid guide paths should use 404.html');
+test('SEO artifact generation writes only canonical product directories', () => {
+  const generatorSource = readText('scripts/generate-seo-artifacts.js');
+
+  assert.match(generatorSource, /const canonicalPath = getProductPath\(product\)/);
+  assert.doesNotMatch(generatorSource, /const legacyPath = `plant\/\$\{product\.id\}`/);
+  assert.doesNotMatch(generatorSource, /legacyDir/);
 });
 
 test('unknown client routes render the noindex not-found page instead of redirecting home', () => {

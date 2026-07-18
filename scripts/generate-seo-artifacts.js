@@ -313,13 +313,6 @@ async function writeDistArtifacts({ artifactProducts, seoIndexProducts, reviews,
     const canonicalDir = path.join(distDir, canonicalPath);
     await fs.mkdir(canonicalDir, { recursive: true });
     await fs.writeFile(path.join(canonicalDir, 'index.html'), pageHtml, 'utf8');
-
-    const legacyPath = `plant/${product.id}`;
-    if (legacyPath !== canonicalPath) {
-      const legacyDir = path.join(distDir, legacyPath);
-      await fs.mkdir(legacyDir, { recursive: true });
-      await fs.writeFile(path.join(legacyDir, 'index.html'), pageHtml, 'utf8');
-    }
   }
 
   console.log(`Generated ${publicProducts.length} static plant SEO pages, ${CATEGORIES.length} category pages, and ${CONTENT_HUBS.length} guide pages in ${path.relative(rootDir, distDir)}`);

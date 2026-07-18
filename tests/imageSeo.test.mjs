@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 
 import { buildMerchantFeedTsv } from '../scripts/seo/artifacts.mjs';
+import { buildVercelConfig } from '../scripts/vercel-config.mjs';
 
 const rootDir = path.resolve('.');
 
@@ -54,7 +55,7 @@ test('package and Vercel expose image SEO verification and cache product images'
   assert.equal(packageJson.scripts['seo:image-audit'], 'node scripts/seo/image-audit.mjs');
   assert.match(packageJson.scripts.prebuild, /seo:image-audit/);
 
-  const vercelConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'vercel.json'), 'utf8'));
+  const vercelConfig = buildVercelConfig([]);
   const salePlantHeader = vercelConfig.headers.find((entry) => entry.source === '/sale_plants/(.*)');
   assert.ok(salePlantHeader, 'missing /sale_plants cache header');
   assert.deepEqual(salePlantHeader.headers, [{

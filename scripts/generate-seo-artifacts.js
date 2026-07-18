@@ -27,7 +27,11 @@ import {
   PUBLIC_STATIC_PAGE_KEYS,
   stripFirebaseOwnedFieldsForSeoIndex,
 } from './seo/artifacts.mjs';
-import { getProductPath, isSeoIndexable } from '../src/utils/productSeo.js';
+import {
+  findDuplicateProductSeoIdentities,
+  getProductPath,
+  isSeoIndexable,
+} from '../src/utils/productSeo.js';
 import { CATEGORIES } from '../src/config/constants.js';
 import { CONTENT_HUBS, GUIDE_IMAGE_ASSETS } from '../src/utils/contentHubs.js';
 
@@ -330,6 +334,13 @@ async function main() {
   const seoIndexProducts = stripFirebaseOwnedFieldsForSeoIndex(localProducts);
 
   if (firebaseProducts.length > 0) {
+    const duplicateIdentities = findDuplicateProductSeoIdentities(artifactProducts);
+    if (duplicateIdentities.length > 0) {
+      const details = duplicateIdentities
+        .map(({ identity, productIds }) => `${identity}: ${productIds.join(', ')}`)
+        .join('; ');
+      throw new Error(`Duplicate product SEO identities: ${details}`);
+    }
     console.log(`Merged Firebase storefront fields for ${firebaseProducts.length} products before SEO artifact generation`);
   }
   if (merchantFeedProducts.length > 0) {

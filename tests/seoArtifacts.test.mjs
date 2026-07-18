@@ -212,7 +212,7 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
 
   const feed = buildMerchantFeedTsv([product], { baseUrl: 'https://rosaryplanthouse.com' });
   assert.match(feed, /^id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tbrand\tcondition\tproduct_type\tshipping_label\treturn_policy_label/m);
-  assert.match(feed, /RPH-1\tSempervivum tectorum Plant\tGenerated merchant description\.\thttps:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+  assert.match(feed, /RPH-1\tRed tip – \(1\.5"-2"\)\tRed tip – \(1\.5"-2"\): Generated meta description\.\thttps:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
   assert.match(feed, /in_stock\t69\.00 INR/);
 
   const html = buildStaticProductHtml({
@@ -220,13 +220,17 @@ test('SEO artifacts use canonical plant URLs and omit private app pages from sit
     product,
     baseUrl: 'https://rosaryplanthouse.com',
   });
-  assert.match(html, /<title>Buy Sempervivum tectorum Plant Online \| Rosary Plant House<\/title>/);
-  assert.match(html, /<h1>Sempervivum Tectorum<\/h1>/);
+  assert.match(html, /<title>Buy Red tip – \(1\.5&quot;-2&quot;\) Online \| Rosary Plant House<\/title>/);
+  assert.match(html, /<h1>Red tip – \(1\.5&quot;-2&quot;\)<\/h1>/);
+  assert.match(html, /class="seo-product-variant-summary">Variety: Red tip\. Offered size: \(1\.5&quot;-2&quot;\)\.<\/p>/);
+  assert.match(html, /alt="Red tip – \(1\.5&quot;-2&quot;\) from Rosary Plant House"/);
   assert.match(html, /<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" \/>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/" \/>/);
   assert.match(html, /<script type="application\/ld\+json">/);
   assert.match(html, /"offers":\{"@type":"Offer"/);
   assert.match(html, /"price":69/);
+  assert.match(html, /"name":"Red tip – \(1\.5\\"-2\\"\)"/);
+  assert.match(html, /"size":"\(1\.5\\"-2\\"\)"/);
   assert.match(html, /"seller":\{"@id":"https:\/\/rosaryplanthouse\.com\/#organization"/);
   assert.match(html, /"hasMerchantReturnPolicy":\{"@type":"MerchantReturnPolicy"/);
   assert.doesNotMatch(html, /"shippingDetails":\{"@type":"OfferShippingDetails"/);
@@ -531,8 +535,8 @@ test('static category pages use SEO care category when storefront category is ge
     baseUrl: 'https://rosaryplanthouse.com',
   });
 
-  assert.match(html, /<a href="\/plant\/1-sempervivum-tectorum\/">Sempervivum Tectorum<\/a>/);
-  assert.match(html, /"name":"Sempervivum Tectorum"/);
+  assert.match(html, /<a href="\/plant\/1-sempervivum-tectorum\/">Red tip – \(1\.5&quot;-2&quot;\)<\/a>/);
+  assert.match(html, /"name":"Red tip – \(1\.5\\"-2\\"\)"/);
   assert.match(html, /"url":"https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\/"/);
 });
 
@@ -594,7 +598,7 @@ test('sitemap includes static content hub URLs for informational search demand',
   assert.match(sitemap, /<image:loc>https:\/\/rosaryplanthouse\.com\/guides\/guide-succulent-group-nursery\.jpg<\/image:loc>/);
   assert.match(sitemap, /<image:title>Succulent nursery collection for Rosary Plant House care guides<\/image:title>/);
   assert.match(sitemap, /<image:loc>https:\/\/example\.com\/1\.jpg<\/image:loc>/);
-  assert.match(sitemap, /<image:title>Sempervivum Tectorum from Rosary Plant House<\/image:title>/);
+  assert.match(sitemap, /<image:title>Red tip – \(1\.5&quot;-2&quot;\) from Rosary Plant House<\/image:title>/);
 });
 
 test('llms.txt summarizes canonical public pages, policies, guides, feed, and OpenAI crawler intent', () => {
@@ -605,7 +609,7 @@ test('llms.txt summarizes canonical public pages, policies, guides, feed, and Op
   assert.match(text, /https:\/\/rosaryplanthouse\.com\/guides\/buy-succulents-online-india/);
   assert.match(text, /https:\/\/rosaryplanthouse\.com\/google-merchant-feed\.tsv/);
   assert.match(text, /OAI-SearchBot and ChatGPT-User are allowed/);
-  assert.match(text, /Sempervivum Tectorum: https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
+  assert.match(text, /Red tip – \(1\.5"-2"\): https:\/\/rosaryplanthouse\.com\/plant\/1-sempervivum-tectorum\//);
 });
 
 test('static not-found artifact is noindex for invalid product and route fallbacks', () => {
@@ -644,6 +648,7 @@ test('SEO artifact generation merges Firebase identity without writing it to the
     id: '1',
     title: 'Sempervivum tectorum',
     commonName: 'Red tip',
+    size: 'Large Rosette',
     name: 'Red tip',
     available: true,
     salesPrice: 69,
@@ -654,11 +659,12 @@ test('SEO artifact generation merges Firebase identity without writing it to the
   const [artifactProduct] = mergeFirebaseStorefrontData([localProduct], [firebaseProduct]);
   assert.equal(artifactProduct.title, 'Sempervivum tectorum');
   assert.equal(artifactProduct.commonName, 'Red tip');
+  assert.equal(artifactProduct.size, 'Large Rosette');
   assert.equal(artifactProduct.salesPrice, 69);
   assert.equal(artifactProduct.schema.name, 'Sempervivum tectorum');
 
   const feed = buildMerchantFeedTsv([artifactProduct], { baseUrl: 'https://rosaryplanthouse.com' });
-  assert.match(feed, /RPH-1\tSempervivum tectorum Plant\tGenerated merchant description\./);
+  assert.match(feed, /RPH-1\tRed tip – Large Rosette\tRed tip – Large Rosette: Generated schema description\./);
   assert.match(feed, /in_stock\t69\.00 INR/);
 
   const [seoIndexProduct] = stripFirebaseOwnedFieldsForSeoIndex([artifactProduct]);
@@ -667,6 +673,7 @@ test('SEO artifact generation merges Firebase identity without writing it to the
   assert.equal(seoIndexProduct.title, undefined);
   assert.equal(seoIndexProduct.name, undefined);
   assert.equal(seoIndexProduct.commonName, undefined);
+  assert.equal(seoIndexProduct.size, undefined);
   assert.equal(seoIndexProduct.salesPrice, undefined);
   assert.equal(seoIndexProduct.available, undefined);
   assert.equal(seoIndexProduct.imageUrl, undefined);

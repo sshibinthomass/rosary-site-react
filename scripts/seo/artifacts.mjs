@@ -14,6 +14,7 @@ import {
   getProductPrice,
   getProductPublicCategory,
   getProductRobots,
+  getProductVariantSummary,
   isProductInStock,
   isSeoIndexable,
   PRODUCT_SEO_SITE,
@@ -392,8 +393,8 @@ export function buildMerchantFeedTsv(products, { baseUrl = DEFAULT_BASE_URL } = 
     .map(({ product, price }) => {
       return [
         product.schema?.sku || `RPH-${product.id}`,
-        product.merchant?.title || product.schema?.name || getProductDisplayName(product),
-        product.merchant?.description || product.schema?.description || getProductMetaDescription(product),
+        getProductDisplayName(product),
+        getProductMetaDescription(product),
         getProductCanonicalUrl(product, baseUrl),
         absoluteUrl(getPrimaryProductImage(product), baseUrl),
         isProductInStock(product) ? 'in_stock' : 'out_of_stock',
@@ -575,6 +576,7 @@ function renderRelatedSeoLinks(product) {
 
 function renderStaticBody(product, baseUrl) {
   const title = getProductDisplayName(product);
+  const variantSummary = getProductVariantSummary(product);
   const image = absoluteUrl(getPrimaryProductImage(product), baseUrl);
   const longDescription = getProductLongDescription(product);
   const quickAnswer = product.careGuide?.quickAnswer;
@@ -590,6 +592,7 @@ function renderStaticBody(product, baseUrl) {
   </nav>
   <article>
     <h1>${escapeHtml(title)}</h1>
+    <p class="seo-product-variant-summary">${escapeHtml(variantSummary)}</p>
     <img src="${escapeHtml(image)}" alt="${escapeHtml(`${getProductDisplayName(product)} from ${SITE_NAME}`)}" />
     ${priceMarkup}
     ${quickAnswer ? `<section><h2>Quick answer</h2><p>${escapeHtml(quickAnswer)}</p></section>` : ''}

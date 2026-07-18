@@ -15,11 +15,13 @@ import {
   buildFaqStructuredData,
   extractProductIdFromParam,
   getProductCanonicalUrl,
+  getProductDisplayName,
   getProductLongDescription,
   getProductMetaDescription,
   getProductMetaTitle,
   getProductPublicCategory,
   getProductRobots,
+  getProductVariantSummary,
 } from '../utils/productSeo';
 
 export default function ProductPage() {
@@ -59,7 +61,7 @@ export default function ProductPage() {
     fetchProduct();
   }, [productId]);
 
-  const title = product?.title || product?.name || product?.commonName;
+  const title = product ? getProductDisplayName(product) : '';
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
@@ -237,6 +239,9 @@ export default function ProductPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] leading-tight">
               {title}
             </h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              {getProductVariantSummary(product)}
+            </p>
             <p className="text-sm text-[var(--text-secondary)] mt-1">#{product.id}</p>
           </div>
 

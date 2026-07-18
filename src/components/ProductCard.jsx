@@ -4,7 +4,7 @@ import { CURRENCY } from '../config/constants';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
-import { getProductPath } from '../utils/productSeo';
+import { getProductDisplayName, getProductPath } from '../utils/productSeo';
 
 export default function ProductCard({ product, index }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function ProductCard({ product, index }) {
   const { error } = useToast();
 
   // Normalize product fields (handle both old and new schema)
-  const name = product.title || product.name || product.commonName;
+  const name = getProductDisplayName(product);
   const price = product.salesPrice || product.price;
   const originalPrice = product.originalPrice;
   const inStock = product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock);

@@ -984,6 +984,7 @@ function resolveRelatedGuideLink(value, aliases) {
 
 export function getProductRelatedSeoLinks(product = {}) {
   const seo = product.seo || {};
+  const relatedProducts = Array.isArray(seo.relatedProducts) ? seo.relatedProducts : [];
   const relatedPlants = Array.isArray(seo.relatedPlants) ? seo.relatedPlants : [];
   const relatedCareGuides = Array.isArray(seo.relatedCareGuides) ? seo.relatedCareGuides : [];
   const relatedProblemGuides = Array.isArray(seo.relatedProblemGuides) ? seo.relatedProblemGuides : [];
@@ -995,6 +996,7 @@ export function getProductRelatedSeoLinks(product = {}) {
   );
 
   return {
+    products: uniqueLinks(relatedProducts.filter((link) => link?.label && /^\/plant\//.test(link.path || ''))),
     plants: uniqueLinks(relatedPlants.map(resolveRelatedCategoryLink).filter(Boolean)),
     careGuides,
     problemGuides,

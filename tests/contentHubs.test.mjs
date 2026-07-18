@@ -101,6 +101,10 @@ test('product related SEO links resolve known plant categories, care guides, and
   const links = getProductRelatedSeoLinks({
     seo: {
       relatedPlants: ['echeveria', 'haworthia', 'jade-plant', 'unknown-family'],
+      relatedProducts: [
+        { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
+        { label: 'Second Rosette duplicate', path: '/plant/2-second-rosette/' },
+      ],
       relatedCareGuides: ['succulent-care-guide', 'monsoon-succulent-care'],
       relatedProblemGuides: ['succulent-root-rot', 'succulent-sunburn'],
     },
@@ -118,6 +122,9 @@ test('product related SEO links resolve known plant categories, care guides, and
   assert.deepEqual(links.problemGuides, [
     { label: 'Root Rot in Succulents: Signs and Recovery', path: '/guides/root-rot-succulent-care' },
     { label: 'Indoor Succulent Care for Indian Apartments', path: '/guides/indoor-succulent-care' },
+  ]);
+  assert.deepEqual(links.products, [
+    { label: 'Second Rosette', path: '/plant/2-second-rosette/' },
   ]);
 });
 

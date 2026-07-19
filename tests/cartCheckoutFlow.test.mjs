@@ -75,3 +75,17 @@ test('cart keeps checkout open with a retryable error when order verification fa
     /catch \(err\) \{[\s\S]*?setShowCheckout\(true\);[\s\S]*?Order was not confirmed/
   );
 });
+
+test('cart clears stale location through the shared pincode normalizer', () => {
+  assert.match(cartPageSource, /normalizeCheckoutPincode/);
+  assert.match(
+    cartPageSource,
+    /setCheckoutInfo\(prev => normalizeCheckoutPincode\(prev, value\)\)/
+  );
+});
+
+test('cart continues to allow orders with optional delivery details', () => {
+  assert.doesNotMatch(cartPageSource, /required=/);
+  assert.doesNotMatch(cartPageSource, /isCheckoutInfoValid/);
+  assert.match(cartPageSource, /disabled=\{isSaving\}/);
+});

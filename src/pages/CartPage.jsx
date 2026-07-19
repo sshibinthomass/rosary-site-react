@@ -14,6 +14,7 @@ import { validatePromoCode } from '../services/promoService';
 import { useSettings } from '../context/SettingsContext';
 import { CURRENCY } from '../config/constants';
 import { CATALOG_REFRESH_EVENT } from '../utils/catalogRefresh';
+import { normalizeCheckoutPincode } from '../utils/checkoutLocation';
 import { NavLink } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import SEO from '../components/SEO';
@@ -156,6 +157,7 @@ export default function CartPage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const checkoutRef = useRef(null);
+  const pincodeLookupRequestRef = useRef(0);
   
   const [checkoutInfo, setCheckoutInfo] = useState({
     name: '',
@@ -235,26 +237,37 @@ export default function CartPage() {
   };
 
   const handlePincodeChange = async (value) => {
-    const cleanValue = value.replace(/\D/g, '').slice(0, 6);
-    setCheckoutInfo(prev => ({ ...prev, pincode: cleanValue }));
+    const requestId = ++pincodeLookupRequestRef.current;
+    const cleanValue = normalizeCheckoutPincode({}, value).pincode;
+    setCheckoutInfo(prev => normalizeCheckoutPincode(prev, value));
+
+    if (cleanValue.length !== 6) {
+      setLookingUp(false);
+      return;
+    }
     
-    if (cleanValue.length === 6) {
-      setLookingUp(true);
-      try {
-        const result = await lookupPincode(cleanValue);
-        if (result) {
-          setCheckoutInfo(prev => ({
-            ...prev,
-            state: result.state,
-            district: result.district
-          }));
-          success('Location found!');
-        } else {
-          error('Invalid pincode');
-        }
-      } catch (err) {
+    setLookingUp(true);
+    try {
+      const result = await lookupPincode(cleanValue);
+      if (pincodeLookupRequestRef.current !== requestId) return;
+
+      if (result) {
+        setCheckoutInfo(prev => ({
+          ...prev,
+          state: result.state,
+          district: result.district
+        }));
+        success('Location found!');
+      } else {
+        error('Invalid pincode');
+      }
+    } catch (err) {
+      if (pincodeLookupRequestRef.current === requestId) {
         console.error('Pincode lookup error:', err);
-      } finally {
+        error('Could not look up pincode');
+      }
+    } finally {
+      if (pincodeLookupRequestRef.current === requestId) {
         setLookingUp(false);
       }
     }

@@ -3,6 +3,7 @@ import { incrementPromoUsage } from './promoService';
 import { openExternalUrl } from '../utils/externalNavigation';
 import { generateWhatsAppOrderRequestUrl } from '../utils/orderWhatsApp';
 import { runVerifiedCheckout } from './verifiedCheckout';
+import { createCheckoutTracker } from './checkoutAttemptService';
 
 /**
  * Generate WhatsApp checkout URL with pre-filled order message
@@ -29,6 +30,13 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
  * @returns {Object} Order details and WhatsApp URL
  */
 export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userId = null, promoInfo = null) {
+  let tracker;
+  try {
+    tracker = await createCheckoutTracker({ cartItems, total, userInfo, userId });
+  } catch (trackingError) {
+    console.warn('Checkout tracking warning:', trackingError);
+  }
+
   try {
     return await runVerifiedCheckout({
       cartItems,
@@ -44,9 +52,12 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
       buildWhatsAppUrl: generateWhatsAppCheckoutUrl,
       incrementPromoUsage,
       openExternalUrl,
+      tracker,
     });
   } catch (error) {
     console.error('Error creating order:', error);
+    error.attemptId = tracker?.attemptId;
+    error.supportCode = tracker?.supportCode;
     throw error;
   }
 }

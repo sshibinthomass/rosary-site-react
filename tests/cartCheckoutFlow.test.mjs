@@ -76,6 +76,24 @@ test('cart keeps checkout open with a retryable error when order verification fa
   );
 });
 
+test('cart keeps a failed checkout support code visible for complaint lookup', () => {
+  assert.match(cartPageSource, /const \[checkoutIssue, setCheckoutIssue\] = useState\(null\)/);
+  assert.match(
+    cartPageSource,
+    /catch \(err\) \{[\s\S]*?setCheckoutIssue\(\{[\s\S]*?supportCode:\s*err\?\.supportCode\s*\|\|\s*''[\s\S]*?message:\s*'Order was not confirmed\.[^']+please try again\.'/
+  );
+  assert.match(cartPageSource, /\{checkoutIssue\.message\}/);
+  assert.match(cartPageSource, /checkoutIssue\.supportCode\s*&&/);
+  assert.match(cartPageSource, /Support code:\s*\{checkoutIssue\.supportCode\}/);
+});
+
+test('cart clears a previous checkout issue when starting a new attempt', () => {
+  assert.match(
+    cartPageSource,
+    /const handleCheckoutClick = async \(\) => \{[\s\S]*?setCheckoutIssue\(null\);[\s\S]*?initiateWhatsAppCheckout/
+  );
+});
+
 test('cart clears stale location through the shared pincode normalizer', () => {
   assert.match(cartPageSource, /normalizeCheckoutPincode/);
   assert.match(
@@ -100,4 +118,12 @@ test('cart treats WhatsApp launch failure as a saved order with retry', () => {
     cartPageSource,
     /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
   );
+  assert.match(cartPageSource, /supportCode:\s*checkoutResult\?\.supportCode\s*\|\|\s*''/);
+  assert.match(
+    cartPageSource,
+    /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
+  );
+  assert.match(cartPageSource, /Support code:\s*\{checkoutConfirmation\.supportCode\}/);
+  assert.match(cartPageSource, /Please tap Send there to confirm/);
+  assert.doesNotMatch(cartPageSource, /WhatsApp message was sent/);
 });

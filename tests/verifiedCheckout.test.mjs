@@ -16,6 +16,7 @@ const checkoutInput = {
 
 function createDependencies({ verifiedOrder } = {}) {
   const events = [];
+  const trackerFailures = [];
   const createdOrder = {
     id: 'p9IhfP2nJsgsx6S5Kx1r',
     orderId: 'RPH-20260515-FQ3UXJ',
@@ -52,7 +53,22 @@ function createDependencies({ verifiedOrder } = {}) {
         events.push('open');
         assert.equal(url, 'https://wa.me/917904050237?text=verified-order');
       },
+      tracker: {
+        attemptId: 'attempt-123',
+        supportCode: 'CHK-ABC123',
+        stage: async (stage) => {
+          events.push(`track:${stage}`);
+        },
+        fail: async (error) => {
+          trackerFailures.push(error);
+          events.push('track:failed');
+        },
+        complete: async () => {
+          events.push('track:completed');
+        },
+      },
     },
+    trackerFailures,
   };
 }
 
@@ -61,27 +77,38 @@ test('checkout verifies the exact persisted order before promo usage and WhatsAp
 
   const result = await runVerifiedCheckout(checkoutInput, dependencies);
 
-  assert.deepEqual(events, ['create', 'verify', 'promo', 'open']);
+  assert.deepEqual(events, [
+    'track:details_validated', 'create', 'track:order_saved',
+    'verify', 'track:order_verified', 'promo', 'open',
+    'track:whatsapp_opened', 'track:completed',
+  ]);
   assert.deepEqual(result, {
     order: createdOrder,
     orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
     whatsappUrl: 'https://wa.me/917904050237?text=verified-order',
     savedToFirestore: true,
     whatsappOpened: true,
+    attemptId: 'attempt-123',
+    supportCode: 'CHK-ABC123',
   });
 });
 
 test('verified checkout remains saved when WhatsApp cannot open', async () => {
-  const { events, createdOrder, dependencies } = createDependencies();
+  const { events, createdOrder, dependencies, trackerFailures } = createDependencies();
+  const whatsappError = new Error('WhatsApp could not open');
   dependencies.openExternalUrl = async (url) => {
     events.push('open');
     assert.equal(url, 'https://wa.me/917904050237?text=verified-order');
-    throw new Error('WhatsApp could not open');
+    throw whatsappError;
   };
 
   const result = await runVerifiedCheckout(checkoutInput, dependencies);
 
-  assert.deepEqual(events, ['create', 'verify', 'promo', 'open']);
+  assert.deepEqual(events, [
+    'track:details_validated', 'create', 'track:order_saved',
+    'verify', 'track:order_verified', 'promo', 'open', 'track:failed',
+  ]);
+  assert.deepEqual(trackerFailures, [whatsappError]);
   assert.deepEqual(result, {
     order: createdOrder,
     orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
@@ -89,7 +116,46 @@ test('verified checkout remains saved when WhatsApp cannot open', async () => {
     savedToFirestore: true,
     whatsappOpened: false,
     whatsappError: 'WhatsApp could not open',
+    attemptId: 'attempt-123',
+    supportCode: 'CHK-ABC123',
   });
+});
+
+test('checkout reports create failures once and rethrows the original error', async () => {
+  const { events, dependencies, trackerFailures } = createDependencies();
+  const createError = new Error('Order save failed');
+  dependencies.createOrder = async () => {
+    events.push('create');
+    throw createError;
+  };
+
+  await assert.rejects(
+    runVerifiedCheckout(checkoutInput, dependencies),
+    (error) => error === createError
+  );
+
+  assert.deepEqual(events, ['track:details_validated', 'create', 'track:failed']);
+  assert.deepEqual(trackerFailures, [createError]);
+});
+
+test('checkout reports verification failures once and rethrows the original error', async () => {
+  const { events, dependencies, trackerFailures } = createDependencies();
+  const verificationError = new Error('Server verification failed');
+  dependencies.verifyOrder = async () => {
+    events.push('verify');
+    throw verificationError;
+  };
+
+  await assert.rejects(
+    runVerifiedCheckout(checkoutInput, dependencies),
+    (error) => error === verificationError
+  );
+
+  assert.deepEqual(events, [
+    'track:details_validated', 'create', 'track:order_saved',
+    'verify', 'track:failed',
+  ]);
+  assert.deepEqual(trackerFailures, [verificationError]);
 });
 
 for (const [label, verifiedOrder] of [
@@ -98,14 +164,19 @@ for (const [label, verifiedOrder] of [
   ['different business order id', { id: 'p9IhfP2nJsgsx6S5Kx1r', orderId: 'RPH-OTHER' }],
 ]) {
   test(`checkout rejects a ${label} before promo usage or WhatsApp handoff`, async () => {
-    const { events, dependencies } = createDependencies({ verifiedOrder });
+    const { events, dependencies, trackerFailures } = createDependencies({ verifiedOrder });
 
     await assert.rejects(
       runVerifiedCheckout(checkoutInput, dependencies),
       /could not be verified after saving/i
     );
 
-    assert.deepEqual(events, ['create', 'verify']);
+    assert.deepEqual(events, [
+      'track:details_validated', 'create', 'track:order_saved',
+      'verify', 'track:failed',
+    ]);
+    assert.equal(trackerFailures.length, 1);
+    assert.match(trackerFailures[0].message, /could not be verified after saving/i);
   });
 }
 
@@ -114,5 +185,58 @@ test('checkout skips promo usage when no promo code was supplied', async () => {
 
   await runVerifiedCheckout({ ...checkoutInput, promoInfo: null }, dependencies);
 
-  assert.deepEqual(events, ['create', 'verify', 'open']);
+  assert.deepEqual(events, [
+    'track:details_validated', 'create', 'track:order_saved',
+    'verify', 'track:order_verified', 'open',
+    'track:whatsapp_opened', 'track:completed',
+  ]);
+});
+
+test('tracker callback failures do not change checkout behavior or business callback order', async () => {
+  const { events, createdOrder, dependencies } = createDependencies();
+  const trackingMethods = [];
+  const warnings = [];
+  dependencies.tracker = {
+    attemptId: 'attempt-isolated',
+    supportCode: 'CHK-SAFE01',
+    stage: async (stage) => {
+      trackingMethods.push(`stage:${stage}`);
+      throw new Error(`stage failed: ${stage}`);
+    },
+    fail: async () => {
+      trackingMethods.push('fail');
+      throw new Error('fail callback failed');
+    },
+    complete: async () => {
+      trackingMethods.push('complete');
+      throw new Error('complete callback failed');
+    },
+  };
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+
+  try {
+    const result = await runVerifiedCheckout(checkoutInput, dependencies);
+
+    assert.deepEqual(events, ['create', 'verify', 'promo', 'open']);
+    assert.deepEqual(trackingMethods, [
+      'stage:details_validated',
+      'stage:order_saved',
+      'stage:order_verified',
+      'stage:whatsapp_opened',
+      'complete',
+    ]);
+    assert.equal(warnings.length, 5);
+    assert.deepEqual(result, {
+      order: createdOrder,
+      orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
+      whatsappUrl: 'https://wa.me/917904050237?text=verified-order',
+      savedToFirestore: true,
+      whatsappOpened: true,
+      attemptId: 'attempt-isolated',
+      supportCode: 'CHK-SAFE01',
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
 });

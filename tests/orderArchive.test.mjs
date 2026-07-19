@@ -30,7 +30,7 @@ test('admin order actions archive and hide operational records instead of deleti
 });
 
 test('Firestore rules deny order deletion for every storefront client', () => {
-  const orderRules = rulesSource.match(/match \/orders\/\{orderId\} \{([\s\S]*?)\n    \}/)?.[1] || '';
+  const orderRules = rulesSource.match(/match \/orders\/\{orderId\} \{([\s\S]*?)\n\s{4}\}/)?.[1] || '';
   assert.match(orderRules, /allow delete:\s*if false;/);
   assert.doesNotMatch(orderRules, /allow delete:\s*if isAdmin\(\)/);
 });

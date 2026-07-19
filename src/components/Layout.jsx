@@ -35,14 +35,6 @@ const HeartIcon = ({ active }) => (
   </svg>
 );
 
-const PlantCareIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-9" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15c-4.5 0-7-2.8-7-7 4.5 0 7 2.5 7 7Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12c4.5 0 7-2.8 7-7-4.5 0-7 2.5-7 7Z" />
-  </svg>
-);
-
 const CartIcon = ({ active }) => (
   <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -318,7 +310,7 @@ const infoNavItems = [
 const navItems = [
   { path: '/', label: 'Home', Icon: HomeIcon },
   { path: '/shop', label: 'Shop', Icon: ShopIcon },
-  { path: '/care', label: 'Plant Care', Icon: PlantCareIcon },
+  { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
   { path: '/cart', label: 'Cart', Icon: CartIcon },
   { path: '/account', label: 'Account', Icon: UserIcon },
 ];
@@ -337,7 +329,6 @@ export default function Layout({ children }) {
     ? { ...item, label: accountNavLabel }
     : item);
   const userNavItems = [
-    { path: '/care', label: 'Plant Care', Icon: PlantCareIcon },
     { path: '/cart', label: 'Cart', Icon: CartIcon, currentCount: cartCount },
     { path: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
     { path: '/account', label: accountNavLabel, Icon: UserIcon },
@@ -408,11 +399,9 @@ export default function Layout({ children }) {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {mainNavItems.map(({ path, label, Icon }) => {
-                  const isActive = path === '/shop'
-                    ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
-                    : path === '/care'
-                      ? location.pathname.startsWith('/care')
-                      : location.pathname === path;
+              const isActive = path === '/shop'
+                ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
+                : location.pathname === path;
               const isCart = path === '/cart';
               const icon = Icon({ active: isActive });
               return (
@@ -633,7 +622,7 @@ export default function Layout({ children }) {
 
           {/* User Account / Navigation */}
           {userNavItems.map(({ path, label, Icon, currentCount }) => {
-                const isActive = path === '/care' ? location.pathname.startsWith('/care') : location.pathname === path;
+            const isActive = location.pathname === path;
             const isCart = path === '/cart';
             const icon = Icon({ active: isActive });
             return (
@@ -735,9 +724,7 @@ export default function Layout({ children }) {
             {mainNavItems.map(({ path, label, Icon }) => {
               const isActive = path === '/shop'
                 ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
-                : path === '/care'
-                  ? location.pathname.startsWith('/care')
-                  : location.pathname === path;
+                : location.pathname === path;
               const isCart = path === '/cart';
               const icon = Icon({ active: isActive });
               
@@ -746,7 +733,7 @@ export default function Layout({ children }) {
                   key={path}
                   to={path}
                   className={`
-                    flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-all relative
+                    flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative
                     ${isActive 
                       ? 'text-[var(--text-primary)]' 
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -769,7 +756,7 @@ export default function Layout({ children }) {
         </div>
       </nav>
       {/* Floating Cart Button (hidden on cart & admin pages) */}
-      {location.pathname !== '/cart' && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/care') && (
+      {location.pathname !== '/cart' && !location.pathname.startsWith('/admin') && (
         <NavLink
           to="/cart"
           className="fixed bottom-24 right-5 z-40 md:hidden animate-scale-in"

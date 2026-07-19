@@ -91,7 +91,7 @@ export function AuthProvider({ children }) {
       let authStarted = false;
       let timeoutId = null;
       const pathname = window.location.pathname;
-      const shouldLoadImmediately = /^\/(account|admin|orders|care)(\/|\.html|$)/.test(pathname);
+      const shouldLoadImmediately = /^\/(account|admin|orders)(\/|\.html|$)/.test(pathname);
       const startAuth = () => {
         if (authStarted) return;
         authStarted = true;

@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "catalog:care": "node scripts/plant-care/build-species-catalog.mjs",
     "dev": "vite",
     "prebuild": "node scripts/generate-seo-artifacts.js --public-only && npm run seo:image-audit",
     "build": "vite build && node scripts/generate-seo-artifacts.js --dist",
@@ -12,10 +11,6 @@
     "android:debug": "powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 -Mode debug",
     "lint": "eslint .",
     "test": "node --test tests/*.test.mjs",
-    "test:care": "vitest run --config vite.config.js",
-    "test:care-catalog": "node --test scripts/plant-care/build-species-catalog.test.mjs",
-    "test:e2e:care": "playwright test --config playwright.care.config.ts",
-    "typecheck:care": "tsc -p tsconfig.care.json --noEmit",
     "import:seo": "node scripts/import-enriched-products.cjs",
     "seo:image-audit": "node scripts/seo/image-audit.mjs",
     "preview": "vite preview"
@@ -26,7 +21,6 @@
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/core": "^8.4.1",
-    "@capacitor/local-notifications": "^8.2.0",
     "@tailwindcss/vite": "^4.1.18",
     "@vercel/analytics": "^1.6.1",
     "@vercel/speed-insights": "^1.3.1",
@@ -34,7 +28,6 @@
     "firebase": "^12.7.0",
     "firebase-admin": "^14.1.0",
     "html2canvas": "^1.4.1",
-    "idb": "^8.0.3",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "react": "^19.2.0",
@@ -48,22 +41,13 @@
   "devDependencies": {
     "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^9.39.1",
-    "@playwright/test": "^1.61.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
-    "fake-indexeddb": "^6.2.5",
     "globals": "^16.5.0",
-    "jsdom": "^29.1.1",
-    "typescript": "^7.0.2",
-    "vite": "^7.2.4",
-    "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.10"
+    "vite": "^7.2.4"
   }
 }

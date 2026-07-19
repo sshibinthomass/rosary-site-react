@@ -67,6 +67,28 @@ test('checkout verifies the exact persisted order before promo usage and WhatsAp
     orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
     whatsappUrl: 'https://wa.me/917904050237?text=verified-order',
     savedToFirestore: true,
+    whatsappOpened: true,
+  });
+});
+
+test('verified checkout remains saved when WhatsApp cannot open', async () => {
+  const { events, createdOrder, dependencies } = createDependencies();
+  dependencies.openExternalUrl = async (url) => {
+    events.push('open');
+    assert.equal(url, 'https://wa.me/917904050237?text=verified-order');
+    throw new Error('WhatsApp could not open');
+  };
+
+  const result = await runVerifiedCheckout(checkoutInput, dependencies);
+
+  assert.deepEqual(events, ['create', 'verify', 'promo', 'open']);
+  assert.deepEqual(result, {
+    order: createdOrder,
+    orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
+    whatsappUrl: 'https://wa.me/917904050237?text=verified-order',
+    savedToFirestore: true,
+    whatsappOpened: false,
+    whatsappError: 'WhatsApp could not open',
   });
 });
 

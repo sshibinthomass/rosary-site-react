@@ -41,12 +41,27 @@ export async function runVerifiedCheckout(input, dependencies) {
     dependencies.incrementPromoUsage(input.promoInfo.code);
   }
 
-  await dependencies.openExternalUrl(whatsappUrl);
+  let whatsappOpened = true;
+  let whatsappError;
 
-  return {
+  try {
+    await dependencies.openExternalUrl(whatsappUrl);
+  } catch (error) {
+    whatsappOpened = false;
+    whatsappError = error instanceof Error ? error.message : String(error);
+  }
+
+  const result = {
     order: verifiedOrder,
     orderUrl,
     whatsappUrl,
     savedToFirestore: true,
+    whatsappOpened,
   };
+
+  if (whatsappError) {
+    result.whatsappError = whatsappError;
+  }
+
+  return result;
 }

@@ -53,7 +53,7 @@ test('Vercel noindexes private app routes and preserves direct app entry for the
   }
 
   for (const route of ['/care', '/care/(.*)']) {
-    assert.ok(appShellRoutes.has(route), `${route} should load the SPA shell directly`);
+    assert.equal(appShellRoutes.has(route), false, `${route} should not remain an app route`);
   }
 });
 

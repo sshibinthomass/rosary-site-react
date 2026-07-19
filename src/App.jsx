@@ -34,6 +34,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ReviewsPage = lazy(() => import('./pages/ReviewsPage'));
 const OrderPage = lazy(() => import('./pages/OrderPage'));
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'));
+const AdminCheckoutTrackingPage = lazy(() => import('./pages/AdminCheckoutTrackingPage'));
 const AdminCreateOrderPage = lazy(() => import('./pages/AdminCreateOrderPage'));
 const UserOrdersPage = lazy(() => import('./pages/UserOrdersPage'));
 const AdminLimitedPage = lazy(() => import('./pages/AdminLimitedPage'));
@@ -155,6 +156,22 @@ function AppRoutes() {
                 <AdminOrdersPage />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/admin/checkout-attempts"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminCheckoutTrackingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/checkout-attempts.html"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminCheckoutTrackingPage />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/admin/orders/new" 

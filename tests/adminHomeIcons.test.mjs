@@ -5,6 +5,7 @@ import test from 'node:test';
 const adminHomeSource = fs.readFileSync('src/pages/AdminHome.jsx', 'utf8');
 const expectedIconIds = Object.freeze([
   'orders',
+  'checkout-tracking',
   'users',
   'products',
   'analysis',
@@ -25,4 +26,11 @@ test('admin home cards use monochrome inline icons instead of emoji glyph string
   assert.match(adminHomeSource, /text-\[var\(--text-primary\)\]/);
   assert.doesNotMatch(adminHomeSource, /<span>\{card\.icon\}<\/span>/);
   assert.doesNotMatch(adminHomeSource, /ðŸ|âš|ï¸/);
+});
+
+test('admin home links to checkout diagnostics with customer-support copy', () => {
+  assert.match(adminHomeSource, /id:\s*'checkout-tracking'/);
+  assert.match(adminHomeSource, /title:\s*'Checkout Tracking'/);
+  assert.match(adminHomeSource, /path:\s*'\/admin\/checkout-attempts'/);
+  assert.match(adminHomeSource, /customer checkout issues/i);
 });

@@ -7,6 +7,16 @@ export const RESOLUTION_STATUSES = Object.freeze(['open', 'investigating', 'reso
 export const CHECKOUT_RETENTION_DAYS = 180;
 
 const SUPPORT_ALPHABET = 'ABCDEFG7HJKLN2PRMST9UVQWXYZ34568';
+const STABLE_ERROR_CODES = new Set([
+  'permission-denied',
+  'unavailable',
+  'network-request-failed',
+  'deadline-exceeded',
+  'verification-failed',
+  'whatsapp-launch-failed',
+  'invalid-argument',
+  'validation-failed',
+]);
 
 export function normalizeContact(value = '') {
   return String(value).replace(/\D/g, '');
@@ -18,7 +28,7 @@ export function createCheckoutEvent(stage, details = {}, now = () => new Date())
     stage,
     outcome: details.outcome || 'success',
     occurredAt: now().toISOString(),
-    ...(details.error ? { error: details.error } : {}),
+    ...(details.error ? { error: sanitizeCheckoutError(details.error) } : {}),
   };
 }
 
@@ -64,9 +74,10 @@ export function createCheckoutAttempt(input = {}, generators = {}) {
 }
 
 export function sanitizeCheckoutError(error) {
-  const code = typeof error?.code === 'string' ? error.code : 'unknown';
+  const rawCode = typeof error?.code === 'string' ? error.code : '';
+  const code = normalizeCheckoutErrorCode(rawCode);
   const message = typeof error?.message === 'string' ? error.message : '';
-  const source = `${code} ${message}`.toLowerCase();
+  const source = `${rawCode} ${message}`.toLowerCase();
   let category = 'unknown';
 
   if (source.includes('permission')) category = 'permission';
@@ -80,6 +91,11 @@ export function sanitizeCheckoutError(error) {
     code,
     message: safeErrorMessage(category),
   };
+}
+
+function normalizeCheckoutErrorCode(value) {
+  const normalized = String(value).trim().toLowerCase().replace(/^(?:firestore|auth)\//, '');
+  return STABLE_ERROR_CODES.has(normalized) ? normalized : 'unknown';
 }
 
 function safeErrorMessage(category) {
@@ -115,7 +131,14 @@ export function filterCheckoutAttempts(attempts = [], filters = {}) {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      return text.includes(query) || (queryPhone && normalizeContact(attempt.customer?.phoneSearch || attempt.customer?.phone).includes(queryPhone));
+      const contacts = [
+        attempt.customer?.phoneSearch || attempt.customer?.phone,
+        attempt.delivery?.phone,
+        attempt.delivery?.whatsappPhone,
+        attempt.delivery?.whatsapp,
+        attempt.whatsappPhone,
+      ];
+      return text.includes(query) || (queryPhone && contacts.some((contact) => normalizeContact(contact).includes(queryPhone)));
     })
     .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
 }

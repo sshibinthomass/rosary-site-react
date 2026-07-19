@@ -44,15 +44,38 @@ test('creates a complete 180-day checkout attempt snapshot', () => {
 });
 
 test('creates checkout events with defaults and optional safe error detail', () => {
-  const event = createCheckoutEvent('order_saved', { eventId: 'evt-1', error: { category: 'network' } }, () => new Date('2026-07-19T13:00:00.000Z'));
+  const event = createCheckoutEvent('order_saved', { eventId: 'evt-1', error: { code: 'unavailable', message: 'connection lost' } }, () => new Date('2026-07-19T13:00:00.000Z'));
 
   assert.deepEqual(event, {
     eventId: 'evt-1',
     stage: 'order_saved',
     outcome: 'success',
     occurredAt: '2026-07-19T13:00:00.000Z',
-    error: { category: 'network' },
+    error: {
+      category: 'network',
+      code: 'unavailable',
+      message: 'A network problem interrupted checkout.',
+    },
   });
+});
+
+test('sanitizes event errors to allowlisted diagnostic fields', () => {
+  const event = createCheckoutEvent('order_saved', {
+    error: {
+      code: `permission-denied apiKey=secret ${'x'.repeat(300)}`,
+      message: 'stack=trace firebaseConfig={"apiKey":"secret"}',
+      stack: 'private stack trace',
+      credentials: { password: 'secret' },
+      arbitrary: 'must not persist',
+    },
+  }, () => new Date('2026-07-19T13:00:00.000Z'));
+
+  assert.deepEqual(event.error, {
+    category: 'permission',
+    code: 'unknown',
+    message: 'Checkout diagnostic access was denied.',
+  });
+  assert.doesNotMatch(JSON.stringify(event.error), /stack|apiKey|firebaseConfig|credentials|secret|arbitrary/i);
 });
 
 for (const [name, error, expected] of [
@@ -61,7 +84,7 @@ for (const [name, error, expected] of [
   ['verification', { code: 'verification-failed', message: 'verification did not pass' }, { category: 'verification', code: 'verification-failed' }],
   ['WhatsApp launch', { code: 'whatsapp-launch-failed', message: 'WhatsApp could not launch' }, { category: 'whatsapp', code: 'whatsapp-launch-failed' }],
   ['validation', { code: 'invalid-argument', message: 'phone is required' }, { category: 'validation', code: 'invalid-argument' }],
-  ['unknown', { code: 'unexpected', message: 'boom' }, { category: 'unknown', code: 'unexpected' }],
+  ['unknown', { code: 'unexpected', message: 'boom' }, { category: 'unknown', code: 'unknown' }],
 ]) {
   test(`sanitizes ${name} errors`, () => {
     const sanitized = sanitizeCheckoutError(error);
@@ -82,9 +105,21 @@ test('sanitizes untrusted error content without serializing objects', () => {
   assert.doesNotMatch(sanitized.message, /stack|apiKey|\{\s*"/i);
 });
 
+test('normalizes untrusted error codes to a bounded generic fallback', () => {
+  const sanitized = sanitizeCheckoutError({
+    code: `permission-denied apiKey=secret ${'x'.repeat(500)}`,
+    message: 'request blocked',
+  });
+
+  assert.equal(sanitized.category, 'permission');
+  assert.equal(sanitized.code, 'unknown');
+  assert.ok(sanitized.code.length <= 64);
+  assert.doesNotMatch(sanitized.code, /apiKey|secret/i);
+});
+
 const attempts = [
   { id: '1', supportCode: 'CHK-AAAAAA', orderId: 'ORD-1', customer: { name: 'Anu', phoneSearch: '919876543210' }, result: 'failed', currentStage: 'order_saved', resolutionStatus: 'open', createdAt: '2026-07-10T10:00:00.000Z' },
-  { id: '2', supportCode: 'CHK-BBBBBB', orderId: 'ORD-2', customer: { name: 'Bala', phoneSearch: '447700900123' }, result: 'successful', currentStage: 'completed', resolutionStatus: 'investigating', createdAt: '2026-07-18T10:00:00.000Z' },
+  { id: '2', supportCode: 'CHK-BBBBBB', orderId: 'ORD-2', customer: { name: 'Bala', phoneSearch: '447700900123' }, delivery: { whatsappPhone: '+91 99999 88888' }, result: 'successful', currentStage: 'completed', resolutionStatus: 'investigating', createdAt: '2026-07-18T10:00:00.000Z' },
   { id: '3', supportCode: 'CHK-CCCCCC', orderId: 'ORD-3', customer: { name: 'Cia', phoneSearch: '12025550123' }, result: 'failed', currentStage: 'started', resolutionStatus: 'resolved', createdAt: '2026-07-19T10:00:00.000Z' },
 ];
 
@@ -93,6 +128,7 @@ for (const [name, filters, expectedIds] of [
   ['order ID', { query: 'ord-1' }, ['1']],
   ['customer name', { query: 'anu' }, ['1']],
   ['normalized phone', { query: '+44 7700 900123' }, ['2']],
+  ['delivery WhatsApp contact', { query: '+91 99999 88888' }, ['2']],
   ['result', { result: 'failed' }, ['1']],
   ['stage', { stage: 'completed' }, ['2']],
   ['resolution status', { resolutionStatus: 'investigating' }, ['2']],

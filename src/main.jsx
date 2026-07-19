@@ -6,6 +6,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.jsx'
 import { isNativeAppRuntime } from './utils/nativeAppSupport.js'
+import { checkForServiceWorkerRelease } from './utils/serviceWorkerRelease.js'
 
 import { HelmetProvider } from 'react-helmet-async'
 
@@ -20,10 +21,12 @@ if (!isNativeAppRuntime(Capacitor) && import.meta.env.PROD && 'serviceWorker' in
     window.location.reload()
   })
 
-  void navigator.serviceWorker
-    .register(`/sw.js?update=${Date.now()}`)
+  void checkForServiceWorkerRelease({
+    serviceWorker: navigator.serviceWorker,
+    storage: window.localStorage,
+  })
     .catch((error) => {
-      console.warn('Service worker registration failed:', error)
+      console.warn('Service worker release check failed:', error)
     })
 }
 

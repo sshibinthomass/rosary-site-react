@@ -10,10 +10,7 @@ const mainSource = fs.readFileSync(path.join(root, 'src', 'main.jsx'), 'utf8');
 const viteSource = fs.readFileSync(path.join(root, 'vite.config.js'), 'utf8');
 
 test('web app bypasses the HTTP cache when checking for a service-worker release', () => {
-  assert.match(
-    mainSource,
-    /navigator\.serviceWorker[\s\S]*?\.register\(`\/sw\.js\?update=\$\{Date\.now\(\)\}`\)/
-  );
+  assert.match(mainSource, /checkForServiceWorkerRelease/);
   assert.match(mainSource, /navigator\.serviceWorker\.addEventListener\('controllerchange'/);
   assert.match(mainSource, /window\.location\.reload\(\)/);
 });

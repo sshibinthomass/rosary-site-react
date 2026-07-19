@@ -78,10 +78,13 @@ test('Vercel config rewrites only supported SPA routes and has no soft-404 catch
 
   for (const source of [
     '/cart', '/wishlist', '/account', '/orders', '/order/(.*)',
-    '/admin', '/admin/(.*)', '/care', '/care/(.*)',
+    '/admin', '/admin/(.*)',
   ]) {
     assert.equal(rewrites.get(source), '/index.html');
   }
+
+  assert.equal(rewrites.has('/care'), false);
+  assert.equal(rewrites.has('/care/(.*)'), false);
 
   assert.equal(rewrites.has('/(.*)'), false);
   assert.equal(config.rewrites.some((entry) => entry.destination === '/404.html'), false);

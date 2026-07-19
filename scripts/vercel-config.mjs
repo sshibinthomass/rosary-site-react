@@ -92,8 +92,6 @@ export function buildVercelConfig(products) {
     ],
     rewrites: [
       ...PRIVATE_ROUTES.map((source) => ({ source, destination: '/index.html' })),
-      { source: '/care', destination: '/index.html' },
-      { source: '/care/(.*)', destination: '/index.html' },
     ],
   };
 }

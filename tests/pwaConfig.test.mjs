@@ -13,6 +13,10 @@ test('web app registers service-worker updates immediately', () => {
   assert.match(mainSource, /import \{ registerSW \} from 'virtual:pwa-register'/);
   assert.match(mainSource, /registerSW\(\{[\s\S]*?immediate:\s*true/);
   assert.match(mainSource, /onNeedRefresh\(\)[\s\S]*?updateSW\(true\)/);
+  assert.match(
+    mainSource,
+    /onRegisteredSW\([^)]*registration[^)]*\)[\s\S]*?registration\?\.update\(\)/
+  );
 });
 
 test('Workbox removes caches created by outdated releases', () => {

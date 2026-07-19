@@ -15,6 +15,11 @@ const enableVercelInsights = !isNativeAppRuntime(Capacitor)
 if (!isNativeAppRuntime(Capacitor)) {
   const updateSW = registerSW({
     immediate: true,
+    onRegisteredSW(_swUrl, registration) {
+      void registration?.update().catch((error) => {
+        console.warn('Service worker update check failed:', error)
+      })
+    },
     onNeedRefresh() {
       void updateSW(true)
     },

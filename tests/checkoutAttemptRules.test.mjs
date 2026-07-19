@@ -30,7 +30,7 @@ test('requires exact create fields and a bounded future expiry', async () => {
   assert.match(helper, /keys\(\)\.hasAll\s*\(/);
   for (const field of [
     'supportCode', 'clientWriteToken', 'orderId', 'customer', 'delivery',
-    'totalAmount', 'items', 'currentStage', 'result', 'resolutionStatus',
+    'totalAmount', 'itemsJson', 'currentStage', 'result', 'resolutionStatus',
     'createdAt', 'updatedAt', 'expiresAt', 'events',
   ]) {
     assert.match(helper, new RegExp(`['"]${field}['"]`));
@@ -39,7 +39,7 @@ test('requires exact create fields and a bounded future expiry', async () => {
   assert.match(helper, /expiresAt\s*<=\s*request\.time\s*\+\s*duration\.value\(181,\s*['"]d['"]\)/);
 });
 
-test('requires exact bounded customer and delivery snapshots and bounded item/event lists', async () => {
+test('requires exact bounded customer/delivery maps and a primitive encoded cart snapshot', async () => {
   const source = await rulesSource();
   const customerStart = source.indexOf('function isValidCheckoutAttemptCustomer(customer)');
   const deliveryStart = source.indexOf('function isValidCheckoutAttemptDelivery(delivery)');
@@ -60,14 +60,12 @@ test('requires exact bounded customer and delivery snapshots and bounded item/ev
     assert.doesNotMatch(customerHelper, new RegExp(`['"]${rejected}['"]`));
     assert.doesNotMatch(deliveryHelper, new RegExp(`['"]${rejected}['"]`));
   }
-  assert.match(source, /function\s+isValidCheckoutAttemptItems\(items\)/);
-  assert.match(source, /items\.size\(\)\s*<=\s*20/);
-  for (const index of [0, 19]) {
-    assert.match(source, new RegExp(`items\\[${index}\\]\\.keys\\(\\)\\.hasOnly`));
-    for (const field of ['productId', 'name', 'price', 'quantity']) {
-      assert.match(source, new RegExp(`items\\[${index}\\]\\.${field}`));
-    }
-  }
+  const createStart = source.indexOf('function isValidCheckoutAttemptClientCreate()');
+  const updateStart = source.indexOf('function isValidCheckoutAttemptClientUpdate()');
+  const createHelper = source.slice(createStart, updateStart);
+  assert.match(createHelper, /data\.itemsJson\s+is\s+string/);
+  assert.match(createHelper, /data\.itemsJson\.size\(\)\s*<=\s*12000/);
+  assert.doesNotMatch(createHelper, /['"]items['"]/);
   assert.match(source, /data\.events\.size\(\)\s*<=\s*100/);
   assert.match(source, /data\.totalAmount\s*>=\s*0/);
   assert.match(source, /data\.totalAmount\s*<=\s*1000000000/);
@@ -90,7 +88,7 @@ test('limits public updates and preserves token, snapshots, expiry, and admin fi
   }
   for (const field of [
     'clientWriteToken', 'supportCode', 'orderId', 'customer', 'delivery',
-    'totalAmount', 'items', 'createdAt', 'expiresAt',
+    'totalAmount', 'itemsJson', 'createdAt', 'expiresAt',
     'resolutionStatus',
   ]) {
     assert.match(helper, new RegExp(`request\\.resource\\.data\\.${field}\\s*==\\s*resource\\.data\\.${field}`));

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  CHECKOUT_ITEMS_JSON_MAX_BYTES,
   CHECKOUT_TRACKING_DEADLINE_MS,
   createCheckoutTrackerSession,
   flushCheckoutAttemptOutbox,
@@ -81,7 +82,39 @@ test('isolates create and stage persistence failures in ordered JSON outbox oper
     assert.deepEqual(payload, JSON.parse(JSON.stringify(payload)));
   }
   assert.equal(queued[0].payload.clientWriteToken.length, 64);
+  assert.equal('items' in queued[0].payload, false);
+  assert.deepEqual(JSON.parse(queued[0].payload.itemsJson), [{
+    productId: '42', name: 'Rosary plant', price: 375, quantity: 2,
+  }]);
   assert.equal(queued[1].payload.currentStage, 'details_validated');
+});
+
+test('encodes only sanitized cart primitives within the persisted byte limit', async () => {
+  const queued = [];
+  await createCheckoutTrackerSession({
+    ...checkoutInput(),
+    items: Array.from({ length: 20 }, (_, index) => ({
+      id: `plant-${index}-${'😀'.repeat(128)}`,
+      name: `${'\\"'.repeat(300)}\u0000`,
+      price: 25,
+      quantity: 1,
+      credentials: { password: 'secret' },
+      firebaseConfig: { apiKey: 'secret' },
+    })),
+  }, {
+    persistCreate: async () => { throw new Error('offline'); },
+    persistUpdate: async () => {},
+    enqueue: (operation) => queued.push(operation),
+    generators: fixedGenerators(),
+  });
+
+  const { itemsJson } = queued[0].payload;
+  const decoded = JSON.parse(itemsJson);
+  assert.ok(new TextEncoder().encode(itemsJson).length <= CHECKOUT_ITEMS_JSON_MAX_BYTES);
+  assert.ok(decoded.length > 0);
+  assert.ok(decoded.length <= 20);
+  assert.deepEqual(Object.keys(decoded[0]).sort(), ['name', 'price', 'productId', 'quantity']);
+  assert.doesNotMatch(itemsJson, /credentials|firebaseConfig|apiKey|secret/i);
 });
 
 test('bounds tracker creation when Firestore never settles and defers the create', async () => {
@@ -158,16 +191,19 @@ test('counts persistence-chain wait time inside each mutation deadline', async (
     persistenceDeadlineMs: 300,
   });
   const startedAt = Date.now();
+  const resolvedAfter = [];
 
   await Promise.all([
-    tracker.stage('details_validated'),
-    tracker.complete(),
+    tracker.stage('details_validated').then(() => resolvedAfter.push(Date.now() - startedAt)),
+    tracker.complete().then(() => resolvedAfter.push(Date.now() - startedAt)),
   ]);
 
   const elapsedMs = Date.now() - startedAt;
   await new Promise((resolve) => setTimeout(resolve, 50));
 
   assert.ok(elapsedMs < 500);
+  assert.equal(resolvedAfter.length, 2);
+  assert.ok(resolvedAfter.every((duration) => duration < 500));
   assert.deepEqual(queued.map(({ payload }) => payload.currentStage), ['completed']);
 });
 
@@ -292,21 +328,29 @@ test('does not count or advance past a persisted operation that storage cannot r
   assert.deepEqual(result, { flushed: 0, remaining: 1 });
 });
 
-test('strips the client write token from admin reads', async () => {
+test('strips private storage fields and decodes safe cart snapshots for admin reads', async () => {
   const attempts = await getAllCheckoutAttempts({
-    fetchAll: async () => [{
-      id: 'attempt-1',
-      supportCode: 'CHK-7K2M9Q',
-      clientWriteToken: 'not-for-the-page',
-      createdAt: { toDate: () => new Date('2026-07-19T10:00:00.000Z') },
-    }],
+    fetchAll: async () => [
+      {
+        id: 'attempt-1',
+        supportCode: 'CHK-7K2M9Q',
+        clientWriteToken: 'not-for-the-page',
+        itemsJson: JSON.stringify([{ productId: '42', name: 'Plant', price: 25, quantity: 2, credentials: 'secret' }]),
+        createdAt: { toDate: () => new Date('2026-07-19T10:00:00.000Z') },
+      },
+      { id: 'attempt-2', supportCode: 'CHK-BADJSON', itemsJson: '{bad json' },
+    ],
   });
 
-  assert.deepEqual(attempts, [{
+  assert.deepEqual(attempts[0], {
     id: 'attempt-1',
     supportCode: 'CHK-7K2M9Q',
     createdAt: '2026-07-19T10:00:00.000Z',
-  }]);
+    items: [{ productId: '42', name: 'Plant', price: 25, quantity: 2 }],
+  });
+  assert.deepEqual(attempts[1], {
+    id: 'attempt-2', supportCode: 'CHK-BADJSON', items: [],
+  });
 });
 
 test('validates admin resolution status, trims notes, and selects set versus clear resolution timestamps', async () => {

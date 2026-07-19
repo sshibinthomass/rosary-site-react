@@ -35,6 +35,18 @@ function safeNonNegativeNumber(value, maximum) {
   return Number.isFinite(number) && number >= 0 ? Math.min(number, maximum) : 0;
 }
 
+export function sanitizeCheckoutItems(items = []) {
+  return (Array.isArray(items) ? items : [])
+    .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+    .slice(0, CHECKOUT_ITEM_LIMIT)
+    .map((item) => ({
+      productId: safeString(item.productId ?? item.id, 128),
+      name: safeString(item.name, 300),
+      price: safeNonNegativeNumber(item.price, CHECKOUT_MONEY_MAX),
+      quantity: safeNonNegativeNumber(item.quantity, CHECKOUT_QUANTITY_MAX),
+    }));
+}
+
 export function createCheckoutEvent(stage, details = {}, now = () => new Date()) {
   return {
     eventId: details.eventId,
@@ -77,15 +89,7 @@ export function createCheckoutAttempt(input = {}, generators = {}) {
       state: safeString(delivery.state, 120),
     },
     totalAmount: safeNonNegativeNumber(input.totalAmount, CHECKOUT_MONEY_MAX),
-    items: (Array.isArray(input.items) ? input.items : [])
-      .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
-      .slice(0, CHECKOUT_ITEM_LIMIT)
-      .map((item) => ({
-      productId: safeString(item.productId ?? item.id, 128),
-      name: safeString(item.name, 300),
-      price: safeNonNegativeNumber(item.price, CHECKOUT_MONEY_MAX),
-      quantity: safeNonNegativeNumber(item.quantity, CHECKOUT_QUANTITY_MAX),
-      })),
+    items: sanitizeCheckoutItems(input.items),
     currentStage: 'started',
     result: 'in_progress',
     resolutionStatus: 'open',

@@ -17,6 +17,7 @@ import {
   RESOLUTION_STATUSES,
   createCheckoutAttempt,
   createCheckoutEvent,
+  sanitizeCheckoutItems,
   sanitizeCheckoutError,
 } from '../utils/checkoutAttemptModel.js';
 import {
@@ -27,6 +28,7 @@ import {
 
 const COLLECTION_NAME = 'checkoutAttempts';
 export const CHECKOUT_TRACKING_DEADLINE_MS = 750;
+export const CHECKOUT_ITEMS_JSON_MAX_BYTES = 12_000;
 
 async function getDatabase() {
   const { db } = await import('../config/firebase.js');
@@ -46,8 +48,12 @@ function toFirestoreEvent(event) {
 }
 
 function toFirestoreCreatePayload(payload) {
+  const { items, itemsJson, ...fields } = payload;
   return {
-    ...payload,
+    ...fields,
+    itemsJson: typeof itemsJson === 'string'
+      ? encodeCheckoutItems(decodeCheckoutItems(itemsJson))
+      : encodeCheckoutItems(items),
     createdAt: toTimestamp(payload.createdAt),
     updatedAt: toTimestamp(payload.updatedAt),
     expiresAt: toTimestamp(payload.expiresAt),
@@ -136,6 +142,29 @@ function toPlainJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function encodedByteLength(value) {
+  return new TextEncoder().encode(value).length;
+}
+
+function encodeCheckoutItems(items) {
+  const encodedItems = [];
+  for (const item of sanitizeCheckoutItems(items)) {
+    const candidate = JSON.stringify([...encodedItems, item]);
+    if (encodedByteLength(candidate) > CHECKOUT_ITEMS_JSON_MAX_BYTES) break;
+    encodedItems.push(item);
+  }
+  return JSON.stringify(encodedItems);
+}
+
+function decodeCheckoutItems(itemsJson) {
+  if (typeof itemsJson !== 'string') return [];
+  try {
+    return sanitizeCheckoutItems(JSON.parse(itemsJson));
+  } catch {
+    return [];
+  }
+}
+
 async function settlePersistence(persist, operation, deadlineMs) {
   let timeoutId;
   const persistence = Promise.resolve()
@@ -189,7 +218,7 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
       customer: attempt.customer,
       delivery: attempt.delivery,
       totalAmount: attempt.totalAmount,
-      items: attempt.items,
+      itemsJson: encodeCheckoutItems(attempt.items),
       currentStage: attempt.currentStage,
       result: attempt.result,
       resolutionStatus: attempt.resolutionStatus,
@@ -354,9 +383,14 @@ function toIsoString(value) {
 export async function getAllCheckoutAttempts(persistence = productionPersistence) {
   const attempts = await persistence.fetchAll();
   return attempts.map((attempt) => {
-    const { clientWriteToken: _clientWriteToken, ...safeAttempt } = attempt;
+    const {
+      clientWriteToken: _clientWriteToken,
+      itemsJson,
+      ...safeAttempt
+    } = attempt;
     return {
       ...safeAttempt,
+      items: decodeCheckoutItems(itemsJson),
       ...('createdAt' in safeAttempt ? { createdAt: toIsoString(safeAttempt.createdAt) } : {}),
       ...('updatedAt' in safeAttempt ? { updatedAt: toIsoString(safeAttempt.updatedAt) } : {}),
       ...('expiresAt' in safeAttempt ? { expiresAt: toIsoString(safeAttempt.expiresAt) } : {}),

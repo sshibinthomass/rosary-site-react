@@ -6,7 +6,12 @@ import {
   updateCheckoutAttemptResolution,
 } from '../services/checkoutAttemptService';
 import {
+  addActiveCheckoutAttemptId,
   filterCheckoutAttempts,
+  formatCheckoutEventOutcome,
+  getCheckoutAttemptContacts,
+  getCheckoutAttemptDomIds,
+  removeActiveCheckoutAttemptId,
   CHECKOUT_STAGES,
   RESOLUTION_STATUSES,
 } from '../utils/checkoutAttemptModel';
@@ -32,12 +37,20 @@ function formatMoney(value) {
   }).format(Number(value) || 0);
 }
 
-function primaryContact(attempt) {
-  return attempt.customer?.phone
-    || attempt.customer?.email
-    || attempt.delivery?.phone
-    || attempt.delivery?.whatsapp
-    || 'No contact recorded';
+function AttemptContacts({ attempt }) {
+  const contacts = getCheckoutAttemptContacts(attempt);
+  return (
+    <div className="mt-1 space-y-0.5 text-xs text-[var(--text-secondary)]">
+      <p className="truncate"><span className="font-medium">Phone:</span> {contacts.phone || 'Not recorded'}</p>
+      <p className="truncate"><span className="font-medium">WhatsApp:</span> {contacts.whatsapp || 'Not recorded'}</p>
+    </div>
+  );
+}
+
+function getExpandLabel(attempt, expanded) {
+  const customerName = attempt.customer?.name || attempt.delivery?.name || 'unknown customer';
+  const supportCode = attempt.supportCode || 'not recorded';
+  return `${expanded ? 'Hide' : 'Show'} checkout details for ${customerName}, support code ${supportCode}`;
 }
 
 function StatusPill({ children, tone = 'neutral' }) {
@@ -76,7 +89,7 @@ function CheckoutTimeline({ events = [] }) {
             <p className="text-sm font-semibold capitalize text-[var(--text-primary)]">{formatLabel(event.stage)}</p>
             <time className="text-xs text-[var(--text-secondary)]">{formatDate(event.occurredAt)}</time>
           </div>
-          <p className="mt-0.5 text-xs capitalize text-[var(--text-secondary)]">{formatLabel(event.outcome || 'success')}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-secondary)]">{formatCheckoutEventOutcome(event.outcome)}</p>
           {event.error && (
             <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
               <p className="font-semibold">{formatLabel(event.error.category)} · {event.error.code || 'unknown'}</p>
@@ -89,7 +102,8 @@ function CheckoutTimeline({ events = [] }) {
   );
 }
 
-function AttemptDetails({ attempt, note, onNoteChange, onResolve, saving }) {
+function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, saving }) {
+  const domIds = getCheckoutAttemptDomIds(attempt.id, idPrefix);
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(15rem,0.8fr)]">
       <section>
@@ -121,17 +135,20 @@ function AttemptDetails({ attempt, note, onNoteChange, onResolve, saving }) {
 
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Timeline</h3>
+        <p className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+          Opening WhatsApp does not prove the customer sent the message, paid, or that the order was confirmed or accepted.
+        </p>
         <div className="mt-3">
           <CheckoutTimeline events={attempt.events} />
         </div>
       </section>
 
       <section>
-        <label htmlFor={`notes-${attempt.id}`} className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+        <label htmlFor={domIds.notesId} className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
           Internal notes
         </label>
         <textarea
-          id={`notes-${attempt.id}`}
+          id={domIds.notesId}
           value={note}
           onChange={(event) => onNoteChange(event.target.value)}
           disabled={saving}
@@ -188,11 +205,15 @@ export default function AdminCheckoutTrackingPage() {
   });
   const [notes, setNotes] = useState({});
   const [expandedAttemptId, setExpandedAttemptId] = useState(null);
-  const [savingAttemptId, setSavingAttemptId] = useState(null);
+  const [savingAttemptIds, setSavingAttemptIds] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [loadRequest, setLoadRequest] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadError('');
     getAllCheckoutAttempts()
       .then((records) => {
         if (!active) return;
@@ -200,13 +221,16 @@ export default function AdminCheckoutTrackingPage() {
         setNotes(Object.fromEntries(records.map((attempt) => [attempt.id, attempt.adminNotes || ''])));
       })
       .catch(() => {
-        if (active) error('Failed to load checkout attempts');
+        if (active) {
+          setLoadError('Checkout attempts could not be loaded.');
+          error('Failed to load checkout attempts');
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [error]);
+  }, [error, loadRequest]);
 
   const summary = useMemo(() => ({
     failures: attempts.filter((attempt) => attempt.result === 'failed').length,
@@ -225,7 +249,7 @@ export default function AdminCheckoutTrackingPage() {
   };
 
   const saveResolution = async (attempt, resolutionStatus) => {
-    setSavingAttemptId(attempt.id);
+    setSavingAttemptIds((activeIds) => addActiveCheckoutAttemptId(activeIds, attempt.id));
     try {
       const updated = await updateCheckoutAttemptResolution(attempt.id, {
         resolutionStatus,
@@ -239,7 +263,7 @@ export default function AdminCheckoutTrackingPage() {
     } catch {
       error('Failed to update checkout attempt');
     } finally {
-      setSavingAttemptId(null);
+      setSavingAttemptIds((activeIds) => removeActiveCheckoutAttemptId(activeIds, attempt.id));
     }
   };
 
@@ -329,6 +353,18 @@ export default function AdminCheckoutTrackingPage() {
           <span className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-forest)] border-t-transparent" />
           <span className="sr-only">Loading checkout attempts</span>
         </div>
+      ) : loadError ? (
+        <div role="alert" className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 text-center">
+          <p className="font-semibold text-[var(--text-primary)]">Checkout tracking is unavailable</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">{loadError} Check the connection and try again.</p>
+          <button
+            type="button"
+            onClick={() => setLoadRequest((request) => request + 1)}
+            className={`btn btn-secondary mt-4 ${focusClass}`}
+          >
+            Retry loading attempts
+          </button>
+        </div>
       ) : visibleAttempts.length === 0 ? (
         <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 text-center">
           <p className="font-medium text-[var(--text-primary)]">No checkout attempts match these filters.</p>
@@ -359,7 +395,7 @@ export default function AdminCheckoutTrackingPage() {
                     onToggle={() => toggleAttempt(attempt.id)}
                     onNoteChange={(value) => setNotes((current) => ({ ...current, [attempt.id]: value }))}
                     onResolve={(status) => saveResolution(attempt, status)}
-                    saving={savingAttemptId === attempt.id}
+                    saving={savingAttemptIds.has(attempt.id)}
                   />
                 ))}
               </tbody>
@@ -374,13 +410,15 @@ export default function AdminCheckoutTrackingPage() {
                   <button
                     type="button"
                     aria-expanded={expanded}
+                    aria-controls={getCheckoutAttemptDomIds(attempt.id, 'mobile').panelId}
+                    aria-label={getExpandLabel(attempt, expanded)}
                     onClick={() => toggleAttempt(attempt.id)}
                     className={`w-full p-4 text-left ${focusClass}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</h2>
-                        <p className="mt-0.5 truncate text-xs text-[var(--text-secondary)]">{primaryContact(attempt)}</p>
+                        <AttemptContacts attempt={attempt} />
                       </div>
                       <span aria-hidden="true" className="text-lg text-[var(--color-forest)]">{expanded ? '−' : '+'}</span>
                     </div>
@@ -394,13 +432,14 @@ export default function AdminCheckoutTrackingPage() {
                     <div className="mt-3"><AttemptBadges attempt={attempt} /></div>
                   </button>
                   {expanded && (
-                    <div className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-4">
+                    <div id={getCheckoutAttemptDomIds(attempt.id, 'mobile').panelId} className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-4">
                       <AttemptDetails
                         attempt={attempt}
+                        idPrefix="mobile"
                         note={notes[attempt.id] || ''}
                         onNoteChange={(value) => setNotes((current) => ({ ...current, [attempt.id]: value }))}
                         onResolve={(status) => saveResolution(attempt, status)}
-                        saving={savingAttemptId === attempt.id}
+                        saving={savingAttemptIds.has(attempt.id)}
                       />
                     </div>
                   )}
@@ -415,12 +454,13 @@ export default function AdminCheckoutTrackingPage() {
 }
 
 function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolve, saving }) {
+  const domIds = getCheckoutAttemptDomIds(attempt.id, 'desktop');
   return (
     <>
       <tr className="align-top hover:bg-[var(--bg-tertiary)]/60">
         <td className="px-3 py-3">
           <p className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</p>
-          <p className="mt-0.5 truncate text-xs text-[var(--text-secondary)]">{primaryContact(attempt)}</p>
+          <AttemptContacts attempt={attempt} />
           <p className="mt-1 truncate font-mono text-[11px] text-[var(--text-secondary)]">{attempt.orderId || 'No order ID'}</p>
         </td>
         <td className="px-3 py-3 font-medium text-[var(--text-primary)]">{formatMoney(attempt.totalAmount)}</td>
@@ -429,16 +469,15 @@ function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolv
         <td className="px-3 py-3 text-xs text-[var(--text-secondary)]">{formatDate(attempt.createdAt)}</td>
         <td className="px-3 py-3"><AttemptBadges attempt={attempt} /></td>
         <td className="px-2 py-3 text-right">
-          <button type="button" aria-expanded={expanded} onClick={onToggle} className={`rounded-md px-2 py-1 text-lg text-[var(--color-forest)] hover:bg-[var(--bg-secondary)] ${focusClass}`}>
+          <button type="button" aria-expanded={expanded} aria-controls={domIds.panelId} aria-label={getExpandLabel(attempt, expanded)} onClick={onToggle} className={`rounded-md px-2 py-1 text-lg text-[var(--color-forest)] hover:bg-[var(--bg-secondary)] ${focusClass}`}>
             <span aria-hidden="true">{expanded ? '−' : '+'}</span>
-            <span className="sr-only">{expanded ? 'Hide' : 'Show'} checkout details</span>
           </button>
         </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan="7" className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-5">
-            <AttemptDetails attempt={attempt} note={note} onNoteChange={onNoteChange} onResolve={onResolve} saving={saving} />
+          <td id={domIds.panelId} colSpan="7" className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-5">
+            <AttemptDetails attempt={attempt} idPrefix="desktop" note={note} onNoteChange={onNoteChange} onResolve={onResolve} saving={saving} />
           </td>
         </tr>
       )}

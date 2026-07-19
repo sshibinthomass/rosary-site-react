@@ -32,7 +32,25 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
 export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userId = null, promoInfo = null) {
   let tracker;
   try {
-    tracker = await createCheckoutTracker({ cartItems, total, userInfo, userId });
+    tracker = await createCheckoutTracker({
+      items: cartItems,
+      totalAmount: total,
+      customer: {
+        name: userInfo?.name,
+        phone: userInfo?.phone,
+        email: userInfo?.email,
+      },
+      delivery: {
+        name: userInfo?.name,
+        phone: userInfo?.phone,
+        whatsapp: userInfo?.whatsapp,
+        address: userInfo?.address,
+        pincode: userInfo?.pincode,
+        district: userInfo?.district,
+        state: userInfo?.state,
+      },
+      userId,
+    });
   } catch (trackingError) {
     console.warn('Checkout tracking warning:', trackingError);
   }

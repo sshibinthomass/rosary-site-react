@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import * as checkoutAttemptModel from '../src/utils/checkoutAttemptModel.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -20,7 +21,7 @@ test('checkout tracking page loads, filters, summarizes, and resolves attempts',
   assert.match(source, /attempts\.filter\([\s\S]*resolutionStatus\s*===\s*['"]resolved['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*result\s*===\s*['"]successful['"]/);
   assert.match(source, /updateCheckoutAttemptResolution\(/);
-  assert.match(source, /savingAttemptId/);
+  assert.match(source, /savingAttemptIds/);
   assert.match(source, /linkedOrderDocumentId[\s\S]*\/order\//);
   assert.match(source, /md:hidden/);
   assert.match(source, /hidden md:table/);
@@ -59,4 +60,90 @@ test('resolution controls disable only while their attempt is saving', () => {
 
   assert.equal(Array.from(details.matchAll(/disabled=\{saving\}/g)).length, 3);
   assert.doesNotMatch(details, /disabled=\{saving\s*\|\|/);
+});
+
+test('active-save helpers preserve concurrent attempt IDs immutably', () => {
+  const addActiveCheckoutAttemptId = checkoutAttemptModel.addActiveCheckoutAttemptId;
+  const removeActiveCheckoutAttemptId = checkoutAttemptModel.removeActiveCheckoutAttemptId;
+  assert.equal(typeof addActiveCheckoutAttemptId, 'function');
+  assert.equal(typeof removeActiveCheckoutAttemptId, 'function');
+
+  const empty = new Set();
+  const first = addActiveCheckoutAttemptId(empty, 'attempt-a');
+  const both = addActiveCheckoutAttemptId(first, 'attempt-b');
+  const secondOnly = removeActiveCheckoutAttemptId(both, 'attempt-a');
+
+  assert.deepEqual([...empty], []);
+  assert.deepEqual([...first], ['attempt-a']);
+  assert.deepEqual([...both], ['attempt-a', 'attempt-b']);
+  assert.deepEqual([...secondOnly], ['attempt-b']);
+});
+
+test('contact helper keeps phone and WhatsApp distinct and never substitutes email', () => {
+  const getCheckoutAttemptContacts = checkoutAttemptModel.getCheckoutAttemptContacts;
+  assert.equal(typeof getCheckoutAttemptContacts, 'function');
+  assert.deepEqual(getCheckoutAttemptContacts({
+    customer: { phone: '111', email: 'private@example.com' },
+    delivery: { phone: '222', whatsapp: '333' },
+  }), { phone: '111', whatsapp: '333' });
+  assert.deepEqual(getCheckoutAttemptContacts({
+    customer: { email: 'email-only@example.com' },
+    delivery: {},
+  }), { phone: '', whatsapp: '' });
+});
+
+test('responsive DOM helpers produce unique matching panel and notes IDs', () => {
+  const getCheckoutAttemptDomIds = checkoutAttemptModel.getCheckoutAttemptDomIds;
+  assert.equal(typeof getCheckoutAttemptDomIds, 'function');
+  const desktop = getCheckoutAttemptDomIds('attempt/one', 'desktop');
+  const mobile = getCheckoutAttemptDomIds('attempt/one', 'mobile');
+
+  assert.notEqual(desktop.panelId, mobile.panelId);
+  assert.notEqual(desktop.notesId, mobile.notesId);
+  assert.match(desktop.panelId, /^checkout-attempt-desktop-/);
+  assert.match(mobile.notesId, /^checkout-attempt-mobile-/);
+});
+
+test('timeline outcome helper never invents success for missing or unknown values', () => {
+  const formatCheckoutEventOutcome = checkoutAttemptModel.formatCheckoutEventOutcome;
+  assert.equal(typeof formatCheckoutEventOutcome, 'function');
+  assert.equal(formatCheckoutEventOutcome('success'), 'Success');
+  assert.equal(formatCheckoutEventOutcome('failed'), 'Failed');
+  assert.equal(formatCheckoutEventOutcome(), 'Outcome not recorded');
+  assert.equal(formatCheckoutEventOutcome('mystery'), 'Outcome not recorded');
+});
+
+test('page keeps diagnostic contacts, responsive IDs, truthful timeline copy, and accessible expansion wiring', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+
+  assert.match(source, /getCheckoutAttemptContacts\(attempt\)/);
+  assert.match(source, />Phone:</);
+  assert.match(source, />WhatsApp:</);
+  assert.doesNotMatch(source, /customer\?\.email/);
+  assert.match(source, /idPrefix="desktop"/);
+  assert.match(source, /idPrefix="mobile"/);
+  assert.match(source, /aria-controls=\{domIds\.panelId\}/);
+  assert.match(source, /aria-label=\{getExpandLabel\(attempt, expanded\)\}/);
+  assert.match(source, /checkout details for \$\{customerName\}, support code \$\{supportCode\}/);
+  assert.match(source, /formatCheckoutEventOutcome\(event\.outcome\)/);
+  assert.match(source, /does not prove the customer sent the message, paid, or that the order was confirmed or accepted/);
+});
+
+test('page retains failed-save notes, tracks concurrent saves, and separates load errors from empty results', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const saveStart = source.indexOf('const saveResolution');
+  const saveEnd = source.indexOf('const toggleAttempt');
+  const saveSource = source.slice(saveStart, saveEnd);
+  const catchStart = saveSource.indexOf('catch');
+  const failedSaveSource = saveSource.slice(catchStart);
+
+  assert.match(source, /useState\(\(\) => new Set\(\)\)/);
+  assert.match(source, /addActiveCheckoutAttemptId/);
+  assert.match(source, /removeActiveCheckoutAttemptId/);
+  assert.doesNotMatch(failedSaveSource, /setNotes/);
+  assert.match(source, /includeResolved:\s*false/);
+  assert.match(source, /setLoadError\(/);
+  assert.match(source, /loadError\s*\?/);
+  assert.match(source, />\s*Retry loading attempts\s*</);
+  assert.match(source, /setLoadRequest\(\(request\) => request \+ 1\)/);
 });

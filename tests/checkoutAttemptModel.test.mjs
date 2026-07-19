@@ -7,6 +7,7 @@ import {
   filterCheckoutAttempts,
   sanitizeCheckoutError,
 } from '../src/utils/checkoutAttemptModel.js';
+import * as checkoutAttemptModel from '../src/utils/checkoutAttemptModel.js';
 
 const fixedGenerators = {
   randomUUID: () => 'document-123',
@@ -192,4 +193,36 @@ for (const [name, filters, expectedIds] of [
 
 test('excludes resolved attempts and sorts remaining attempts newest first by default', () => {
   assert.deepEqual(filterCheckoutAttempts(attempts, {}).map(({ id }) => id), ['2', '1']);
+});
+
+test('parses date-only filter bounds at the start and end of the browser-local day', () => {
+  const parseCheckoutFilterDate = checkoutAttemptModel.parseCheckoutFilterDate;
+  assert.equal(typeof parseCheckoutFilterDate, 'function');
+
+  const start = parseCheckoutFilterDate('2026-07-18', false);
+  const end = parseCheckoutFilterDate('2026-07-18', true);
+  assert.deepEqual(
+    [start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds()],
+    [2026, 6, 18, 0, 0, 0, 0],
+  );
+  assert.deepEqual(
+    [end.getFullYear(), end.getMonth(), end.getDate(), end.getHours(), end.getMinutes(), end.getSeconds(), end.getMilliseconds()],
+    [2026, 6, 18, 23, 59, 59, 999],
+  );
+});
+
+test('date-only filters include both local-day boundaries and exclude adjacent instants', () => {
+  const start = new Date(2026, 6, 18, 0, 0, 0, 0);
+  const end = new Date(2026, 6, 18, 23, 59, 59, 999);
+  const records = [
+    { id: 'before', resolutionStatus: 'open', createdAt: new Date(start.getTime() - 1).toISOString() },
+    { id: 'start', resolutionStatus: 'open', createdAt: start.toISOString() },
+    { id: 'end', resolutionStatus: 'open', createdAt: end.toISOString() },
+    { id: 'after', resolutionStatus: 'open', createdAt: new Date(end.getTime() + 1).toISOString() },
+  ];
+
+  assert.deepEqual(
+    filterCheckoutAttempts(records, { from: '2026-07-18', to: '2026-07-18' }).map(({ id }) => id),
+    ['end', 'start'],
+  );
 });

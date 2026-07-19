@@ -25,6 +25,41 @@ export function normalizeContact(value = '') {
   return safeString(value, 64).replace(/\D/g, '').slice(0, 32);
 }
 
+export function addActiveCheckoutAttemptId(activeIds, id) {
+  const next = new Set(activeIds);
+  next.add(id);
+  return next;
+}
+
+export function removeActiveCheckoutAttemptId(activeIds, id) {
+  const next = new Set(activeIds);
+  next.delete(id);
+  return next;
+}
+
+export function getCheckoutAttemptContacts(attempt = {}) {
+  return {
+    phone: attempt.customer?.phone || attempt.delivery?.phone || '',
+    whatsapp: attempt.delivery?.whatsapp || '',
+  };
+}
+
+export function getCheckoutAttemptDomIds(attemptId, viewport) {
+  const safeAttemptId = String(attemptId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '-');
+  const safeViewport = String(viewport || 'view').replace(/[^a-zA-Z0-9_-]/g, '-');
+  const base = `checkout-attempt-${safeViewport}-${safeAttemptId}`;
+  return {
+    panelId: `${base}-panel`,
+    notesId: `${base}-notes`,
+  };
+}
+
+export function formatCheckoutEventOutcome(outcome) {
+  if (outcome === 'success') return 'Success';
+  if (outcome === 'failed') return 'Failed';
+  return 'Outcome not recorded';
+}
+
 function safeString(value, limit) {
   if (!['string', 'number', 'boolean'].includes(typeof value)) return '';
   return String(value).slice(0, limit);
@@ -138,8 +173,8 @@ function safeErrorMessage(category) {
 export function filterCheckoutAttempts(attempts = [], filters = {}) {
   const query = String(filters.query || '').trim().toLowerCase();
   const queryPhone = /^[\d\s()+-]+$/.test(query) ? normalizeContact(query) : '';
-  const from = parseFilterDate(filters.from, false);
-  const to = parseFilterDate(filters.to, true);
+  const from = parseCheckoutFilterDate(filters.from, false);
+  const to = parseCheckoutFilterDate(filters.to, true);
 
   return attempts
     .filter((attempt) => filters.includeResolved || attempt.resolutionStatus !== 'resolved')
@@ -168,9 +203,20 @@ export function filterCheckoutAttempts(attempts = [], filters = {}) {
     .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
 }
 
-function parseFilterDate(value, endOfDay) {
+export function parseCheckoutFilterDate(value, endOfDay) {
   if (!value) return null;
   const source = String(value);
-  const date = new Date(source.length === 10 && endOfDay ? `${source}T23:59:59.999Z` : source);
+  const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(source);
+  if (dateParts) {
+    const [, yearText, monthText, dayText] = dateParts;
+    const year = Number(yearText);
+    const month = Number(monthText) - 1;
+    const day = Number(dayText);
+    const date = new Date(year, month, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+      ? date
+      : null;
+  }
+  const date = new Date(source);
   return Number.isNaN(date.getTime()) ? null : date;
 }

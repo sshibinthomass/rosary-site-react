@@ -64,3 +64,14 @@ test('cart shows a persistent confirmation panel after opening WhatsApp', () => 
     'confirmation panel should be prepared before the empty-cart return so saved orders do not show only an empty cart'
   );
 });
+
+test('cart keeps checkout open with a retryable error when order verification fails', () => {
+  assert.match(
+    cartPageSource,
+    /Order was not confirmed\. Your cart is safe—please try again\./
+  );
+  assert.match(
+    cartPageSource,
+    /catch \(err\) \{[\s\S]*?setShowCheckout\(true\);[\s\S]*?Order was not confirmed/
+  );
+});

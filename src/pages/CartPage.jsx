@@ -466,7 +466,8 @@ export default function CartPage() {
       await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
       console.error('Checkout failed:', err);
-      error('Failed to create order. Please try again.');
+      setShowCheckout(true);
+      error('Order was not confirmed. Your cart is safe—please try again.');
     } finally {
       setIsSaving(false);
     }

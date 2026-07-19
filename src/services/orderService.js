@@ -2,6 +2,7 @@ import {
   collection, 
   doc, 
   getDoc,
+  getDocFromServer,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -310,6 +311,24 @@ export function getOrderUrl(docId) {
   );
 
   return `${baseUrl}/order/${docId}`;
+}
+
+/**
+ * Get an order directly from the Firestore server, without cache fallback.
+ */
+export async function getOrderByIdFromServer(docId) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, docId);
+    const docSnap = await getDocFromServer(docRef);
+
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error verifying order:', error);
+    throw error;
+  }
 }
 
 /**

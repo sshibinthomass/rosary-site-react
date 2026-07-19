@@ -2,6 +2,7 @@ import {
   Timestamp,
   arrayUnion,
   collection,
+  deleteField,
   doc,
   getDocs,
   orderBy,
@@ -25,6 +26,7 @@ import {
 } from '../utils/checkoutAttemptOutbox.js';
 
 const COLLECTION_NAME = 'checkoutAttempts';
+export const CHECKOUT_TRACKING_DEADLINE_MS = 750;
 
 async function getDatabase() {
   const { db } = await import('../config/firebase.js');
@@ -97,11 +99,10 @@ async function fetchAllAttempts() {
 
 async function persistResolution(id, updates) {
   const database = await getDatabase();
-  const { setResolvedAt, ...fields } = updates;
   await updateDoc(doc(database, COLLECTION_NAME, id), {
-    ...fields,
+    ...updates,
     updatedAt: serverTimestamp(),
-    ...(setResolvedAt ? { resolvedAt: serverTimestamp() } : {}),
+    resolvedAt: updates.resolutionStatus === 'resolved' ? serverTimestamp() : deleteField(),
   });
 }
 
@@ -135,6 +136,35 @@ function toPlainJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+async function settlePersistence(persist, operation, deadlineMs) {
+  let timeoutId;
+  const persistence = Promise.resolve()
+    .then(() => persist(operation))
+    .then(() => true, () => false);
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve(false), deadlineMs);
+  });
+
+  try {
+    return await Promise.race([persistence, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function resolveWithinDeadline(operationPromise, deadlineMs) {
+  let timeoutId;
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(resolve, deadlineMs);
+  });
+
+  try {
+    await Promise.race([operationPromise, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function createCheckoutTrackerSession(input, dependencies = {}) {
   const generators = dependencies.generators || {};
   const now = generators.now || (() => new Date());
@@ -142,26 +172,37 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
   const persistCreate = dependencies.persistCreate || productionPersistence.persistCreate;
   const persistUpdate = dependencies.persistUpdate || productionPersistence.persistUpdate;
   const enqueue = dependencies.enqueue || defaultEnqueue;
+  const persistenceDeadlineMs = Number.isFinite(dependencies.persistenceDeadlineMs)
+    ? Math.max(1, dependencies.persistenceDeadlineMs)
+    : CHECKOUT_TRACKING_DEADLINE_MS;
   const attempt = createCheckoutAttempt(input, generators);
   const initialEvent = createCheckoutEvent('started', { eventId: randomUUID() }, now);
-  const { id, clientToken, ...snapshot } = attempt;
+  const { id, clientToken } = attempt;
   const createOperation = {
     operationId: `${id}:create`,
     attemptId: id,
     type: 'create',
     payload: toPlainJson({
-      ...snapshot,
+      supportCode: attempt.supportCode,
       clientWriteToken: clientToken,
+      orderId: attempt.orderId,
+      customer: attempt.customer,
+      delivery: attempt.delivery,
+      totalAmount: attempt.totalAmount,
+      items: attempt.items,
+      currentStage: attempt.currentStage,
+      result: attempt.result,
+      resolutionStatus: attempt.resolutionStatus,
+      createdAt: attempt.createdAt,
+      expiresAt: attempt.expiresAt,
       updatedAt: attempt.createdAt,
       events: [initialEvent],
     }),
   };
 
   async function persistWithoutRejecting(operation, persist) {
-    try {
-      await persist(operation);
-      return true;
-    } catch {
+    const persisted = await settlePersistence(persist, operation, persistenceDeadlineMs);
+    if (!persisted) {
       try {
         await enqueue(operation);
       } catch {
@@ -169,6 +210,7 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
       }
       return false;
     }
+    return true;
   }
 
   const createPersisted = await persistWithoutRejecting(createOperation, persistCreate);
@@ -179,15 +221,18 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
   let persistenceChain = Promise.resolve();
 
   function queueUpdate(payload, operationId) {
+    const deadlineAt = Date.now() + persistenceDeadlineMs;
     const operation = {
       operationId,
       attemptId: id,
       type: 'update',
       payload: toPlainJson(payload),
     };
-    persistenceChain = persistenceChain
+    const operationPromise = persistenceChain
       .then(async () => {
-        if (hasDeferredOperation) {
+        const remainingMs = deadlineAt - Date.now();
+        if (hasDeferredOperation || remainingMs <= 0) {
+          hasDeferredOperation = true;
           try {
             await enqueue(operation);
           } catch {
@@ -196,11 +241,19 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
           return;
         }
 
-        const persisted = await persistWithoutRejecting(operation, persistUpdate);
+        const persisted = await settlePersistence(persistUpdate, operation, remainingMs);
+        if (!persisted) {
+          try {
+            await enqueue(operation);
+          } catch {
+            // Tracking must never interrupt checkout, even if local storage is blocked.
+          }
+        }
         if (!persisted) hasDeferredOperation = true;
       })
       .catch(() => undefined);
-    return persistenceChain;
+    persistenceChain = operationPromise;
+    return resolveWithinDeadline(operationPromise, persistenceDeadlineMs);
   }
 
   function stage(stageName, details = {}) {
@@ -326,7 +379,6 @@ export async function updateCheckoutAttemptResolution(id, input, persistence = p
   const updates = {
     resolutionStatus: input.resolutionStatus,
     adminNotes: String(input.adminNotes ?? '').trim().slice(0, 2_000),
-    ...(input.resolutionStatus === 'resolved' ? { setResolvedAt: true } : {}),
   };
   await persistence.updateResolution(id, updates);
   return { id, ...updates };

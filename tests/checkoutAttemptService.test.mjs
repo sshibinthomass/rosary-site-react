@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  CHECKOUT_TRACKING_DEADLINE_MS,
   createCheckoutTrackerSession,
   flushCheckoutAttemptOutbox,
   getAllCheckoutAttempts,
@@ -81,6 +82,93 @@ test('isolates create and stage persistence failures in ordered JSON outbox oper
   }
   assert.equal(queued[0].payload.clientWriteToken.length, 64);
   assert.equal(queued[1].payload.currentStage, 'details_validated');
+});
+
+test('bounds tracker creation when Firestore never settles and defers the create', async () => {
+  assert.ok(CHECKOUT_TRACKING_DEADLINE_MS <= 1_000);
+  const queued = [];
+  const startedAt = Date.now();
+  const tracker = await createCheckoutTrackerSession(checkoutInput(), {
+    persistCreate: () => new Promise(() => {}),
+    persistUpdate: async () => {},
+    enqueue: (operation) => queued.push(operation),
+    generators: fixedGenerators(),
+  });
+
+  assert.ok(Date.now() - startedAt < CHECKOUT_TRACKING_DEADLINE_MS + 500);
+  assert.equal(tracker.attemptId, 'uuid-1');
+  assert.deepEqual(queued.map(({ type }) => type), ['create']);
+});
+
+test('handles a Firestore rejection that arrives after the tracking deadline', async () => {
+  const queued = [];
+  const tracker = await createCheckoutTrackerSession(checkoutInput(), {
+    persistCreate: () => new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('late Firestore rejection')), 40);
+    }),
+    persistUpdate: async () => {},
+    enqueue: (operation) => queued.push(operation),
+    generators: fixedGenerators(),
+    persistenceDeadlineMs: 10,
+  });
+
+  assert.equal(tracker.attemptId, 'uuid-1');
+  assert.deepEqual(queued.map(({ type }) => type), ['create']);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+});
+
+test('bounds every mutation when Firestore never settles and preserves deferred FIFO', async () => {
+  for (const invoke of [
+    (tracker) => tracker.stage('details_validated'),
+    (tracker) => tracker.fail(new Error('failure')),
+    (tracker) => tracker.linkOrder({ id: 'doc-1', orderId: 'RPH-1' }),
+    (tracker) => tracker.complete(),
+  ]) {
+    const queued = [];
+    const tracker = await createCheckoutTrackerSession(checkoutInput(), {
+      persistCreate: async () => {},
+      persistUpdate: () => new Promise(() => {}),
+      enqueue: (operation) => queued.push(operation),
+      generators: fixedGenerators(),
+      persistenceDeadlineMs: 25,
+    });
+    const startedAt = Date.now();
+
+    await assert.doesNotReject(invoke(tracker));
+    await tracker.complete();
+
+    assert.ok(Date.now() - startedAt < 250);
+    assert.deepEqual(queued.map(({ type }) => type), ['update', 'update']);
+  }
+});
+
+test('counts persistence-chain wait time inside each mutation deadline', async () => {
+  const queued = [];
+  let updateNumber = 0;
+  const tracker = await createCheckoutTrackerSession(checkoutInput(), {
+    persistCreate: async () => {},
+    persistUpdate: () => {
+      updateNumber += 1;
+      return updateNumber === 1
+        ? new Promise((resolve) => setTimeout(resolve, 250))
+        : new Promise(() => {});
+    },
+    enqueue: (operation) => queued.push(operation),
+    generators: fixedGenerators(),
+    persistenceDeadlineMs: 300,
+  });
+  const startedAt = Date.now();
+
+  await Promise.all([
+    tracker.stage('details_validated'),
+    tracker.complete(),
+  ]);
+
+  const elapsedMs = Date.now() - startedAt;
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  assert.ok(elapsedMs < 500);
+  assert.deepEqual(queued.map(({ payload }) => payload.currentStage), ['completed']);
 });
 
 test('records exact order, failure, and completion state transitions without rejecting', async () => {
@@ -221,7 +309,7 @@ test('strips the client write token from admin reads', async () => {
   }]);
 });
 
-test('validates admin resolution status, trims notes, and timestamps only resolved attempts', async () => {
+test('validates admin resolution status, trims notes, and selects set versus clear resolution timestamps', async () => {
   const writes = [];
   const persistence = { updateResolution: async (id, updates) => writes.push({ id, updates }) };
 
@@ -239,7 +327,11 @@ test('validates admin resolution status, trims notes, and timestamps only resolv
   }, persistence);
 
   assert.equal(writes[0].updates.adminNotes.length, 2_000);
-  assert.equal('resolvedAt' in writes[0].updates, false);
+  assert.equal(writes[0].updates.resolutionStatus, 'investigating');
   assert.equal(writes[1].updates.adminNotes, 'Fixed after contacting the customer.');
-  assert.equal(writes[1].updates.setResolvedAt, true);
+  assert.equal(writes[1].updates.resolutionStatus, 'resolved');
+
+  const source = await readFile(serviceUrl, 'utf8');
+  assert.match(source, /deleteField\s*\(\s*\)/);
+  assert.match(source, /resolutionStatus\s*===\s*['"]resolved['"][\s\S]*serverTimestamp\(\)[\s\S]*deleteField\(\)/);
 });

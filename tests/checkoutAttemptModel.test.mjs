@@ -15,8 +15,15 @@ const fixedGenerators = {
 };
 
 const input = {
-  customer: { name: 'Anu', phone: '+91 98765 43210', email: 'anu@example.com' },
-  delivery: { phone: '(919) 876-543-210' },
+  customer: {
+    name: 'Anu', phone: '+91 98765 43210', email: 'anu@example.com',
+    credentials: { password: 'secret' }, firebaseConfig: { apiKey: 'secret' }, stack: 'private',
+  },
+  delivery: {
+    name: 'Anu', phone: '(919) 876-543-210', whatsapp: '+91 99887 76655',
+    address: 'Rose Lane', pincode: '682001', district: 'Ernakulam', state: 'Kerala',
+    credentials: { token: 'secret' }, firebaseConfig: { apiKey: 'secret' }, stack: 'private',
+  },
   orderId: 'ORD-100',
   totalAmount: '137',
   items: [{ id: '49', name: 'Hydrangea', price: '39', quantity: '1', ignored: 'nope' }],
@@ -32,6 +39,11 @@ test('creates a complete 180-day checkout attempt snapshot', () => {
   assert.equal(attempt.customer.phone, '919876543210');
   assert.equal(attempt.customer.phoneSearch, '919876543210');
   assert.equal(attempt.delivery.phone, '919876543210');
+  assert.deepEqual(Object.keys(attempt.customer).sort(), ['email', 'name', 'phone', 'phoneSearch']);
+  assert.deepEqual(Object.keys(attempt.delivery).sort(), [
+    'address', 'district', 'name', 'phone', 'pincode', 'state', 'whatsapp',
+  ]);
+  assert.doesNotMatch(JSON.stringify({ customer: attempt.customer, delivery: attempt.delivery }), /credentials|firebaseConfig|apiKey|stack|secret/i);
   assert.equal(attempt.totalAmount, 137);
   assert.deepEqual(attempt.items[0], {
     productId: '49', name: 'Hydrangea', price: 39, quantity: 1,
@@ -41,6 +53,44 @@ test('creates a complete 180-day checkout attempt snapshot', () => {
   assert.equal(attempt.resolutionStatus, 'open');
   assert.equal(attempt.createdAt, '2026-07-19T12:00:00.000Z');
   assert.equal(attempt.expiresAt, '2027-01-15T12:00:00.000Z');
+});
+
+test('keeps checkout item snapshots primitive, bounded, and free of nested input data', () => {
+  const attempt = createCheckoutAttempt({
+    ...input,
+    items: Array.from({ length: 55 }, (_, index) => ({
+      id: index,
+      name: index === 0 ? { credentials: 'secret' } : `Plant ${index}`,
+      price: index === 0 ? 'not-a-number' : index,
+      quantity: index === 0 ? Infinity : 1,
+      firebaseConfig: { apiKey: 'secret' },
+    })),
+  }, fixedGenerators);
+
+  assert.equal(attempt.items.length, 20);
+  assert.deepEqual(Object.keys(attempt.items[0]).sort(), ['name', 'price', 'productId', 'quantity']);
+  assert.equal(typeof attempt.items[0].name, 'string');
+  assert.equal(attempt.items[0].price, 0);
+  assert.equal(attempt.items[0].quantity, 0);
+  assert.doesNotMatch(JSON.stringify(attempt.items), /credentials|firebaseConfig|apiKey|secret/i);
+});
+
+test('normalizes null checkout items without throwing', () => {
+  const attempt = createCheckoutAttempt({ ...input, items: [null] }, fixedGenerators);
+
+  assert.deepEqual(attempt.items, []);
+});
+
+test('caps checkout monetary and quantity primitives to Firestore rule bounds', () => {
+  const attempt = createCheckoutAttempt({
+    ...input,
+    totalAmount: Number.MAX_VALUE,
+    items: [{ id: 'plant-1', name: 'Plant', price: Number.MAX_VALUE, quantity: Number.MAX_VALUE }],
+  }, fixedGenerators);
+
+  assert.equal(attempt.totalAmount, 1_000_000_000);
+  assert.equal(attempt.items[0].price, 1_000_000_000);
+  assert.equal(attempt.items[0].quantity, 1_000_000);
 });
 
 test('creates checkout events with defaults and optional safe error detail', () => {

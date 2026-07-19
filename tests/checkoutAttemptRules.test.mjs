@@ -39,6 +39,40 @@ test('requires exact create fields and a bounded future expiry', async () => {
   assert.match(helper, /expiresAt\s*<=\s*request\.time\s*\+\s*duration\.value\(181,\s*['"]d['"]\)/);
 });
 
+test('requires exact bounded customer and delivery snapshots and bounded item/event lists', async () => {
+  const source = await rulesSource();
+  const customerStart = source.indexOf('function isValidCheckoutAttemptCustomer(customer)');
+  const deliveryStart = source.indexOf('function isValidCheckoutAttemptDelivery(delivery)');
+  const eventStart = source.indexOf('function isValidCheckoutAttemptEvent(event)');
+  const customerHelper = source.slice(customerStart, deliveryStart);
+  const deliveryHelper = source.slice(deliveryStart, eventStart);
+
+  assert.ok(customerStart >= 0);
+  assert.ok(deliveryStart > customerStart);
+  assert.ok(eventStart > deliveryStart);
+  assert.match(customerHelper, /keys\(\)\.hasOnly\s*\(\s*\[\s*['"]name['"],\s*['"]email['"],\s*['"]phone['"],\s*['"]phoneSearch['"]\s*\]\s*\)/);
+  assert.match(customerHelper, /keys\(\)\.hasAll\s*\(/);
+  assert.match(deliveryHelper, /keys\(\)\.hasOnly\s*\(/);
+  for (const field of ['name', 'phone', 'whatsapp', 'address', 'pincode', 'district', 'state']) {
+    assert.match(deliveryHelper, new RegExp(`['"]${field}['"]`));
+  }
+  for (const rejected of ['credentials', 'firebaseConfig', 'apiKey', 'stack']) {
+    assert.doesNotMatch(customerHelper, new RegExp(`['"]${rejected}['"]`));
+    assert.doesNotMatch(deliveryHelper, new RegExp(`['"]${rejected}['"]`));
+  }
+  assert.match(source, /function\s+isValidCheckoutAttemptItems\(items\)/);
+  assert.match(source, /items\.size\(\)\s*<=\s*20/);
+  for (const index of [0, 19]) {
+    assert.match(source, new RegExp(`items\\[${index}\\]\\.keys\\(\\)\\.hasOnly`));
+    for (const field of ['productId', 'name', 'price', 'quantity']) {
+      assert.match(source, new RegExp(`items\\[${index}\\]\\.${field}`));
+    }
+  }
+  assert.match(source, /data\.events\.size\(\)\s*<=\s*100/);
+  assert.match(source, /data\.totalAmount\s*>=\s*0/);
+  assert.match(source, /data\.totalAmount\s*<=\s*1000000000/);
+});
+
 test('limits public updates and preserves token, snapshots, expiry, and admin fields', async () => {
   const source = await rulesSource();
   const start = source.indexOf('function isValidCheckoutAttemptClientUpdate()');

@@ -11,6 +11,349 @@ service cloud.firestore {
              request.auth.token.email in ['sshibinthomass@gmail.com', 'rosaryplanthouse@gmail.com'];
     }
 
+    function isValidCheckoutAttemptCustomer(customer) {
+      return customer is map
+             && customer.keys().hasOnly(['name', 'email', 'phone', 'phoneSearch'])
+             && customer.keys().hasAll(['name', 'email', 'phone', 'phoneSearch'])
+             && customer.name is string
+             && customer.name.size() <= 200
+             && customer.email is string
+             && customer.email.size() <= 320
+             && customer.phone is string
+             && customer.phone.size() <= 32
+             && customer.phoneSearch is string
+             && customer.phoneSearch.size() <= 32;
+    }
+
+    function isValidCheckoutAttemptDelivery(delivery) {
+      return delivery is map
+             && delivery.keys().hasOnly([
+               'name', 'phone', 'whatsapp', 'address', 'pincode', 'district', 'state'
+             ])
+             && delivery.keys().hasAll([
+               'name', 'phone', 'whatsapp', 'address', 'pincode', 'district', 'state'
+             ])
+             && delivery.name is string
+             && delivery.name.size() <= 200
+             && delivery.phone is string
+             && delivery.phone.size() <= 32
+             && delivery.whatsapp is string
+             && delivery.whatsapp.size() <= 32
+             && delivery.address is string
+             && delivery.address.size() <= 1000
+             && delivery.pincode is string
+             && delivery.pincode.size() <= 20
+             && delivery.district is string
+             && delivery.district.size() <= 120
+             && delivery.state is string
+             && delivery.state.size() <= 120;
+    }
+
+    function isValidCheckoutAttemptItems(items) {
+      return items is list
+             && items.size() <= 20
+             && (items.size() <= 0 || (
+               items[0] is map
+               && items[0].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[0].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[0].productId is string
+               && items[0].productId.size() <= 128
+               && items[0].name is string
+               && items[0].name.size() <= 300
+               && items[0].price is number
+               && items[0].price >= 0
+               && items[0].price <= 1000000000
+               && items[0].quantity is number
+               && items[0].quantity >= 0
+               && items[0].quantity <= 1000000
+             ))
+             && (items.size() <= 1 || (
+               items[1] is map
+               && items[1].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[1].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[1].productId is string
+               && items[1].productId.size() <= 128
+               && items[1].name is string
+               && items[1].name.size() <= 300
+               && items[1].price is number
+               && items[1].price >= 0
+               && items[1].price <= 1000000000
+               && items[1].quantity is number
+               && items[1].quantity >= 0
+               && items[1].quantity <= 1000000
+             ))
+             && (items.size() <= 2 || (
+               items[2] is map
+               && items[2].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[2].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[2].productId is string
+               && items[2].productId.size() <= 128
+               && items[2].name is string
+               && items[2].name.size() <= 300
+               && items[2].price is number
+               && items[2].price >= 0
+               && items[2].price <= 1000000000
+               && items[2].quantity is number
+               && items[2].quantity >= 0
+               && items[2].quantity <= 1000000
+             ))
+             && (items.size() <= 3 || (
+               items[3] is map
+               && items[3].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[3].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[3].productId is string
+               && items[3].productId.size() <= 128
+               && items[3].name is string
+               && items[3].name.size() <= 300
+               && items[3].price is number
+               && items[3].price >= 0
+               && items[3].price <= 1000000000
+               && items[3].quantity is number
+               && items[3].quantity >= 0
+               && items[3].quantity <= 1000000
+             ))
+             && (items.size() <= 4 || (
+               items[4] is map
+               && items[4].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[4].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[4].productId is string
+               && items[4].productId.size() <= 128
+               && items[4].name is string
+               && items[4].name.size() <= 300
+               && items[4].price is number
+               && items[4].price >= 0
+               && items[4].price <= 1000000000
+               && items[4].quantity is number
+               && items[4].quantity >= 0
+               && items[4].quantity <= 1000000
+             ))
+             && (items.size() <= 5 || (
+               items[5] is map
+               && items[5].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[5].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[5].productId is string
+               && items[5].productId.size() <= 128
+               && items[5].name is string
+               && items[5].name.size() <= 300
+               && items[5].price is number
+               && items[5].price >= 0
+               && items[5].price <= 1000000000
+               && items[5].quantity is number
+               && items[5].quantity >= 0
+               && items[5].quantity <= 1000000
+             ))
+             && (items.size() <= 6 || (
+               items[6] is map
+               && items[6].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[6].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[6].productId is string
+               && items[6].productId.size() <= 128
+               && items[6].name is string
+               && items[6].name.size() <= 300
+               && items[6].price is number
+               && items[6].price >= 0
+               && items[6].price <= 1000000000
+               && items[6].quantity is number
+               && items[6].quantity >= 0
+               && items[6].quantity <= 1000000
+             ))
+             && (items.size() <= 7 || (
+               items[7] is map
+               && items[7].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[7].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[7].productId is string
+               && items[7].productId.size() <= 128
+               && items[7].name is string
+               && items[7].name.size() <= 300
+               && items[7].price is number
+               && items[7].price >= 0
+               && items[7].price <= 1000000000
+               && items[7].quantity is number
+               && items[7].quantity >= 0
+               && items[7].quantity <= 1000000
+             ))
+             && (items.size() <= 8 || (
+               items[8] is map
+               && items[8].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[8].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[8].productId is string
+               && items[8].productId.size() <= 128
+               && items[8].name is string
+               && items[8].name.size() <= 300
+               && items[8].price is number
+               && items[8].price >= 0
+               && items[8].price <= 1000000000
+               && items[8].quantity is number
+               && items[8].quantity >= 0
+               && items[8].quantity <= 1000000
+             ))
+             && (items.size() <= 9 || (
+               items[9] is map
+               && items[9].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[9].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[9].productId is string
+               && items[9].productId.size() <= 128
+               && items[9].name is string
+               && items[9].name.size() <= 300
+               && items[9].price is number
+               && items[9].price >= 0
+               && items[9].price <= 1000000000
+               && items[9].quantity is number
+               && items[9].quantity >= 0
+               && items[9].quantity <= 1000000
+             ))
+             && (items.size() <= 10 || (
+               items[10] is map
+               && items[10].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[10].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[10].productId is string
+               && items[10].productId.size() <= 128
+               && items[10].name is string
+               && items[10].name.size() <= 300
+               && items[10].price is number
+               && items[10].price >= 0
+               && items[10].price <= 1000000000
+               && items[10].quantity is number
+               && items[10].quantity >= 0
+               && items[10].quantity <= 1000000
+             ))
+             && (items.size() <= 11 || (
+               items[11] is map
+               && items[11].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[11].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[11].productId is string
+               && items[11].productId.size() <= 128
+               && items[11].name is string
+               && items[11].name.size() <= 300
+               && items[11].price is number
+               && items[11].price >= 0
+               && items[11].price <= 1000000000
+               && items[11].quantity is number
+               && items[11].quantity >= 0
+               && items[11].quantity <= 1000000
+             ))
+             && (items.size() <= 12 || (
+               items[12] is map
+               && items[12].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[12].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[12].productId is string
+               && items[12].productId.size() <= 128
+               && items[12].name is string
+               && items[12].name.size() <= 300
+               && items[12].price is number
+               && items[12].price >= 0
+               && items[12].price <= 1000000000
+               && items[12].quantity is number
+               && items[12].quantity >= 0
+               && items[12].quantity <= 1000000
+             ))
+             && (items.size() <= 13 || (
+               items[13] is map
+               && items[13].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[13].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[13].productId is string
+               && items[13].productId.size() <= 128
+               && items[13].name is string
+               && items[13].name.size() <= 300
+               && items[13].price is number
+               && items[13].price >= 0
+               && items[13].price <= 1000000000
+               && items[13].quantity is number
+               && items[13].quantity >= 0
+               && items[13].quantity <= 1000000
+             ))
+             && (items.size() <= 14 || (
+               items[14] is map
+               && items[14].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[14].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[14].productId is string
+               && items[14].productId.size() <= 128
+               && items[14].name is string
+               && items[14].name.size() <= 300
+               && items[14].price is number
+               && items[14].price >= 0
+               && items[14].price <= 1000000000
+               && items[14].quantity is number
+               && items[14].quantity >= 0
+               && items[14].quantity <= 1000000
+             ))
+             && (items.size() <= 15 || (
+               items[15] is map
+               && items[15].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[15].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[15].productId is string
+               && items[15].productId.size() <= 128
+               && items[15].name is string
+               && items[15].name.size() <= 300
+               && items[15].price is number
+               && items[15].price >= 0
+               && items[15].price <= 1000000000
+               && items[15].quantity is number
+               && items[15].quantity >= 0
+               && items[15].quantity <= 1000000
+             ))
+             && (items.size() <= 16 || (
+               items[16] is map
+               && items[16].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[16].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[16].productId is string
+               && items[16].productId.size() <= 128
+               && items[16].name is string
+               && items[16].name.size() <= 300
+               && items[16].price is number
+               && items[16].price >= 0
+               && items[16].price <= 1000000000
+               && items[16].quantity is number
+               && items[16].quantity >= 0
+               && items[16].quantity <= 1000000
+             ))
+             && (items.size() <= 17 || (
+               items[17] is map
+               && items[17].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[17].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[17].productId is string
+               && items[17].productId.size() <= 128
+               && items[17].name is string
+               && items[17].name.size() <= 300
+               && items[17].price is number
+               && items[17].price >= 0
+               && items[17].price <= 1000000000
+               && items[17].quantity is number
+               && items[17].quantity >= 0
+               && items[17].quantity <= 1000000
+             ))
+             && (items.size() <= 18 || (
+               items[18] is map
+               && items[18].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[18].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[18].productId is string
+               && items[18].productId.size() <= 128
+               && items[18].name is string
+               && items[18].name.size() <= 300
+               && items[18].price is number
+               && items[18].price >= 0
+               && items[18].price <= 1000000000
+               && items[18].quantity is number
+               && items[18].quantity >= 0
+               && items[18].quantity <= 1000000
+             ))
+             && (items.size() <= 19 || (
+               items[19] is map
+               && items[19].keys().hasOnly(['productId', 'name', 'price', 'quantity'])
+               && items[19].keys().hasAll(['productId', 'name', 'price', 'quantity'])
+               && items[19].productId is string
+               && items[19].productId.size() <= 128
+               && items[19].name is string
+               && items[19].name.size() <= 300
+               && items[19].price is number
+               && items[19].price >= 0
+               && items[19].price <= 1000000000
+               && items[19].quantity is number
+               && items[19].quantity >= 0
+               && items[19].quantity <= 1000000
+             ));
+    }
+
     function isValidCheckoutAttemptError(error) {
       return error is map
              && error.keys().hasOnly(['category', 'code', 'message'])
@@ -58,10 +401,12 @@ service cloud.firestore {
              && data.supportCode is string
              && data.supportCode.matches('^CHK-[A-Z0-9]{6}$')
              && data.orderId is string
-             && data.customer is map
-             && data.delivery is map
+             && isValidCheckoutAttemptCustomer(data.customer)
+             && isValidCheckoutAttemptDelivery(data.delivery)
              && data.totalAmount is number
-             && data.items is list
+             && data.totalAmount >= 0
+             && data.totalAmount <= 1000000000
+             && isValidCheckoutAttemptItems(data.items)
              && data.currentStage == 'started'
              && data.result == 'in_progress'
              && data.resolutionStatus == 'open'
@@ -72,6 +417,7 @@ service cloud.firestore {
              && data.expiresAt > request.time
              && data.expiresAt <= request.time + duration.value(181, 'd')
              && data.events is list
+             && data.events.size() <= 100
              && data.events.size() == 1
              && isValidCheckoutAttemptEvent(data.events[0])
              && data.events[0].stage == 'started'
@@ -112,8 +458,15 @@ service cloud.firestore {
                'order_verified', 'whatsapp_opened', 'completed'
              ]
              && data.result in ['in_progress', 'successful', 'failed']
+             && isValidCheckoutAttemptCustomer(data.customer)
+             && isValidCheckoutAttemptDelivery(data.delivery)
+             && data.totalAmount is number
+             && data.totalAmount >= 0
+             && data.totalAmount <= 1000000000
+             && isValidCheckoutAttemptItems(data.items)
              && data.updatedAt is timestamp
              && data.events is list
+             && data.events.size() <= 100
              && (
                data.events == resource.data.events
                || (

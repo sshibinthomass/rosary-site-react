@@ -5,6 +5,9 @@ export const CHECKOUT_STAGES = Object.freeze([
 export const CHECKOUT_RESULTS = Object.freeze(['in_progress', 'successful', 'failed']);
 export const RESOLUTION_STATUSES = Object.freeze(['open', 'investigating', 'resolved']);
 export const CHECKOUT_RETENTION_DAYS = 180;
+export const CHECKOUT_ITEM_LIMIT = 20;
+const CHECKOUT_MONEY_MAX = 1_000_000_000;
+const CHECKOUT_QUANTITY_MAX = 1_000_000;
 
 const SUPPORT_ALPHABET = 'ABCDEFG7HJKLN2PRMST9UVQWXYZ34568';
 const STABLE_ERROR_CODES = new Set([
@@ -19,7 +22,17 @@ const STABLE_ERROR_CODES = new Set([
 ]);
 
 export function normalizeContact(value = '') {
-  return String(value).replace(/\D/g, '');
+  return safeString(value, 64).replace(/\D/g, '').slice(0, 32);
+}
+
+function safeString(value, limit) {
+  if (!['string', 'number', 'boolean'].includes(typeof value)) return '';
+  return String(value).slice(0, limit);
+}
+
+function safeNonNegativeNumber(value, maximum) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.min(number, maximum) : 0;
 }
 
 export function createCheckoutEvent(stage, details = {}, now = () => new Date()) {
@@ -47,24 +60,32 @@ export function createCheckoutAttempt(input = {}, generators = {}) {
     id: randomUUID(),
     supportCode: `CHK-${Array.from(supportBytes).slice(0, 6).map((byte) => SUPPORT_ALPHABET[byte % SUPPORT_ALPHABET.length]).join('')}`,
     clientToken: Array.from(randomBytes(32), (byte) => byte.toString(16).padStart(2, '0')).join(''),
-    orderId: input.orderId || '',
+    orderId: safeString(input.orderId, 128),
     customer: {
-      name: customer.name || '',
-      email: customer.email || '',
+      name: safeString(customer.name, 200),
+      email: safeString(customer.email, 320),
       phone: normalizeContact(customer.phone),
       phoneSearch: normalizeContact(customer.phone),
     },
     delivery: {
-      ...delivery,
+      name: safeString(delivery.name, 200),
       phone: normalizeContact(delivery.phone),
+      whatsapp: normalizeContact(delivery.whatsapp),
+      address: safeString(delivery.address, 1_000),
+      pincode: safeString(delivery.pincode, 20),
+      district: safeString(delivery.district, 120),
+      state: safeString(delivery.state, 120),
     },
-    totalAmount: Number(input.totalAmount || 0),
-    items: (input.items || []).map((item) => ({
-      productId: String(item.productId ?? item.id ?? ''),
-      name: item.name || '',
-      price: Number(item.price || 0),
-      quantity: Number(item.quantity || 0),
-    })),
+    totalAmount: safeNonNegativeNumber(input.totalAmount, CHECKOUT_MONEY_MAX),
+    items: (Array.isArray(input.items) ? input.items : [])
+      .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+      .slice(0, CHECKOUT_ITEM_LIMIT)
+      .map((item) => ({
+      productId: safeString(item.productId ?? item.id, 128),
+      name: safeString(item.name, 300),
+      price: safeNonNegativeNumber(item.price, CHECKOUT_MONEY_MAX),
+      quantity: safeNonNegativeNumber(item.quantity, CHECKOUT_QUANTITY_MAX),
+      })),
     currentStage: 'started',
     result: 'in_progress',
     resolutionStatus: 'open',

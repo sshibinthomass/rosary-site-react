@@ -2,9 +2,9 @@ import {
   collection, 
   doc, 
   getDoc,
+  getDocFromServer,
   getDocs,
   updateDoc,
-  deleteDoc,
   deleteField,
   query,
   where,
@@ -313,15 +313,37 @@ export function getOrderUrl(docId) {
 }
 
 /**
- * Delete an order (admin)
+ * Get an order directly from the Firestore server, without cache fallback.
  */
-export async function deleteOrder(orderId) {
+export async function getOrderByIdFromServer(docId) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, docId);
+    const docSnap = await getDocFromServer(docRef);
+
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error verifying order:', error);
+    throw error;
+  }
+}
+
+/**
+ * Archive an order while preserving its public link.
+ */
+export async function archiveOrder(orderId) {
   try {
     const docRef = doc(db, COLLECTION_NAME, orderId);
-    await deleteDoc(docRef);
-    return { id: orderId };
+    await updateDoc(docRef, {
+      archived: true,
+      archivedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { id: orderId, archived: true };
   } catch (error) {
-    console.error('Error deleting order:', error);
+    console.error('Error archiving order:', error);
     throw error;
   }
 }

@@ -64,3 +64,40 @@ test('cart shows a persistent confirmation panel after opening WhatsApp', () => 
     'confirmation panel should be prepared before the empty-cart return so saved orders do not show only an empty cart'
   );
 });
+
+test('cart keeps checkout open with a retryable error when order verification fails', () => {
+  assert.match(
+    cartPageSource,
+    /Order was not confirmed\. Your cart is safe—please try again\./
+  );
+  assert.match(
+    cartPageSource,
+    /catch \(err\) \{[\s\S]*?setShowCheckout\(true\);[\s\S]*?Order was not confirmed/
+  );
+});
+
+test('cart clears stale location through the shared pincode normalizer', () => {
+  assert.match(cartPageSource, /normalizeCheckoutPincode/);
+  assert.match(
+    cartPageSource,
+    /setCheckoutInfo\(prev => normalizeCheckoutPincode\(prev, value\)\)/
+  );
+});
+
+test('cart continues to allow orders with optional delivery details', () => {
+  assert.doesNotMatch(cartPageSource, /required=/);
+  assert.doesNotMatch(cartPageSource, /isCheckoutInfoValid/);
+  assert.match(cartPageSource, /disabled=\{isSaving\}/);
+});
+
+test('cart treats WhatsApp launch failure as a saved order with retry', () => {
+  assert.match(cartPageSource, /whatsappOpened/);
+  assert.match(cartPageSource, /Your order is safely saved/);
+  assert.match(cartPageSource, /WhatsApp could not open/);
+  assert.match(cartPageSource, /Open WhatsApp again/);
+  assert.match(cartPageSource, /if \(checkoutResult\?\.savedToFirestore\)/);
+  assert.match(
+    cartPageSource,
+    /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
+  );
+});

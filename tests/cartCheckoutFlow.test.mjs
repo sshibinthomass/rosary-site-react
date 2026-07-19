@@ -89,3 +89,15 @@ test('cart continues to allow orders with optional delivery details', () => {
   assert.doesNotMatch(cartPageSource, /isCheckoutInfoValid/);
   assert.match(cartPageSource, /disabled=\{isSaving\}/);
 });
+
+test('cart treats WhatsApp launch failure as a saved order with retry', () => {
+  assert.match(cartPageSource, /whatsappOpened/);
+  assert.match(cartPageSource, /Your order is safely saved/);
+  assert.match(cartPageSource, /WhatsApp could not open/);
+  assert.match(cartPageSource, /Open WhatsApp again/);
+  assert.match(cartPageSource, /if \(checkoutResult\?\.savedToFirestore\)/);
+  assert.match(
+    cartPageSource,
+    /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
+  );
+});

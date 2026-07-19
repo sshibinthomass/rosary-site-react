@@ -278,6 +278,12 @@ export default function CartPage() {
 
     try {
       await openExternalUrl(checkoutConfirmation.whatsappUrl);
+      setCheckoutConfirmation(prev => prev ? {
+        ...prev,
+        whatsappOpened: true,
+        whatsappError: ''
+      } : prev);
+      success('WhatsApp opened. Please tap Send there to confirm.');
     } catch (openError) {
       console.error('Failed to reopen WhatsApp checkout:', openError);
       error('Could not reopen WhatsApp. Please try again.');
@@ -318,9 +324,15 @@ export default function CartPage() {
         </span>
         <div className="min-w-0 flex-1 space-y-3">
           <div>
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">Order request opened in WhatsApp</h2>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">
+              {checkoutConfirmation.whatsappOpened
+                ? 'Order request opened in WhatsApp'
+                : 'Your order is safely saved'}
+            </h2>
             <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
-              Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.
+              {checkoutConfirmation.whatsappOpened
+                ? 'Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.'
+                : 'WhatsApp could not open, but this order is already saved. Use the button below to open WhatsApp again without creating another order.'}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -437,7 +449,9 @@ export default function CartPage() {
     setCheckoutConfirmation({
       orderUrl: checkoutResult?.orderUrl || checkoutResult?.order?.orderUrl || '',
       whatsappUrl: checkoutResult?.whatsappUrl || '',
-      savedToFirestore: Boolean(checkoutResult?.savedToFirestore)
+      savedToFirestore: Boolean(checkoutResult?.savedToFirestore),
+      whatsappOpened: checkoutResult?.whatsappOpened !== false,
+      whatsappError: checkoutResult?.whatsappError || ''
     });
 
     if (checkoutResult?.savedToFirestore) {

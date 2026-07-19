@@ -17,6 +17,14 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If GitHub reports a leaked Google API key, rotate or restrict the exposed key in Google Cloud/Firebase before dismissing the alert. Removing the file from future commits does not invalidate a key that was already exposed.
 
+## Checkout diagnostic deployment
+
+1. Deploy `firestore.rules` before or with the web release.
+2. Deploy any generated Firestore indexes if Firebase reports one as required.
+3. In Firestore TTL policies, enable `checkoutAttempts.expiresAt`.
+4. Deploy the web build.
+5. Confirm a test failure support code can be found under Admin → Checkout Tracking.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

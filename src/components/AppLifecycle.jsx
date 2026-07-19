@@ -19,9 +19,13 @@ export default function AppLifecycle() {
     };
 
     const flushCheckoutDiagnostics = () => {
-      void flushCheckoutAttemptOutbox(window.localStorage).catch((error) => {
+      try {
+        void flushCheckoutAttemptOutbox(window.localStorage).catch((error) => {
+          console.warn('Checkout diagnostic retry warning:', error);
+        });
+      } catch (error) {
         console.warn('Checkout diagnostic retry warning:', error);
-      });
+      }
     };
 
     flushCheckoutDiagnostics();

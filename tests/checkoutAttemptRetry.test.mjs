@@ -14,7 +14,7 @@ test('app lifecycle retries queued checkout diagnostics without exposing failure
   );
   assert.match(
     lifecycleSource,
-    /const flushCheckoutDiagnostics = \(\) => \{\s*void flushCheckoutAttemptOutbox\(window\.localStorage\)\.catch\(/s,
+    /const flushCheckoutDiagnostics = \(\) => \{\s*try \{\s*void flushCheckoutAttemptOutbox\(window\.localStorage\)\.catch\([\s\S]*?\);\s*\} catch \(error\) \{\s*console\.warn\('Checkout diagnostic retry warning:', error\);\s*\}/,
   );
   assert.match(lifecycleSource, /flushCheckoutDiagnostics\(\);\s*refreshCatalog\('app-open'\);/);
   assert.match(

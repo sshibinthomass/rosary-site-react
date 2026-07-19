@@ -1,0 +1,1 @@
+import{B as o,D as s}from"./vendor-firebase-app-DU3ujpbt.js";import{k as r}from"./vendor-firebase-firestore-BbvuCeMf.js";import{a}from"./vendor-firebase-storage-B721vxUT.js";import{f as e}from"./firebaseOptions-BhGK3f0q.js";const t=o().length?o()[0]:s(e),g=r(t),n=a(t);export{g as d,n as s};

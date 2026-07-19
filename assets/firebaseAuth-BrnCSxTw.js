@@ -1,0 +1,1 @@
+import{B as o,D as t}from"./vendor-firebase-app-DU3ujpbt.js";import{getAuth as e,GoogleAuthProvider as r}from"./vendor-firebase-auth-BbOR8tWw.js";import{f as p}from"./firebaseOptions-BhGK3f0q.js";const s=o().length?o()[0]:t(p),g=e(s),i=new r;i.setCustomParameters({prompt:"select_account"});export{g as auth,i as googleProvider};

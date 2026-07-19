@@ -1,0 +1,1 @@
+const a={apiKey:"AIzaSyAvRLRxiCF-TNajg0c0-5_crkjzuxq61hQ",authDomain:"rosary-plant-house.firebaseapp.com",projectId:"rosary-plant-house",storageBucket:"rosary-plant-house.firebasestorage.app",messagingSenderId:"476582504014",appId:"1:476582504014:web:3d6f4febc2384843bd851f"};export{a as f};

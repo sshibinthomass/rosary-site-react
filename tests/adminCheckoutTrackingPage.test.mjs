@@ -147,3 +147,28 @@ test('page retains failed-save notes, tracks concurrent saves, and separates loa
   assert.match(source, />\s*Retry loading attempts\s*</);
   assert.match(source, /setLoadRequest\(\(request\) => request \+ 1\)/);
 });
+
+test('mobile cards keep semantic summary content outside the disclosure button', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const mobileStart = source.indexOf('<div className="space-y-3 md:hidden">');
+  const mobileEnd = source.indexOf('\nfunction FragmentRow');
+  const mobileSource = source.slice(mobileStart, mobileEnd);
+  const buttonStart = mobileSource.indexOf('<button');
+  const buttonEnd = mobileSource.indexOf('</button>', buttonStart);
+  const disclosureButton = mobileSource.slice(buttonStart, buttonEnd);
+
+  assert.ok(mobileStart >= 0 && mobileEnd > mobileStart, 'mobile card source should be isolated');
+  assert.doesNotMatch(disclosureButton, /<h2|<div|<dl|AttemptContacts|AttemptBadges/);
+  assert.match(
+    mobileSource,
+    /<article[\s\S]*?<div className="p-4">[\s\S]*?<h2[\s\S]*?<AttemptContacts[\s\S]*?<dl[\s\S]*?<AttemptBadges[\s\S]*?<\/div>[\s\S]*?<button/,
+  );
+  assert.match(disclosureButton, /aria-expanded=\{expanded\}/);
+  assert.match(disclosureButton, /aria-controls=\{getCheckoutAttemptDomIds\(attempt\.id, 'mobile'\)\.panelId\}/);
+  assert.match(disclosureButton, /aria-label=\{getExpandLabel\(attempt, expanded\)\}/);
+  assert.match(disclosureButton, /\{expanded \? 'Hide details' : 'Show details'\}/);
+  assert.match(
+    mobileSource,
+    /id=\{getCheckoutAttemptDomIds\(attempt\.id, 'mobile'\)\.panelId\}/,
+  );
+});

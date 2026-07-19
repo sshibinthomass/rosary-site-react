@@ -407,20 +407,10 @@ export default function AdminCheckoutTrackingPage() {
               const expanded = expandedAttemptId === attempt.id;
               return (
                 <article key={attempt.id} className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
-                  <button
-                    type="button"
-                    aria-expanded={expanded}
-                    aria-controls={getCheckoutAttemptDomIds(attempt.id, 'mobile').panelId}
-                    aria-label={getExpandLabel(attempt, expanded)}
-                    onClick={() => toggleAttempt(attempt.id)}
-                    className={`w-full p-4 text-left ${focusClass}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</h2>
-                        <AttemptContacts attempt={attempt} />
-                      </div>
-                      <span aria-hidden="true" className="text-lg text-[var(--color-forest)]">{expanded ? '−' : '+'}</span>
+                  <div className="p-4">
+                    <div className="min-w-0">
+                      <h2 className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</h2>
+                      <AttemptContacts attempt={attempt} />
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
                       <div><dt className="text-[var(--text-secondary)]">Order cost</dt><dd className="mt-0.5 font-semibold text-[var(--text-primary)]">{formatMoney(attempt.totalAmount)}</dd></div>
@@ -430,6 +420,17 @@ export default function AdminCheckoutTrackingPage() {
                       <div className="col-span-2"><dt className="text-[var(--text-secondary)]">Attempt time</dt><dd className="mt-0.5 text-[var(--text-primary)]">{formatDate(attempt.createdAt)}</dd></div>
                     </dl>
                     <div className="mt-3"><AttemptBadges attempt={attempt} /></div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={getCheckoutAttemptDomIds(attempt.id, 'mobile').panelId}
+                    aria-label={getExpandLabel(attempt, expanded)}
+                    onClick={() => toggleAttempt(attempt.id)}
+                    className={`flex w-full items-center justify-between border-t border-[var(--border-color)] px-4 py-3 text-left text-sm font-semibold text-[var(--color-forest)] hover:bg-[var(--bg-tertiary)] ${focusClass}`}
+                  >
+                    <span>{expanded ? 'Hide details' : 'Show details'}</span>
+                    <span aria-hidden="true" className="text-lg">{expanded ? '−' : '+'}</span>
                   </button>
                   {expanded && (
                     <div id={getCheckoutAttemptDomIds(attempt.id, 'mobile').panelId} className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-4">

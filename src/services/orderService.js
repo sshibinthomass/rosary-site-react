@@ -5,7 +5,6 @@ import {
   getDocFromServer,
   getDocs,
   updateDoc,
-  deleteDoc,
   deleteField,
   query,
   where,
@@ -332,15 +331,19 @@ export async function getOrderByIdFromServer(docId) {
 }
 
 /**
- * Delete an order (admin)
+ * Archive an order while preserving its public link.
  */
-export async function deleteOrder(orderId) {
+export async function archiveOrder(orderId) {
   try {
     const docRef = doc(db, COLLECTION_NAME, orderId);
-    await deleteDoc(docRef);
-    return { id: orderId };
+    await updateDoc(docRef, {
+      archived: true,
+      archivedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { id: orderId, archived: true };
   } catch (error) {
-    console.error('Error deleting order:', error);
+    console.error('Error archiving order:', error);
     throw error;
   }
 }

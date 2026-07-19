@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { getAllOrders, updateOrderStatus, deleteOrder, updateDeliveryCharge, updateManualDiscount, updateOrderItems, updateOrderCustomer, getOrderUrl } from '../services/orderService';
+import { getAllOrders, updateOrderStatus, archiveOrder, updateDeliveryCharge, updateManualDiscount, updateOrderItems, updateOrderCustomer, getOrderUrl } from '../services/orderService';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { resolveImageUrl } from '../utils/imageCompressor';
@@ -609,17 +609,17 @@ export default function AdminOrdersPage() {
     printWindow.document.close();
   };
 
-  const handleBulkDeleteSelected = async () => {
+  const handleBulkArchiveSelected = async () => {
     if (filterStatus !== 'cancelled' && filterStatus !== 'delivered') {
       return;
     }
 
-    const toDelete = orders.filter(
+    const toArchive = orders.filter(
       (o) => o.status === filterStatus && selectedOrders.includes(o.id)
     );
 
-    if (!toDelete.length) {
-      error('Please select at least one order to delete');
+    if (!toArchive.length) {
+      error('Please select at least one order to archive');
       return;
     }
 
@@ -628,21 +628,21 @@ export default function AdminOrdersPage() {
 
     if (
       !window.confirm(
-        `Are you sure you want to permanently delete ${toDelete.length} ${label} order(s)?`
+        `Archive ${toArchive.length} ${label} order(s)? Their existing order links will keep working.`
       )
     ) {
       return;
     }
 
     try {
-      await Promise.all(toDelete.map((order) => deleteOrder(order.id)));
-      const ids = new Set(toDelete.map((o) => o.id));
+      await Promise.all(toArchive.map((order) => archiveOrder(order.id)));
+      const ids = new Set(toArchive.map((o) => o.id));
       setOrders((prev) => prev.filter((o) => !ids.has(o.id)));
       setSelectedOrders([]);
-      success(`Deleted ${toDelete.length} ${label} order(s)`);
+      success(`Archived ${toArchive.length} ${label} order(s)`);
     } catch (err) {
-      console.error('Error deleting selected orders:', err);
-      error('Failed to delete selected orders');
+      console.error('Error archiving selected orders:', err);
+      error('Failed to archive selected orders');
     }
   };
 
@@ -810,14 +810,14 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Are you sure you want to delete this cancelled order?')) return;
+  const handleArchiveOrder = async (orderId) => {
+    if (!window.confirm('Archive this cancelled order? Its existing order link will keep working.')) return;
     try {
-      await deleteOrder(orderId);
+      await archiveOrder(orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
-      success('Order deleted');
+      success('Order archived');
     } catch (err) {
-      error('Failed to delete order');
+      error('Failed to archive order');
     }
   };
 
@@ -942,6 +942,7 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders
+    .filter(o => !o.archived)
     .filter(o => {
       if (filterStatus === 'all') return o.status !== 'cancelled';
       return o.status === filterStatus;
@@ -1230,7 +1231,7 @@ export default function AdminOrdersPage() {
           </button>
           <button
             type="button"
-            onClick={handleBulkDeleteSelected}
+            onClick={handleBulkArchiveSelected}
             disabled={!anySelectedVisible}
             className={`
               text-xs px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1
@@ -1240,7 +1241,7 @@ export default function AdminOrdersPage() {
               }
             `}
           >
-            🗑️ Delete Selected
+            Archive Selected
             {visibleSelectedCount > 0 && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/10">
                 {visibleSelectedCount}
@@ -1733,14 +1734,14 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Delete Cancelled Order */}
+                  {/* Archive cancelled orders without breaking their public links. */}
                   {order.status === 'cancelled' && (
                     <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
                       <button
-                        onClick={() => handleDeleteOrder(order.id)}
+                        onClick={() => handleArchiveOrder(order.id)}
                         className="btn bg-red-500 text-white hover:bg-red-600 text-sm w-full"
                       >
-                        🗑️ Delete This Order
+                        Archive This Order
                       </button>
                     </div>
                   )}

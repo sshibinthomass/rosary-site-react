@@ -74,7 +74,8 @@ service cloud.firestore {
             && resource.data.customer.userId != null
             && resource.data.customer.userId == request.auth.uid);
 
-      allow delete: if isAdmin();
+      // Preserve issued order links. Archiving is an update, never a client delete.
+      allow delete: if false;
     }
 
     // Admin fallback for any other collection

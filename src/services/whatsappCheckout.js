@@ -56,8 +56,17 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
     });
   } catch (error) {
     console.error('Error creating order:', error);
-    error.attemptId = tracker?.attemptId;
-    error.supportCode = tracker?.supportCode;
+    try {
+      const canAnnotate = error !== null
+        && (typeof error === 'object' || typeof error === 'function')
+        && Object.isExtensible(error);
+      if (canAnnotate) {
+        error.attemptId = tracker?.attemptId;
+        error.supportCode = tracker?.supportCode;
+      }
+    } catch {
+      // Diagnostic metadata must never replace the original business failure.
+    }
     throw error;
   }
 }

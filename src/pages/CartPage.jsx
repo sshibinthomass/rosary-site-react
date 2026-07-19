@@ -335,7 +335,7 @@ export default function CartPage() {
                 ? 'Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.'
                 : 'WhatsApp could not open, but this order is already saved. Use the button below to open WhatsApp again without creating another order.'}
             </p>
-            {!checkoutConfirmation.whatsappOpened && checkoutConfirmation.supportCode && (
+            {checkoutConfirmation.supportCode && (
               <p className="mt-2 font-mono text-xs font-semibold text-[var(--text-primary)]">
                 Support code: {checkoutConfirmation.supportCode}
               </p>

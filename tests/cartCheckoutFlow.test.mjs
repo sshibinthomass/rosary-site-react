@@ -119,11 +119,15 @@ test('cart treats WhatsApp launch failure as a saved order with retry', () => {
     /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
   );
   assert.match(cartPageSource, /supportCode:\s*checkoutResult\?\.supportCode\s*\|\|\s*''/);
-  assert.match(
-    cartPageSource,
-    /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
-  );
   assert.match(cartPageSource, /Support code:\s*\{checkoutConfirmation\.supportCode\}/);
   assert.match(cartPageSource, /Please tap Send there to confirm/);
   assert.doesNotMatch(cartPageSource, /WhatsApp message was sent/);
+});
+
+test('cart always shows the confirmation support code, including successful WhatsApp handoffs', () => {
+  assert.match(cartPageSource, /\{checkoutConfirmation\.supportCode\s*&&\s*\(/);
+  assert.doesNotMatch(
+    cartPageSource,
+    /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
+  );
 });

@@ -13,6 +13,72 @@ const whatsappCheckoutSource = fs.readFileSync(
   'utf8'
 );
 
+let adapterModuleIndex = 0;
+
+async function loadWhatsAppCheckoutAdapter(overrides = {}) {
+  const dependencyKey = `__whatsappCheckoutTestDependencies${++adapterModuleIndex}`;
+  globalThis[dependencyKey] = {
+    createOrder: async () => {},
+    generateOrderId: () => 'RPH-TEST',
+    getOrderByIdFromServer: async () => {},
+    getOrderUrl: () => '',
+    incrementPromoUsage: async () => {},
+    openExternalUrl: async () => {},
+    generateWhatsAppOrderRequestUrl: () => '',
+    runVerifiedCheckout: async () => {},
+    createCheckoutTracker: async () => ({
+      attemptId: 'attempt-runtime',
+      supportCode: 'CHK-RUNTIME',
+    }),
+    ...overrides,
+  };
+
+  const dependencyNames = [
+    'createOrder',
+    'generateOrderId',
+    'getOrderByIdFromServer',
+    'getOrderUrl',
+    'incrementPromoUsage',
+    'openExternalUrl',
+    'generateWhatsAppOrderRequestUrl',
+    'runVerifiedCheckout',
+    'createCheckoutTracker',
+  ];
+  const executableSource = whatsappCheckoutSource
+    .replace(/^import[^\n]*\r?\n/gm, '')
+    .replaceAll('export ', '');
+  const moduleSource = [
+    `const { ${dependencyNames.join(', ')} } = globalThis.${dependencyKey};`,
+    executableSource,
+    'export { initiateWhatsAppCheckout };',
+  ].join('\n');
+
+  try {
+    return await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString('base64')}`);
+  } finally {
+    delete globalThis[dependencyKey];
+  }
+}
+
+async function captureAdapterRejection(failure) {
+  const adapter = await loadWhatsAppCheckoutAdapter({
+    runVerifiedCheckout: async () => {
+      throw failure;
+    },
+  });
+  const originalError = console.error;
+  console.error = () => {};
+
+  try {
+    await adapter.initiateWhatsAppCheckout([], 0, {}, null, null);
+    assert.fail('Expected checkout adapter to reject');
+  } catch (error) {
+    return error;
+  } finally {
+    console.error = originalError;
+  }
+}
+
 test('checkout tracker support identifiers flow through verified checkout results', async () => {
   const persistedUpdates = [];
   let uuidIndex = 0;
@@ -73,4 +139,21 @@ test('production adapter creates and passes a tracker and annotates the original
     whatsappCheckoutSource,
     /error\.supportCode\s*=\s*tracker\?\.supportCode[\s\S]*?throw error;/
   );
+});
+
+test('production adapter preserves a primitive business failure value', async () => {
+  const failure = 'checkout failed as a primitive';
+
+  const rejection = await captureAdapterRejection(failure);
+
+  assert.equal(rejection, failure);
+});
+
+test('production adapter preserves a frozen business failure object by identity', async () => {
+  const failure = Object.freeze({ code: 'frozen-checkout-failure' });
+
+  const rejection = await captureAdapterRejection(failure);
+
+  assert.strictEqual(rejection, failure);
+  assert.deepEqual(rejection, { code: 'frozen-checkout-failure' });
 });

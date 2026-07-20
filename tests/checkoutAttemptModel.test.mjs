@@ -5,6 +5,7 @@ import {
   createCheckoutAttempt,
   createCheckoutEvent,
   filterCheckoutAttempts,
+  getCheckoutAttemptLinkedOrder,
   sanitizeCheckoutError,
 } from '../src/utils/checkoutAttemptModel.js';
 import * as checkoutAttemptModel from '../src/utils/checkoutAttemptModel.js';
@@ -35,16 +36,17 @@ test('creates a complete 180-day checkout attempt snapshot', () => {
 
   assert.equal(attempt.id, 'document-123');
   assert.equal(attempt.supportCode, 'CHK-7K2M9Q');
-  assert.notEqual(attempt.clientToken, attempt.id);
+  assert.notEqual(attempt.capabilityToken, attempt.id);
+  assert.equal(attempt.capabilityToken.length, 64);
   assert.equal(attempt.customer.name, 'Anu');
   assert.equal(attempt.customer.phone, '919876543210');
-  assert.equal(attempt.customer.phoneSearch, '919876543210');
-  assert.equal(attempt.delivery.phone, '919876543210');
-  assert.deepEqual(Object.keys(attempt.customer).sort(), ['email', 'name', 'phone', 'phoneSearch']);
-  assert.deepEqual(Object.keys(attempt.delivery).sort(), [
-    'address', 'district', 'name', 'phone', 'pincode', 'state', 'whatsapp',
-  ]);
-  assert.doesNotMatch(JSON.stringify({ customer: attempt.customer, delivery: attempt.delivery }), /credentials|firebaseConfig|apiKey|stack|secret/i);
+  assert.equal(attempt.customer.whatsapp, '919988776655');
+  assert.deepEqual(Object.keys(attempt.customer).sort(), ['name', 'phone', 'whatsapp']);
+  assert.equal('delivery' in attempt, false);
+  assert.doesNotMatch(
+    JSON.stringify(attempt.customer),
+    /email|address|pincode|district|state|credentials|firebaseConfig|apiKey|stack|secret/i,
+  );
   assert.equal(attempt.totalAmount, 137);
   assert.deepEqual(attempt.items[0], {
     productId: '49', name: 'Hydrangea', price: 39, quantity: 1,
@@ -168,10 +170,29 @@ test('normalizes untrusted error codes to a bounded generic fallback', () => {
   assert.doesNotMatch(sanitized.code, /apiKey|secret/i);
 });
 
+test('stable boundary codes take precedence over misleading generic messages', () => {
+  assert.deepEqual(sanitizeCheckoutError({
+    code: 'whatsapp-launch-failed',
+    message: 'A network-looking plugin rejection occurred.',
+  }), {
+    category: 'whatsapp',
+    code: 'whatsapp-launch-failed',
+    message: 'WhatsApp could not be opened.',
+  });
+  assert.deepEqual(sanitizeCheckoutError({
+    code: 'verification-failed',
+    message: 'Network response contained a mismatched order.',
+  }), {
+    category: 'verification',
+    code: 'verification-failed',
+    message: 'Checkout verification did not complete.',
+  });
+});
+
 const attempts = [
   { id: '1', supportCode: 'CHK-AAAAAA', orderId: 'ORD-1', customer: { name: 'Anu', phoneSearch: '919876543210' }, result: 'failed', currentStage: 'order_saved', resolutionStatus: 'open', createdAt: '2026-07-10T10:00:00.000Z' },
-  { id: '2', supportCode: 'CHK-BBBBBB', orderId: 'ORD-2', customer: { name: 'Bala', phoneSearch: '447700900123' }, delivery: { whatsappPhone: '+91 99999 88888' }, result: 'successful', currentStage: 'completed', resolutionStatus: 'investigating', createdAt: '2026-07-18T10:00:00.000Z' },
-  { id: '3', supportCode: 'CHK-CCCCCC', orderId: 'ORD-3', customer: { name: 'Cia', phoneSearch: '12025550123' }, result: 'failed', currentStage: 'started', resolutionStatus: 'resolved', createdAt: '2026-07-19T10:00:00.000Z' },
+  { id: '2', supportCode: 'CHK-BBBBBB', linkedOrderId: 'ORD-2', linkedOrderDocumentId: 'document-2', customer: { name: 'Bala', phone: '447700900123', whatsapp: '919999988888' }, result: 'successful', currentStage: 'completed', resolutionStatus: 'investigating', createdAt: '2026-07-18T10:00:00.000Z' },
+  { id: '3', supportCode: 'CHK-CCCCCC', linkedOrderId: 'ORD-3', linkedOrderDocumentId: 'document-3', customer: { name: 'Cia', phone: '12025550123', whatsapp: '' }, result: 'failed', currentStage: 'started', resolutionStatus: 'resolved', createdAt: '2026-07-19T10:00:00.000Z' },
 ];
 
 for (const [name, filters, expectedIds] of [
@@ -193,6 +214,37 @@ for (const [name, filters, expectedIds] of [
 
 test('excludes resolved attempts and sorts remaining attempts newest first by default', () => {
   assert.deepEqual(filterCheckoutAttempts(attempts, {}).map(({ id }) => id), ['2', '1']);
+});
+
+test('resolves canonical linked-order identifiers from current and legacy tracker shapes', () => {
+  assert.deepEqual(getCheckoutAttemptLinkedOrder({
+    linkedOrderId: 'RPH-CURRENT',
+    linkedOrderDocumentId: 'document-current',
+    orderId: 'RPH-LEGACY-IGNORED',
+  }), {
+    businessOrderId: 'RPH-CURRENT',
+    documentId: 'document-current',
+    displayId: 'RPH-CURRENT',
+    searchValues: ['RPH-CURRENT', 'RPH-LEGACY-IGNORED', 'document-current'],
+  });
+  assert.deepEqual(getCheckoutAttemptLinkedOrder({ orderId: 'legacy-order-reference' }), {
+    businessOrderId: 'legacy-order-reference',
+    documentId: 'legacy-order-reference',
+    displayId: 'legacy-order-reference',
+    searchValues: ['legacy-order-reference'],
+  });
+});
+
+test('explicit support-code or order query searches can include resolved attempts', () => {
+  assert.deepEqual(
+    filterCheckoutAttempts(attempts, { query: 'ORD-3', includeResolvedForQuery: true }).map(({ id }) => id),
+    ['3'],
+  );
+  assert.deepEqual(
+    filterCheckoutAttempts(attempts, { query: 'CHK-CCCCCC', includeResolvedForQuery: true }).map(({ id }) => id),
+    ['3'],
+  );
+  assert.deepEqual(filterCheckoutAttempts(attempts, { query: 'ORD-3' }), []);
 });
 
 test('parses date-only filter bounds at the start and end of the browser-local day', () => {

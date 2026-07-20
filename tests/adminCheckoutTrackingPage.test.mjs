@@ -16,20 +16,22 @@ test('checkout tracking page loads, filters, summarizes, and resolves attempts',
   assert.match(source, /getAllCheckoutAttempts\(\)/);
   assert.match(source, /filterCheckoutAttempts\(attempts,/);
   assert.match(source, /new URLSearchParams\(location\.search\)\.get\(['"]orderId['"]\)/);
+  assert.match(source, /new URLSearchParams\(location\.search\)\.get\(['"]supportCode['"]\)/);
   assert.match(source, /attempts\.filter\([\s\S]*result\s*===\s*['"]failed['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*resolutionStatus\s*===\s*['"]investigating['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*resolutionStatus\s*===\s*['"]resolved['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*result\s*===\s*['"]successful['"]/);
   assert.match(source, /updateCheckoutAttemptResolution\(/);
   assert.match(source, /savingAttemptIds/);
-  assert.match(source, /linkedOrderDocumentId[\s\S]*\/order\//);
+  assert.match(source, /getCheckoutAttemptLinkedOrder\(attempt\)[\s\S]*\/order\//);
   assert.match(source, /md:hidden/);
   assert.match(source, /hidden md:table/);
 
   for (const label of [
     'Checkout Tracking', 'Failures', 'Open investigations', 'Resolved', 'Successful',
     'Customer', 'Order cost', 'Support code', 'Last stage', 'Attempt time',
-    'Cart snapshot', 'Timeline', 'Internal notes', 'Mark investigating', 'Mark resolved',
+    'Cart snapshot', 'Timeline', 'Internal notes', 'Mark open', 'Mark investigating',
+    'Mark resolved', 'Save notes',
   ]) {
     assert.match(source, new RegExp(label));
   }
@@ -52,14 +54,53 @@ test('admin orders links each record to its encoded checkout diagnostics', () =>
   assert.match(source, />\s*Checkout issues\s*</);
 });
 
+test('explicit query-parameter searches include resolved records while default browsing does not', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  assert.match(source, /includeResolvedForQuery:\s*Boolean\(explicitQuery\)/);
+  assert.match(source, /includeResolved:\s*filters\.includeResolved\s*\|\|\s*filters\.resolutionStatus\s*===\s*['"]resolved['"]/);
+  assert.match(source, /setFilter\(['"]query['"],[\s\S]*setExplicitQuery\(['"]['"]\)/);
+});
+
 test('resolution controls disable only while their attempt is saving', () => {
   const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
   const detailStart = source.indexOf('function AttemptDetails');
   const detailEnd = source.indexOf('function AttemptBadges');
   const details = source.slice(detailStart, detailEnd);
 
-  assert.equal(Array.from(details.matchAll(/disabled=\{saving\}/g)).length, 3);
+  assert.equal(Array.from(details.matchAll(/disabled=\{saving\}/g)).length, 5);
   assert.doesNotMatch(details, /disabled=\{saving\s*\|\|/);
+});
+
+test('standalone note updates preserve the current resolution status, including open', () => {
+  const createUpdate = checkoutAttemptModel.createCheckoutAttemptResolutionUpdate;
+  assert.equal(typeof createUpdate, 'function');
+
+  assert.deepEqual(createUpdate({ resolutionStatus: 'open' }, 'Customer will retry.'), {
+    resolutionStatus: 'open',
+    adminNotes: 'Customer will retry.',
+  });
+  assert.deepEqual(createUpdate({ resolutionStatus: 'investigating' }, 'Waiting'), {
+    resolutionStatus: 'investigating',
+    adminNotes: 'Waiting',
+  });
+  assert.deepEqual(createUpdate({ resolutionStatus: 'resolved' }, 'Done', 'open'), {
+    resolutionStatus: 'open',
+    adminNotes: 'Done',
+  });
+});
+
+test('page exposes every resolution action and a separate save-notes action', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const detailStart = source.indexOf('function AttemptDetails');
+  const detailEnd = source.indexOf('function AttemptBadges');
+  const details = source.slice(detailStart, detailEnd);
+
+  assert.match(details, /onClick=\{\(\) => onResolve\('open'\)\}/);
+  assert.match(details, /onClick=\{\(\) => onResolve\('investigating'\)\}/);
+  assert.match(details, /onClick=\{\(\) => onResolve\('resolved'\)\}/);
+  assert.match(details, /onClick=\{onSaveNotes\}/);
+  assert.match(source, /createCheckoutAttemptResolutionUpdate\(attempt, notes\[attempt\.id\]\s*\|\|\s*'', resolutionStatus\)/);
+  assert.match(source, /onSaveNotes=\{\(\) => saveResolution\(attempt\)\}/);
 });
 
 test('active-save helpers preserve concurrent attempt IDs immutably', () => {

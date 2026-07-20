@@ -279,6 +279,11 @@ export default function CartPage() {
 
     try {
       await openExternalUrl(checkoutConfirmation.whatsappUrl);
+      try {
+        await checkoutConfirmation.recordWhatsAppRetry?.({ success: true });
+      } catch (trackingError) {
+        console.warn('Checkout tracking warning:', trackingError);
+      }
       setCheckoutConfirmation(prev => prev ? {
         ...prev,
         whatsappOpened: true,
@@ -286,6 +291,11 @@ export default function CartPage() {
       } : prev);
       success('WhatsApp opened. Please tap Send there to confirm.');
     } catch (openError) {
+      try {
+        await checkoutConfirmation.recordWhatsAppRetry?.({ success: false, error: openError });
+      } catch (trackingError) {
+        console.warn('Checkout tracking warning:', trackingError);
+      }
       console.error('Failed to reopen WhatsApp checkout:', openError);
       error('Could not reopen WhatsApp. Please try again.');
     }
@@ -458,7 +468,8 @@ export default function CartPage() {
       savedToFirestore: Boolean(checkoutResult?.savedToFirestore),
       whatsappOpened: checkoutResult?.whatsappOpened !== false,
       whatsappError: checkoutResult?.whatsappError || '',
-      supportCode: checkoutResult?.supportCode || ''
+      supportCode: checkoutResult?.supportCode || '',
+      recordWhatsAppRetry: checkoutResult?.recordWhatsAppRetry
     });
 
     if (checkoutResult?.savedToFirestore) {

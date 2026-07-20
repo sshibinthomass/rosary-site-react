@@ -131,3 +131,20 @@ test('cart always shows the confirmation support code, including successful What
     /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
   );
 });
+
+test('built-in WhatsApp retry reports success or failure through the opaque same-attempt callback', () => {
+  assert.match(
+    cartPageSource,
+    /recordWhatsAppRetry:\s*checkoutResult\?\.recordWhatsAppRetry/
+  );
+  assert.match(
+    cartPageSource,
+    /await checkoutConfirmation\.recordWhatsAppRetry\?\.\(\{\s*success:\s*true\s*\}\)/
+  );
+  assert.match(
+    cartPageSource,
+    /await checkoutConfirmation\.recordWhatsAppRetry\?\.\(\{\s*success:\s*false,\s*error:\s*openError\s*\}\)/
+  );
+  assert.doesNotMatch(cartPageSource, /checkoutConfirmation[\s\S]{0,80}capabilityToken/);
+  assert.doesNotMatch(cartPageSource, /initiateWhatsAppCheckout[\s\S]{0,240}handleOpenWhatsAppAgain/);
+});

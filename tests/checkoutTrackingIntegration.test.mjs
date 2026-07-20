@@ -5,7 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { createCheckoutTrackerSession } from '../src/services/checkoutAttemptService.js';
-import { createCheckoutAttempt } from '../src/utils/checkoutAttemptModel.js';
+import { createCheckoutAttempt, filterCheckoutAttempts } from '../src/utils/checkoutAttemptModel.js';
 import { runVerifiedCheckout } from '../src/services/verifiedCheckout.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -122,6 +122,19 @@ test('checkout tracker support identifiers flow through verified checkout result
     ['details_validated', 'order_saved', 'order_verified', 'whatsapp_opened', 'completed']
   );
   assert.equal(persistedUpdates.at(-1).result, 'successful');
+  const trackerRecord = {
+    id: tracker.attemptId,
+    resolutionStatus: 'resolved',
+    createdAt: '2026-07-19T10:00:00.000Z',
+    ...persistedUpdates.find((update) => update.linkedOrderId),
+  };
+  assert.deepEqual(
+    filterCheckoutAttempts([trackerRecord], {
+      query: order.orderId,
+      includeResolvedForQuery: true,
+    }).map(({ id }) => id),
+    [tracker.attemptId],
+  );
 });
 
 test('production adapter creates and passes a tracker and annotates the original business error', () => {
@@ -131,8 +144,9 @@ test('production adapter creates and passes a tracker and annotates the original
   );
   assert.match(
     whatsappCheckoutSource,
-    /createCheckoutTracker\(\{[\s\S]*?items:\s*cartItems[\s\S]*?totalAmount:\s*total[\s\S]*?customer:[\s\S]*?delivery:[\s\S]*?userId[\s\S]*?\}\)/
+    /createCheckoutTracker\(\{[\s\S]*?items:\s*cartItems[\s\S]*?totalAmount:\s*total[\s\S]*?customer:[\s\S]*?whatsapp:[\s\S]*?userId[\s\S]*?\}\)/
   );
+  assert.doesNotMatch(whatsappCheckoutSource, /createCheckoutTracker\(\{[\s\S]*?email:|createCheckoutTracker\(\{[\s\S]*?address:/);
   assert.match(whatsappCheckoutSource, /runVerifiedCheckout\([\s\S]*?tracker,?[\s\S]*?\)/);
   assert.match(whatsappCheckoutSource, /error\.attemptId\s*=\s*tracker\?\.attemptId/);
   assert.match(whatsappCheckoutSource, /error\.supportCode\s*=\s*tracker\?\.supportCode/);
@@ -171,7 +185,7 @@ test('production adapter maps storefront checkout fields into a complete model s
   });
   assert.equal(attempt.customer.name, 'Anu');
   assert.equal(attempt.customer.phone, '919876543210');
-  assert.equal(attempt.delivery.whatsapp, '919988776655');
+  assert.equal(attempt.customer.whatsapp, '919988776655');
   assert.equal(attempt.totalAmount, 78);
   assert.deepEqual(attempt.items, [{
     productId: 'plant-49', name: 'Hydrangea', price: 39, quantity: 2,

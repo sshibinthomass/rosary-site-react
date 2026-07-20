@@ -19,11 +19,27 @@ If GitHub reports a leaked Google API key, rotate or restrict the exposed key in
 
 ## Checkout diagnostic deployment
 
-1. Deploy `firestore.rules` before or with the web release.
-2. Deploy any generated Firestore indexes if Firebase reports one as required.
-3. In Firestore TTL policies, enable `checkoutAttempts.expiresAt`.
-4. Deploy the web build.
-5. Confirm a test failure support code can be found under Admin → Checkout Tracking.
+Customer checkout diagnostics use the Vercel `/api/checkout-attempts` endpoint and Firebase Admin; browsers do not write the `checkoutAttempts` collection directly. Configure exactly one of these server-only Vercel environment variables:
+
+- `FIREBASE_SERVICE_ACCOUNT_BASE64` (recommended for a single-line Vercel value)
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+Never prefix either variable with `VITE_`, expose its value to the browser, or commit a real service account. The API stores only a SHA-256 capability-token hash. Diagnostic payloads contain name, phone, WhatsApp, safe cart fields, and an optional Firebase-token-verified user ID; they exclude email and delivery-location fields.
+
+Deploy in this order:
+
+1. Add the server-only credential variable to the Vercel environment that will host the release.
+2. Publish `firestore.rules` so public checkout-attempt create/update/read/list/delete are denied.
+3. Publish `firestore.indexes.json`, then confirm Firestore TTL is enabled for `checkoutAttempts.expiresAt`.
+4. Deploy the Vercel release containing both `/api/checkout-attempts` and the web build.
+
+After deployment, run these live smoke checks without using production credentials locally:
+
+1. Complete a normal test checkout. Confirm its support code and canonical order ID find the same attempt under Admin -> Checkout Tracking.
+2. Block the WhatsApp popup/launcher. Confirm the saved-order panel appears, then use `Open WhatsApp again`; the same attempt should recover without a duplicate order.
+3. Confirm Firestore stores `capabilityTokenHash` but no raw capability token, email, street address, pincode, district, or state.
+4. Save notes while the attempt is `open`, then exercise `investigating`, `resolved`, and `open`; a resolved record should hide by default but remain findable by its explicit support-code/order-ID URL.
+5. Confirm an unauthenticated browser cannot create, update, get, list, or delete `checkoutAttempts`, and that an admin still cannot delete a checkout attempt or protected order.
 
 ## Expanding the ESLint configuration
 

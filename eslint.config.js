@@ -32,7 +32,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['*.js', 'scripts/**/*.{js,cjs,mjs}', 'tests/**/*.mjs'],
+    files: ['*.js', 'api/**/*.js', 'scripts/**/*.{js,cjs,mjs}', 'tests/**/*.mjs'],
     extends: [
       js.configs.recommended,
     ],

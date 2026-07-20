@@ -7,10 +7,12 @@ import {
 } from '../services/checkoutAttemptService';
 import {
   addActiveCheckoutAttemptId,
+  createCheckoutAttemptResolutionUpdate,
   filterCheckoutAttempts,
   formatCheckoutEventOutcome,
   getCheckoutAttemptContacts,
   getCheckoutAttemptDomIds,
+  getCheckoutAttemptLinkedOrder,
   removeActiveCheckoutAttemptId,
   CHECKOUT_STAGES,
   RESOLUTION_STATUSES,
@@ -102,8 +104,9 @@ function CheckoutTimeline({ events = [] }) {
   );
 }
 
-function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, saving }) {
+function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, onSaveNotes, saving }) {
   const domIds = getCheckoutAttemptDomIds(attempt.id, idPrefix);
+  const linkedOrder = getCheckoutAttemptLinkedOrder(attempt);
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(15rem,0.8fr)]">
       <section>
@@ -123,9 +126,9 @@ function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, savi
         ) : (
           <p className="mt-3 text-sm text-[var(--text-secondary)]">No cart items were recorded.</p>
         )}
-        {attempt.linkedOrderDocumentId && (
+        {linkedOrder.documentId && (
           <NavLink
-            to={`/order/${encodeURIComponent(attempt.linkedOrderDocumentId)}`}
+            to={`/order/${encodeURIComponent(linkedOrder.documentId)}`}
             className={`mt-4 inline-flex text-sm font-semibold text-[var(--color-forest)] hover:underline ${focusClass}`}
           >
             Open linked order
@@ -157,24 +160,43 @@ function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, savi
           className={`input mt-3 resize-y text-sm ${focusClass}`}
           placeholder="Add context for the next support follow-up"
         />
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+        <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
           <button
             type="button"
             disabled={saving}
+            aria-pressed={attempt.resolutionStatus === 'open'}
+            onClick={() => onResolve('open')}
+            className={`btn btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
+          >
+            Mark open
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            aria-pressed={attempt.resolutionStatus === 'investigating'}
             onClick={() => onResolve('investigating')}
-            className={`btn btn-secondary flex-1 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
+            className={`btn btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
           >
             Mark investigating
           </button>
           <button
             type="button"
             disabled={saving}
+            aria-pressed={attempt.resolutionStatus === 'resolved'}
             onClick={() => onResolve('resolved')}
-            className={`btn flex-1 bg-[var(--color-forest)] text-xs text-white disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
+            className={`btn bg-[var(--color-forest)] text-xs text-white disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
           >
-            {saving ? 'Saving…' : 'Mark resolved'}
+            Mark resolved
           </button>
         </div>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onSaveNotes}
+          className={`btn btn-secondary mt-2 w-full text-xs disabled:cursor-not-allowed disabled:opacity-50 ${focusClass}`}
+        >
+          {saving ? 'Saving…' : 'Save notes'}
+        </button>
       </section>
     </div>
   );
@@ -193,9 +215,12 @@ export default function AdminCheckoutTrackingPage() {
   const location = useLocation();
   const { error, success } = useToast();
   const initialOrderId = new URLSearchParams(location.search).get('orderId') || '';
+  const initialSupportCode = new URLSearchParams(location.search).get('supportCode') || '';
+  const initialExplicitQuery = initialSupportCode || initialOrderId;
+  const [explicitQuery, setExplicitQuery] = useState(initialExplicitQuery);
   const [attempts, setAttempts] = useState([]);
   const [filters, setFilters] = useState({
-    query: initialOrderId,
+    query: initialExplicitQuery,
     result: '',
     stage: '',
     resolutionStatus: '',
@@ -242,24 +267,30 @@ export default function AdminCheckoutTrackingPage() {
   const visibleAttempts = useMemo(() => filterCheckoutAttempts(attempts, {
     ...filters,
     includeResolved: filters.includeResolved || filters.resolutionStatus === 'resolved',
-  }), [attempts, filters]);
+    includeResolvedForQuery: Boolean(explicitQuery),
+  }), [attempts, explicitQuery, filters]);
 
   const setFilter = (name, value) => {
     setFilters((current) => ({ ...current, [name]: value }));
   };
 
   const saveResolution = async (attempt, resolutionStatus) => {
+    const notesOnly = resolutionStatus === undefined;
     setSavingAttemptIds((activeIds) => addActiveCheckoutAttemptId(activeIds, attempt.id));
     try {
-      const updated = await updateCheckoutAttemptResolution(attempt.id, {
-        resolutionStatus,
-        adminNotes: notes[attempt.id] || '',
-      });
+      const updated = await updateCheckoutAttemptResolution(
+        attempt.id,
+        createCheckoutAttemptResolutionUpdate(attempt, notes[attempt.id] || '', resolutionStatus),
+      );
       setAttempts((current) => current.map((record) => (
         record.id === attempt.id ? { ...record, ...updated } : record
       )));
       setNotes((current) => ({ ...current, [attempt.id]: updated.adminNotes }));
-      success(resolutionStatus === 'resolved' ? 'Checkout attempt marked resolved' : 'Checkout attempt marked investigating');
+      if (notesOnly) {
+        success('Checkout notes saved');
+      } else {
+        success(`Checkout attempt marked ${resolutionStatus}`);
+      }
     } catch {
       error('Failed to update checkout attempt');
     } finally {
@@ -300,7 +331,10 @@ export default function AdminCheckoutTrackingPage() {
             <input
               type="search"
               value={filters.query}
-              onChange={(event) => setFilter('query', event.target.value)}
+              onChange={(event) => {
+                setFilter('query', event.target.value);
+                setExplicitQuery('');
+              }}
               className={`input mt-1 text-sm ${focusClass}`}
               placeholder="Search checkout attempts"
             />
@@ -395,6 +429,7 @@ export default function AdminCheckoutTrackingPage() {
                     onToggle={() => toggleAttempt(attempt.id)}
                     onNoteChange={(value) => setNotes((current) => ({ ...current, [attempt.id]: value }))}
                     onResolve={(status) => saveResolution(attempt, status)}
+                    onSaveNotes={() => saveResolution(attempt)}
                     saving={savingAttemptIds.has(attempt.id)}
                   />
                 ))}
@@ -405,6 +440,7 @@ export default function AdminCheckoutTrackingPage() {
           <div className="space-y-3 md:hidden">
             {visibleAttempts.map((attempt) => {
               const expanded = expandedAttemptId === attempt.id;
+              const linkedOrder = getCheckoutAttemptLinkedOrder(attempt);
               return (
                 <article key={attempt.id} className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
                   <div className="p-4">
@@ -415,7 +451,7 @@ export default function AdminCheckoutTrackingPage() {
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
                       <div><dt className="text-[var(--text-secondary)]">Order cost</dt><dd className="mt-0.5 font-semibold text-[var(--text-primary)]">{formatMoney(attempt.totalAmount)}</dd></div>
                       <div><dt className="text-[var(--text-secondary)]">Support code</dt><dd className="mt-0.5 font-mono text-[var(--text-primary)]">{attempt.supportCode || 'Not recorded'}</dd></div>
-                      <div><dt className="text-[var(--text-secondary)]">Order</dt><dd className="mt-0.5 font-mono text-[var(--text-primary)]">{attempt.orderId || 'Not linked'}</dd></div>
+                      <div><dt className="text-[var(--text-secondary)]">Order</dt><dd className="mt-0.5 font-mono text-[var(--text-primary)]">{linkedOrder.displayId || 'Not linked'}</dd></div>
                       <div><dt className="text-[var(--text-secondary)]">Last stage</dt><dd className="mt-0.5 capitalize text-[var(--text-primary)]">{formatLabel(attempt.currentStage)}</dd></div>
                       <div className="col-span-2"><dt className="text-[var(--text-secondary)]">Attempt time</dt><dd className="mt-0.5 text-[var(--text-primary)]">{formatDate(attempt.createdAt)}</dd></div>
                     </dl>
@@ -440,6 +476,7 @@ export default function AdminCheckoutTrackingPage() {
                         note={notes[attempt.id] || ''}
                         onNoteChange={(value) => setNotes((current) => ({ ...current, [attempt.id]: value }))}
                         onResolve={(status) => saveResolution(attempt, status)}
+                        onSaveNotes={() => saveResolution(attempt)}
                         saving={savingAttemptIds.has(attempt.id)}
                       />
                     </div>
@@ -454,15 +491,16 @@ export default function AdminCheckoutTrackingPage() {
   );
 }
 
-function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolve, saving }) {
+function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolve, onSaveNotes, saving }) {
   const domIds = getCheckoutAttemptDomIds(attempt.id, 'desktop');
+  const linkedOrder = getCheckoutAttemptLinkedOrder(attempt);
   return (
     <>
       <tr className="align-top hover:bg-[var(--bg-tertiary)]/60">
         <td className="px-3 py-3">
           <p className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</p>
           <AttemptContacts attempt={attempt} />
-          <p className="mt-1 truncate font-mono text-[11px] text-[var(--text-secondary)]">{attempt.orderId || 'No order ID'}</p>
+          <p className="mt-1 truncate font-mono text-[11px] text-[var(--text-secondary)]">{linkedOrder.displayId || 'No order ID'}</p>
         </td>
         <td className="px-3 py-3 font-medium text-[var(--text-primary)]">{formatMoney(attempt.totalAmount)}</td>
         <td className="px-3 py-3 font-mono text-xs text-[var(--text-primary)]">{attempt.supportCode || 'Not recorded'}</td>
@@ -478,7 +516,7 @@ function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolv
       {expanded && (
         <tr>
           <td id={domIds.panelId} colSpan="7" className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-5">
-            <AttemptDetails attempt={attempt} idPrefix="desktop" note={note} onNoteChange={onNoteChange} onResolve={onResolve} saving={saving} />
+            <AttemptDetails attempt={attempt} idPrefix="desktop" note={note} onNoteChange={onNoteChange} onResolve={onResolve} onSaveNotes={onSaveNotes} saving={saving} />
           </td>
         </tr>
       )}

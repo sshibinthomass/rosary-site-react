@@ -37,10 +37,45 @@ export function removeActiveCheckoutAttemptId(activeIds, id) {
   return next;
 }
 
+export function createCheckoutAttemptResolutionUpdate(
+  attempt = {},
+  adminNotes = '',
+  resolutionStatus = attempt.resolutionStatus,
+) {
+  const currentStatus = RESOLUTION_STATUSES.includes(attempt.resolutionStatus)
+    ? attempt.resolutionStatus
+    : 'open';
+  return {
+    resolutionStatus: RESOLUTION_STATUSES.includes(resolutionStatus)
+      ? resolutionStatus
+      : currentStatus,
+    adminNotes: safeString(adminNotes, 2000),
+  };
+}
+
 export function getCheckoutAttemptContacts(attempt = {}) {
   return {
     phone: attempt.customer?.phone || attempt.delivery?.phone || '',
-    whatsapp: attempt.delivery?.whatsapp || '',
+    whatsapp: attempt.customer?.whatsapp || attempt.delivery?.whatsapp || '',
+  };
+}
+
+export function getCheckoutAttemptLinkedOrder(attempt = {}) {
+  const linkedOrderId = safeString(attempt.linkedOrderId, 128);
+  const legacyOrderId = safeString(attempt.orderId, 128);
+  const linkedOrderDocumentId = safeString(attempt.linkedOrderDocumentId, 128);
+  const businessOrderId = linkedOrderId || legacyOrderId;
+  const documentId = linkedOrderDocumentId || (!linkedOrderId ? legacyOrderId : '');
+  const searchValues = [...new Set([
+    linkedOrderId,
+    legacyOrderId,
+    linkedOrderDocumentId,
+  ].filter(Boolean))];
+  return {
+    businessOrderId,
+    documentId,
+    displayId: businessOrderId || documentId,
+    searchValues,
   };
 }
 
@@ -106,22 +141,11 @@ export function createCheckoutAttempt(input = {}, generators = {}) {
   return {
     id: randomUUID(),
     supportCode: `CHK-${Array.from(supportBytes).slice(0, 6).map((byte) => SUPPORT_ALPHABET[byte % SUPPORT_ALPHABET.length]).join('')}`,
-    clientToken: Array.from(randomBytes(32), (byte) => byte.toString(16).padStart(2, '0')).join(''),
-    orderId: safeString(input.orderId, 128),
+    capabilityToken: Array.from(randomBytes(32), (byte) => byte.toString(16).padStart(2, '0')).join(''),
     customer: {
       name: safeString(customer.name, 200),
-      email: safeString(customer.email, 320),
       phone: normalizeContact(customer.phone),
-      phoneSearch: normalizeContact(customer.phone),
-    },
-    delivery: {
-      name: safeString(delivery.name, 200),
-      phone: normalizeContact(delivery.phone),
-      whatsapp: normalizeContact(delivery.whatsapp),
-      address: safeString(delivery.address, 1_000),
-      pincode: safeString(delivery.pincode, 20),
-      district: safeString(delivery.district, 120),
-      state: safeString(delivery.state, 120),
+      whatsapp: normalizeContact(customer.whatsapp ?? delivery.whatsapp),
     },
     totalAmount: safeNonNegativeNumber(input.totalAmount, CHECKOUT_MONEY_MAX),
     items: sanitizeCheckoutItems(input.items),
@@ -140,7 +164,9 @@ export function sanitizeCheckoutError(error) {
   const source = `${rawCode} ${message}`.toLowerCase();
   let category = 'unknown';
 
-  if (source.includes('permission')) category = 'permission';
+  if (code === 'whatsapp-launch-failed') category = 'whatsapp';
+  else if (code === 'verification-failed') category = 'verification';
+  else if (source.includes('permission')) category = 'permission';
   else if (source.includes('network') || source.includes('unavailable') || source.includes('timeout')) category = 'network';
   else if (source.includes('verification') || source.includes('verify')) category = 'verification';
   else if (source.includes('whatsapp')) category = 'whatsapp';
@@ -177,7 +203,11 @@ export function filterCheckoutAttempts(attempts = [], filters = {}) {
   const to = parseCheckoutFilterDate(filters.to, true);
 
   return attempts
-    .filter((attempt) => filters.includeResolved || attempt.resolutionStatus !== 'resolved')
+    .filter((attempt) => (
+      filters.includeResolved
+      || (filters.includeResolvedForQuery && query)
+      || attempt.resolutionStatus !== 'resolved'
+    ))
     .filter((attempt) => !filters.result || attempt.result === filters.result)
     .filter((attempt) => !filters.stage || attempt.currentStage === filters.stage)
     .filter((attempt) => !filters.resolutionStatus || attempt.resolutionStatus === filters.resolutionStatus)
@@ -187,12 +217,14 @@ export function filterCheckoutAttempts(attempts = [], filters = {}) {
     })
     .filter((attempt) => {
       if (!query) return true;
-      const text = [attempt.supportCode, attempt.orderId, attempt.customer?.name]
+      const linkedOrder = getCheckoutAttemptLinkedOrder(attempt);
+      const text = [attempt.supportCode, ...linkedOrder.searchValues, attempt.customer?.name]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       const contacts = [
         attempt.customer?.phoneSearch || attempt.customer?.phone,
+        attempt.customer?.whatsapp,
         attempt.delivery?.phone,
         attempt.delivery?.whatsappPhone,
         attempt.delivery?.whatsapp,

@@ -38,16 +38,7 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
       customer: {
         name: userInfo?.name,
         phone: userInfo?.phone,
-        email: userInfo?.email,
-      },
-      delivery: {
-        name: userInfo?.name,
-        phone: userInfo?.phone,
         whatsapp: userInfo?.whatsapp,
-        address: userInfo?.address,
-        pincode: userInfo?.pincode,
-        district: userInfo?.district,
-        state: userInfo?.state,
       },
       userId,
     });

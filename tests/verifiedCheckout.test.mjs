@@ -66,6 +66,9 @@ function createDependencies({ verifiedOrder } = {}) {
         complete: async () => {
           events.push('track:completed');
         },
+        recordWhatsAppRetry: async (retry) => {
+          events.push(`track:retry:${retry.success ? 'success' : 'failed'}`);
+        },
       },
     },
     trackerFailures,
@@ -108,7 +111,9 @@ test('verified checkout remains saved when WhatsApp cannot open', async () => {
     'track:details_validated', 'create', 'track:order_saved',
     'verify', 'track:order_verified', 'promo', 'open', 'track:failed',
   ]);
-  assert.deepEqual(trackerFailures, [whatsappError]);
+  assert.equal(trackerFailures.length, 1);
+  assert.equal(trackerFailures[0].code, 'whatsapp-launch-failed');
+  assert.equal(trackerFailures[0].cause, whatsappError);
   assert.deepEqual(result, {
     order: createdOrder,
     orderUrl: `https://rosaryplanthouse.com/order/${createdOrder.id}`,
@@ -148,14 +153,16 @@ test('checkout reports verification failures once and rethrows the original erro
 
   await assert.rejects(
     runVerifiedCheckout(checkoutInput, dependencies),
-    (error) => error === verificationError
+    (error) => error.code === 'verification-failed' && error.cause === verificationError
   );
 
   assert.deepEqual(events, [
     'track:details_validated', 'create', 'track:order_saved',
     'verify', 'track:failed',
   ]);
-  assert.deepEqual(trackerFailures, [verificationError]);
+  assert.equal(trackerFailures.length, 1);
+  assert.equal(trackerFailures[0].code, 'verification-failed');
+  assert.equal(trackerFailures[0].cause, verificationError);
 });
 
 for (const [label, verifiedOrder] of [
@@ -177,8 +184,42 @@ for (const [label, verifiedOrder] of [
     ]);
     assert.equal(trackerFailures.length, 1);
     assert.match(trackerFailures[0].message, /could not be verified after saving/i);
+    assert.equal(trackerFailures[0].code, 'verification-failed');
   });
 }
+
+test('generic native launcher rejection is classified at the WhatsApp boundary', async () => {
+  const { dependencies, trackerFailures } = createDependencies();
+  const nativeError = new Error('plugin rejected');
+  dependencies.openExternalUrl = async () => { throw nativeError; };
+
+  const result = await runVerifiedCheckout(checkoutInput, dependencies);
+
+  assert.equal(result.whatsappOpened, false);
+  assert.equal(trackerFailures.length, 1);
+  assert.equal(trackerFailures[0].code, 'whatsapp-launch-failed');
+  assert.equal(trackerFailures[0].cause, nativeError);
+});
+
+test('only a failed WhatsApp handoff exposes an opaque non-persisted retry callback for the same tracker', async () => {
+  const successfulCheckout = createDependencies();
+  const successfulResult = await runVerifiedCheckout(checkoutInput, successfulCheckout.dependencies);
+  assert.equal(successfulResult.recordWhatsAppRetry, undefined);
+
+  const { events, dependencies } = createDependencies();
+  dependencies.openExternalUrl = async () => {
+    events.push('open');
+    throw new Error('blocked');
+  };
+  const result = await runVerifiedCheckout(checkoutInput, dependencies);
+
+  assert.equal(typeof result.recordWhatsAppRetry, 'function');
+  assert.equal(Object.keys(result).includes('recordWhatsAppRetry'), false);
+  assert.doesNotMatch(JSON.stringify(result), /capabilityToken|clientWriteToken/);
+
+  await result.recordWhatsAppRetry({ success: false, error: new Error('still blocked') });
+  assert.equal(events.at(-1), 'track:retry:failed');
+});
 
 test('checkout skips promo usage when no promo code was supplied', async () => {
   const { events, dependencies } = createDependencies();

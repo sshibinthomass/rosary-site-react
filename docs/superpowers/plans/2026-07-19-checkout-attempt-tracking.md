@@ -4,7 +4,7 @@
 
 **Goal:** Record every observable checkout attempt with a support code and stage timeline, then give administrators a searchable workflow for diagnosing and resolving customer complaints.
 
-**Architecture:** A pure model module creates stable diagnostic records and sanitized events, while a Firestore service persists them and a bounded local-storage outbox retries failed writes. The existing verified checkout orchestrator reports stages through a failure-isolated tracker. A protected admin page lists, filters, expands, and resolves the separate diagnostic records.
+**Architecture:** A pure model creates stable diagnostic records and sanitized events. Customer writes go through the Vercel `/api/checkout-attempts` endpoint, whose Firebase Admin transaction validates a high-entropy capability token and stores only its SHA-256 hash. A bounded, expiring local-storage outbox keeps whole attempt groups while the raw token stays in an opaque in-memory session. Firestore browser access is admin-only. The verified checkout orchestrator reports stages through a failure-isolated tracker, and a protected admin page lists, filters, expands, and resolves the records.
 
 **Tech Stack:** React 19, React Router 7, Firebase/Firestore 12, Vite 7, Tailwind CSS 4, Node.js built-in test runner, ESLint.
 
@@ -17,8 +17,10 @@
 - Retention is exactly 180 days through `checkoutAttempts.expiresAt` and a deployed Firestore TTL policy.
 - `whatsapp_opened` means only that the site handed the URL to WhatsApp; never call it sent, confirmed, or paid.
 - Diagnostic persistence is best-effort and must never block or change a valid checkout result.
+- Diagnostic PII is limited to name, phone, WhatsApp, safe cart fields, and an optional server-verified user ID; never persist email or delivery-location fields.
+- Public clients cannot create, update, read, list, or delete checkout-attempt records directly.
+- Never persist or return the raw capability token; Firestore stores only its SHA-256 hash.
 - Never persist stack traces, credentials, Firebase configuration, or arbitrary serialized error objects.
-- Public clients cannot read, list, or delete checkout-attempt records.
 - Preserve the existing order archive behavior and cart preservation on checkout failure.
 
 ---
@@ -26,15 +28,17 @@
 ## File Structure
 
 - Create `src/utils/checkoutAttemptModel.js`: pure IDs, snapshots, event creation, error sanitization, and admin filtering.
-- Create `src/utils/checkoutAttemptOutbox.js`: bounded local-storage queue with operation deduplication.
-- Create `src/services/checkoutAttemptService.js`: Firestore writes, admin queries/updates, tracker session, and outbox flushing.
+- Create `src/utils/checkoutAttemptOutbox.js`: bounded/expiring local-storage attempt groups with operation deduplication.
+- Create `src/utils/checkoutAttemptTransport.js`: exact POST/PATCH requests to `/api/checkout-attempts` and stable response classification.
+- Create `src/services/checkoutAttemptService.js`: API-backed customer tracking, admin-only Firestore queries/updates, opaque authorization sessions, and grouped outbox flushing.
+- Create `api/checkout-attempts-core.js`, `api/checkout-attempts-firebase.js`, `api/firebase-admin.js`, and `api/checkout-attempts.js`: validation, transactional Firebase Admin persistence, credential initialization, and the Vercel entry point.
 - Modify `src/services/verifiedCheckout.js`: emit the verified checkout stages without importing Firebase.
 - Modify `src/services/whatsappCheckout.js`: create a tracker session and return its support code.
 - Modify `src/pages/CartPage.jsx`: show the support code on failure and saved-order WhatsApp retry states.
 - Create `src/pages/AdminCheckoutTrackingPage.jsx`: admin list, filters, details, timeline, notes, and resolution actions.
 - Modify `src/App.jsx`, `src/pages/AdminHome.jsx`, and `src/pages/AdminOrdersPage.jsx`: protected route and navigation links.
 - Modify `src/components/AppLifecycle.jsx`: retry queued diagnostic operations on app open, focus, and online events.
-- Modify `firestore.rules`: isolate public diagnostic writes from admin reads and resolution changes.
+- Modify `firestore.rules`: deny all public checkout-attempt access and constrain admin investigation updates.
 - Create focused tests under `tests/` for each boundary.
 
 ---
@@ -52,18 +56,18 @@
 - Produces: `createCheckoutEvent(stage, details, now) -> CheckoutEvent`.
 - Produces: `sanitizeCheckoutError(error) -> { category, code, message }`.
 - Produces: `filterCheckoutAttempts(attempts, filters) -> CheckoutAttempt[]`.
-- Produces: `enqueueCheckoutOperation(storage, operation)`, `readCheckoutOutbox(storage)`, `removeCheckoutOperation(storage, operationId)`.
+- Produces: `enqueueCheckoutAttemptGroup(storage, group)`, `readCheckoutOutbox(storage)`, `pruneCheckoutOutbox(storage)`, and `removeCheckoutAttemptGroup(storage, attemptId)`.
 
 - [ ] **Step 1: Write failing model tests**
 
-Create deterministic tests that pass fixed `randomUUID`, `randomBytes`, and `now` generators. Assert the output includes `supportCode: 'CHK-7K2M9Q'`, a separate client token, normalized digits-only phone fields, item snapshots, `currentStage: 'started'`, `result: 'in_progress'`, `resolutionStatus: 'open'`, and `expiresAt` exactly 180 days after `createdAt`.
+Create deterministic tests that pass fixed `randomUUID`, `randomBytes`, and `now` generators. Assert the output includes `supportCode: 'CHK-7K2M9Q'`, a separate in-memory capability token, normalized digits-only contact fields, item snapshots, `currentStage: 'started'`, `result: 'in_progress'`, `resolutionStatus: 'open'`, and `expiresAt` exactly 180 days after `createdAt`. Assert email and delivery-location fields are absent.
 
 ```js
 test('creates a complete 180-day checkout attempt snapshot', () => {
   const attempt = createCheckoutAttempt(input, fixedGenerators);
   assert.equal(attempt.supportCode, 'CHK-7K2M9Q');
   assert.equal(attempt.customer.name, 'Anu');
-  assert.equal(attempt.customer.phoneSearch, '919876543210');
+  assert.equal(attempt.customer.phone, '919876543210');
   assert.equal(attempt.totalAmount, 137);
   assert.deepEqual(attempt.items[0], {
     productId: '49', name: 'Hydrangea', price: 39, quantity: 1,
@@ -111,7 +115,7 @@ export function createCheckoutEvent(stage, details = {}, now = () => new Date())
 }
 ```
 
-Implement `createCheckoutAttempt` with primitive fields and plain ISO dates so it is unit-testable; the service converts date strings to Firestore `Timestamp` values. Copy only product ID, name, numeric price, and numeric quantity. Generate a random Firestore document ID with `randomUUID()`, a separate 32-byte token, and a six-character support suffix using an alphabet without ambiguous `0/O/1/I` characters.
+Implement `createCheckoutAttempt` with primitive fields and plain ISO dates so it is unit-testable and safe to encode for the API. Copy only product ID, name, numeric price, and numeric quantity. Generate a random document ID with `randomUUID()`, a separate 32-byte capability token that never enters the persisted payload, and a six-character support suffix using an alphabet without ambiguous `0/O/1/I` characters.
 
 Implement `sanitizeCheckoutError` by inspecting only `error.code` and `error.message`; map stable categories and return a generic safe fallback. Implement `filterCheckoutAttempts` as a pure client-side filter and descending created-time sort.
 
@@ -123,13 +127,13 @@ Expected: all model tests PASS.
 
 - [ ] **Step 5: Write failing outbox tests**
 
-Use an in-memory storage fake. Prove that the queue deduplicates by `operationId`, preserves FIFO order, caps itself at 100 operations by dropping the oldest entry, tolerates invalid stored JSON by returning an empty list, and removes only a successfully flushed operation.
+Use an in-memory storage fake. Prove that the queue deduplicates by `operationId`, preserves FIFO within an attempt, caps itself at 20 whole groups by dropping the oldest group, and never splits a create anchor from its updates. Cover malformed groups, missing-create orphans, expiry pruning, forbidden PII/token keys, permanent group failure, retryable retention, and later-group progress.
 
 ```js
-enqueueCheckoutOperation(storage, { operationId: 'op-1', type: 'create', payload: {} });
-enqueueCheckoutOperation(storage, { operationId: 'op-1', type: 'create', payload: {} });
+enqueueCheckoutAttemptGroup(storage, attemptGroup);
+enqueueCheckoutAttemptGroup(storage, attemptGroup);
 assert.equal(readCheckoutOutbox(storage).length, 1);
-removeCheckoutOperation(storage, 'op-1');
+removeCheckoutAttemptGroup(storage, attemptGroup.attemptId);
 assert.deepEqual(readCheckoutOutbox(storage), []);
 ```
 
@@ -141,7 +145,7 @@ Expected: FAIL because `src/utils/checkoutAttemptOutbox.js` does not exist.
 
 - [ ] **Step 7: Implement the bounded outbox**
 
-Use the key `rosary.checkoutAttemptOutbox.v1` and limit `100`. All functions must accept an explicit Storage-compatible object for testability and catch storage access errors. `enqueueCheckoutOperation` returns `true` only when persisted; `readCheckoutOutbox` always returns an array; `removeCheckoutOperation` returns whether the queue changed.
+Use the key `rosary.checkoutAttemptOutbox.v2` and limit `20` attempt groups. Every group has one create anchor, a shared `attemptId`/`expiresAt`, unique FIFO operation IDs, and no raw authorization or forbidden PII. All functions accept an explicit Storage-compatible object and isolate storage errors.
 
 - [ ] **Step 8: Run focused tests and commit**
 
@@ -154,107 +158,49 @@ git add src/utils/checkoutAttemptModel.js src/utils/checkoutAttemptOutbox.js tes
 git commit -m "feat: add checkout diagnostic model"
 ```
 
-### Task 2: Firestore Tracking Service and Security Rules
+### Task 2: Secure API Tracking Service and Firestore Rules
 
 **Files:**
+- Create: `api/checkout-attempts-core.js`, `api/checkout-attempts-firebase.js`, `api/firebase-admin.js`, `api/checkout-attempts.js`
+- Create: `src/utils/checkoutAttemptTransport.js`
 - Create: `src/services/checkoutAttemptService.js`
-- Modify: `firestore.rules`
-- Create: `tests/checkoutAttemptService.test.mjs`
-- Create: `tests/checkoutAttemptRules.test.mjs`
+- Modify: `firestore.rules`, `firebase.json`, `firestore.indexes.json`
+- Create: focused API, service, rules, transport, Firebase adapter, and emulator-matrix tests
 
 **Interfaces:**
-- Consumes: Task 1 model and outbox functions.
-- Produces: `createCheckoutTracker(input) -> Promise<CheckoutTracker>` where the tracker exposes `{ attemptId, supportCode, stage(stage, details), fail(error), linkOrder(order), complete() }` and none of the mutation methods reject.
-- Produces: `getAllCheckoutAttempts() -> Promise<CheckoutAttempt[]>`.
-- Produces: `updateCheckoutAttemptResolution(id, { resolutionStatus, adminNotes })`.
-- Produces: `flushCheckoutAttemptOutbox(storage) -> Promise<{ flushed, remaining }>`.
+- `POST /api/checkout-attempts` creates an exact minimal-PII record; replay with the same attempt/token is idempotent and never overwrites advanced state.
+- `PATCH /api/checkout-attempts` hashes and compares the capability token inside one Firebase Admin transaction, then permits only the next lifecycle stage or a matching same-stage failure event.
+- `createCheckoutTracker(input)` returns a failure-isolated tracker with `{ attemptId, supportCode, stage, fail, linkOrder, complete, recordWhatsAppRetry }`; its raw capability stays in module-private memory.
+- Admin `getAllCheckoutAttempts()` and `updateCheckoutAttemptResolution(...)` continue through authenticated Firestore client access.
 
-- [ ] **Step 1: Write failing service contract tests**
+- [ ] **Step 1: Test the API and transport contracts RED**
 
-Use source-contract assertions plus injected persistence tests for the failure-isolated tracker factory. Assert Firestore operations use the `checkoutAttempts` collection, `arrayUnion` for unique events, and `Timestamp` conversion for `createdAt`, `updatedAt`, and `expiresAt`. Prove a rejected persistence callback causes an outbox entry but `tracker.stage(...)` resolves.
+Cover exact methods/content type/body size and field allowlists, identifiers, numeric/string bounds, exact 180-day expiry, token format/hash matching, idempotent create, append-only matching events, forward transitions, immutable order links, optional Firebase ID-token UID matching, minimal PII, and permanent/retryable HTTP classification.
 
-```js
-const tracker = await createCheckoutTrackerSession(input, {
-  persistCreate: async () => { throw new Error('offline'); },
-  persistUpdate: async () => { throw new Error('offline'); },
-  enqueue: operation => queued.push(operation),
-  generators: fixedGenerators,
-});
-await assert.doesNotReject(tracker.stage('details_validated'));
-assert.equal(tracker.supportCode, 'CHK-7K2M9Q');
-assert.deepEqual(queued.map(item => item.type), ['create', 'update']);
-```
+- [ ] **Step 2: Implement injectable Vercel and Firebase Admin modules**
 
-- [ ] **Step 2: Run service tests and verify RED**
+Use only `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64` on the server. Store `capabilityTokenHash`, never the raw token. Return stable error objects with `code`, safe `message`, and `retryable`. The browser sends POST/PATCH requests only to `/api/checkout-attempts`; optional `userId` is included only with a matching Firebase ID token.
 
-Run: `node --test tests/checkoutAttemptService.test.mjs`
+- [ ] **Step 3: Implement failure-isolated tracking and grouped flush**
 
-Expected: FAIL because the tracking service does not exist.
+Bound each diagnostic call. Queue a whole create-anchored attempt group after retryable/time-out failures, preserve FIFO/idempotency, continue to later groups after one group fails, retain only retryable groups, and drop only the permanently failed or unauthorizable group. Never let diagnostic I/O change checkout business behavior.
 
-- [ ] **Step 3: Implement persistence and tracker session**
-
-Implement production Firestore adapters with `setDoc`, `updateDoc`, `getDocs`, `query`, `orderBy`, `arrayUnion`, `serverTimestamp`, and `Timestamp`. Every queued operation contains a stable `operationId`, attempt ID, operation type, and plain JSON payload. Flush sequentially and remove an operation only after it succeeds; stop on the first failure to preserve event order.
-
-The tracker performs these exact state changes:
-
-```js
-stage('order_saved', { order })
-// currentStage = 'order_saved'; linkedOrderDocumentId/orderId are populated.
-
-fail(error)
-// result = 'failed'; resolutionStatus stays 'open'; sanitized failed event appended.
-
-complete()
-// currentStage = 'completed'; result = 'successful'; completed event appended.
-```
-
-Admin resolution updates accept only the three declared statuses, trim notes to 2,000 characters, and set `resolvedAt` only for `resolved`. Do not expose `clientWriteToken` from `getAllCheckoutAttempts`; strip it before returning records to the page.
-
-- [ ] **Step 4: Write failing Firestore rule tests**
-
-Assert the new rules contain a dedicated match block and enforce these contracts:
+- [ ] **Step 4: Lock down Firestore and add the authorization matrix**
 
 ```text
-allow get, list: if isAdmin();
-allow create: if request.resource.data.clientWriteToken is string ...
-allow update: if isAdmin() || isValidCheckoutAttemptClientUpdate();
-allow delete: if false;
-```
-
-The public update helper must require the token to remain identical, keep immutable identity/snapshot/expiry fields unchanged, and allow changes only to `currentStage`, `result`, `updatedAt`, `events`, `linkedOrderDocumentId`, `linkedOrderId`, and `error`. Admin-only `resolutionStatus`, `adminNotes`, and `resolvedAt` are immutable through the public branch.
-
-- [ ] **Step 5: Run rule tests and verify RED**
-
-Run: `node --test tests/checkoutAttemptRules.test.mjs`
-
-Expected: FAIL because `firestore.rules` has no `checkoutAttempts` block.
-
-- [ ] **Step 6: Implement the checkout-attempt Firestore rules**
-
-Add named helpers for valid client creation and updates. Require `expiresAt` after `request.time` and no later than `request.time + duration.value(181, 'd')`. Require exact allowed field sets with `keys().hasOnly(...)` and exact required fields with `keys().hasAll(...)`.
-
-Firestore combines overlapping matches with logical OR, so the existing recursive admin fallback would otherwise bypass the explicit delete denial. Replace it with a top-level collection-variable fallback that excludes both protected collections:
-
-```text
-match /{collection}/{document=**} {
-  allow read, write: if isAdmin()
-    && collection != 'orders'
-    && collection != 'checkoutAttempts';
+match /checkoutAttempts/{attemptId} {
+  allow get, list: if isAdmin();
+  allow create: if false;
+  allow update: if isAdmin() && isValidCheckoutAttemptAdminUpdate();
+  allow delete: if false;
 }
 ```
 
-Add assertions proving neither `orders` nor `checkoutAttempts` can inherit delete permission from the fallback.
+The admin helper allows only bounded `resolutionStatus`, `adminNotes`, `resolvedAt`, and server `updatedAt`. The recursive admin fallback excludes `orders` and `checkoutAttempts`. The emulator matrix covers public create/update/get/list/delete denial, admin get/list/resolution update, forbidden lifecycle update/delete, protected order delete, and unrelated admin fallback access.
 
-- [ ] **Step 7: Run focused tests and commit**
+- [ ] **Step 5: Run focused tests**
 
-Run: `node --test tests/checkoutAttemptService.test.mjs tests/checkoutAttemptRules.test.mjs`
-
-Expected: all tests PASS.
-
-```powershell
-git add src/services/checkoutAttemptService.js firestore.rules tests/checkoutAttemptService.test.mjs tests/checkoutAttemptRules.test.mjs
-git commit -m "feat: persist checkout diagnostics securely"
-```
+Run the API, Firebase adapter, transport, service, rules, grouped outbox, and emulator source-contract suites. Run the executable emulator matrix when Java and Firebase CLI are available; otherwise retain it and report the exact environment blocker.
 
 ### Task 3: Instrument Verified Checkout and Show Support Codes
 
@@ -269,7 +215,7 @@ git commit -m "feat: persist checkout diagnostics securely"
 **Interfaces:**
 - Consumes: `createCheckoutTracker(input)` from Task 2.
 - Produces: `runVerifiedCheckout(input, dependencies)` with optional `dependencies.tracker`.
-- Produces: checkout results containing `attemptId` and `supportCode` whenever tracker creation succeeds locally.
+- Produces: checkout results containing `attemptId` and `supportCode` whenever tracker creation succeeds locally; a failed WhatsApp handoff also carries a non-enumerable retry callback that closes over the same authorized tracker session.
 
 - [ ] **Step 1: Write failing orchestration tests**
 
@@ -283,7 +229,7 @@ assert.deepEqual(events, [
 ]);
 ```
 
-For create and verification failures, assert `tracker.fail(error)` runs once and the original error is rethrown. For WhatsApp launch failure, assert the saved-order result remains successful from the order perspective, `whatsappOpened` is false, the tracking result is `failed`, and the support code remains returned for complaint lookup. Add a test where every tracker method throws and prove the existing checkout result and callback order are unchanged.
+For create and verification failures, assert `tracker.fail(error)` runs once and the original error is rethrown. Assign `verification-failed` at the verification boundary. For browser popup blocking or native launcher rejection, assign `whatsapp-launch-failed`, keep the saved-order result successful from the order perspective, set `whatsappOpened` false, and return the support code for complaint lookup. Add a test where every tracker method throws and prove the existing checkout result and callback order are unchanged.
 
 - [ ] **Step 2: Run orchestration tests and verify RED**
 
@@ -305,11 +251,11 @@ const track = async (method, ...args) => {
 };
 ```
 
-Wrap the business flow in `try/catch`, emit the exact stages in order, call `fail` before rethrowing business failures, and do not allow tracking callbacks to enter the business error path. Treat WhatsApp open failure as a tracker failure while keeping the existing saved-order retry result. Add `attemptId` and `supportCode` to both result variants.
+Wrap the business flow in `try/catch`, emit the exact stages in order, call `fail` before rethrowing business failures, and do not allow tracking callbacks to enter the business error path. Treat WhatsApp open failure as a tracker failure while keeping the existing saved-order retry result. Add `attemptId` and `supportCode` to both result variants. Define a non-enumerable `recordWhatsAppRetry` closure so it cannot be serialized into persisted confirmation data.
 
 - [ ] **Step 4: Create the tracker in the production adapter**
 
-In `initiateWhatsAppCheckout`, call `createCheckoutTracker({ cartItems, total, userInfo, userId })`, pass the returned tracker into `runVerifiedCheckout`, and keep the current Firestore/order/WhatsApp dependencies unchanged. If the business flow rejects, attach `tracker.attemptId` and `tracker.supportCode` as explicit properties on that same error before rethrowing it so CartPage can display the complaint reference without replacing the original cause.
+In `initiateWhatsAppCheckout`, call `createCheckoutTracker` with only safe item, amount, name, phone, WhatsApp, and optional user-ID inputs. Pass the returned tracker into `runVerifiedCheckout`; order persistence remains unchanged, while diagnostics use only the secure API. If the business flow rejects, attach `tracker.attemptId` and `tracker.supportCode` as explicit properties on that same error before rethrowing it so CartPage can display the complaint reference without replacing the original cause.
 
 - [ ] **Step 5: Write failing CartPage support-code tests**
 
@@ -330,7 +276,7 @@ Order was not confirmed. Your cart is safe—please try again.
 Support code: CHK-XXXXXX
 ```
 
-Render the second line only when a code exists. For a saved order whose WhatsApp launch failed, include the support code in the persistent saved-order panel. Preserve all current cart clearing rules and WhatsApp retry controls.
+Render the second line only when a code exists. For a saved order whose WhatsApp launch failed, include the support code in the persistent saved-order panel. When `Open WhatsApp again` succeeds or fails, invoke the opaque retry callback with the truthful result so the same attempt advances or receives another failure event. Isolate callback failures, preserve all current cart clearing rules, and never create another order during retry.
 
 - [ ] **Step 8: Run focused tests and commit**
 
@@ -405,7 +351,7 @@ git commit -m "feat: retry queued checkout diagnostics"
 
 - [ ] **Step 1: Write failing admin page and route tests**
 
-Assert the page imports the tracking service/model, loads attempts, derives summary counts, reads the initial `orderId` search parameter, and renders these exact labels:
+Assert the page imports the tracking service/model, loads attempts, derives summary counts, reads initial `orderId` and `supportCode` search parameters, and renders these exact labels:
 
 ```text
 Checkout Tracking
@@ -421,8 +367,10 @@ Attempt time
 Cart snapshot
 Timeline
 Internal notes
+Mark open
 Mark investigating
 Mark resolved
+Save notes
 ```
 
 Assert `App.jsx` lazy-loads the page and wraps both routes in `<ProtectedRoute requireAdmin>`. Update the expected Admin icon IDs to include `checkout-tracking`, and require the Admin home card description to mention customer checkout issues. Assert Admin Orders builds an encoded tracking link from `order.orderId`.
@@ -435,9 +383,9 @@ Expected: FAIL because the page and navigation do not exist.
 
 - [ ] **Step 3: Implement the responsive admin page**
 
-Follow existing admin page styles and use inline SVG through the existing `AdminIcon` pattern. Load records once, then use `filterCheckoutAttempts` for client-side search/filtering. Provide controls for free-text search, result, last stage, resolution status, start date, and end date. Default resolution filtering hides resolved entries.
+Follow existing admin page styles and use inline SVG through the existing `AdminIcon` pattern. Load records once, then use `filterCheckoutAttempts` for client-side search/filtering. Provide controls for free-text search, result, last stage, resolution status, start date, and end date. Default resolution filtering hides resolved entries, while an explicit support-code/order-ID URL query includes its resolved match.
 
-Desktop uses a compact table; narrow screens use cards. Each row/card shows customer name, primary contact, formatted INR cost, support code, linked order ID, last stage, result, resolution status, and local attempt time. Expanding it shows items with quantity and price, chronological timeline, sanitized error details, a linked `/order/:documentId` action when available, notes textarea, and resolution buttons.
+Desktop uses a compact table; narrow screens use cards. Resolve `linkedOrderId`, legacy `orderId`, and `linkedOrderDocumentId` through one canonical accessor for search/display/linking. Each row/card shows customer name, primary contact, formatted INR cost, support code, linked order ID, last stage, result, resolution status, and local attempt time. Expanding it shows items with quantity and price, chronological timeline, sanitized error details, a linked `/order/:documentId` action when available, notes textarea, all three resolution buttons, and standalone `Save notes` that preserves the current status.
 
 Keep unsaved notes in component state if a save fails. Disable only the active record while saving and show existing ToastContext success/error messages.
 
@@ -476,11 +424,11 @@ git commit -m "feat: add admin checkout tracking"
 Add a `Checkout diagnostic deployment` section that states:
 
 ```text
-1. Deploy firestore.rules before or with the web release.
-2. Deploy any generated Firestore indexes if Firebase reports one as required.
-3. In Firestore TTL policies, enable checkoutAttempts.expiresAt.
-4. Deploy the web build.
-5. Confirm a test failure support code can be found under Admin → Checkout Tracking.
+1. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64 as a server-only Vercel variable; never use a VITE_ prefix.
+2. Deploy firestore.rules so direct browser checkout-attempt access is denied.
+3. Deploy firestore.indexes.json and confirm the checkoutAttempts.expiresAt TTL override is enabled.
+4. Deploy the Vercel release containing both /api/checkout-attempts and the web build.
+5. Run success, blocked-popup/retry, admin workflow, authorization, and minimal-PII live smoke checks.
 ```
 
 Do not include service-account values or environment secrets.
@@ -518,4 +466,4 @@ git commit -m "docs: document checkout tracking deployment"
 
 - [ ] **Step 7: Perform a manual smoke test after Firebase deployment**
 
-Place a test checkout with a deliberately blocked WhatsApp launch or simulated network failure. Confirm the customer sees a support code, `Admin → Checkout Tracking` finds it by that code, the name/cost/items are correct, the last stage matches the failure, notes persist, and marking the issue resolved hides it from the default list.
+Place successful and deliberately blocked-WhatsApp test checkouts. Confirm the customer sees a support code; `Admin -> Checkout Tracking` finds it by support code and order ID; only approved diagnostic PII is stored; the last stage matches the outcome; retry recovery updates the same attempt without a second order; notes persist independently; all three resolution states work; and resolved records hide by default but remain explicitly searchable. Confirm direct unauthenticated Firestore checkout-attempt access and admin deletes fail.

@@ -7,6 +7,16 @@ export async function runVerifiedCheckout(input, dependencies) {
     }
   };
 
+  const boundaryError = (error, code, fallbackMessage) => {
+    if (error?.code === code) return error;
+    const message = error instanceof Error && error.message
+      ? error.message
+      : fallbackMessage;
+    const classified = new Error(message, { cause: error });
+    classified.code = code;
+    return classified;
+  };
+
   try {
     await track('stage', 'details_validated');
     const originalAmount = input.cartItems.reduce(
@@ -29,13 +39,20 @@ export async function runVerifiedCheckout(input, dependencies) {
     });
     await track('stage', 'order_saved', { order: createdOrder });
 
-    const verifiedOrder = await dependencies.verifyOrder(createdOrder.id);
+    let verifiedOrder;
+    try {
+      verifiedOrder = await dependencies.verifyOrder(createdOrder.id);
+    } catch (error) {
+      throw boundaryError(error, 'verification-failed', 'Order verification failed.');
+    }
     const isExactOrder = verifiedOrder
       && verifiedOrder.id === createdOrder.id
       && verifiedOrder.orderId === createdOrder.orderId;
 
     if (!isExactOrder) {
-      throw new Error('Order could not be verified after saving');
+      const error = new Error('Order could not be verified after saving');
+      error.code = 'verification-failed';
+      throw error;
     }
     await track('stage', 'order_verified');
 
@@ -61,9 +78,14 @@ export async function runVerifiedCheckout(input, dependencies) {
       await track('stage', 'whatsapp_opened');
       await track('complete');
     } catch (error) {
+      const classifiedError = boundaryError(
+        error,
+        'whatsapp-launch-failed',
+        'WhatsApp could not be opened.',
+      );
       whatsappOpened = false;
-      whatsappError = error instanceof Error ? error.message : String(error);
-      await track('fail', error);
+      whatsappError = classifiedError.message;
+      await track('fail', classifiedError);
     }
 
     const result = {
@@ -78,6 +100,13 @@ export async function runVerifiedCheckout(input, dependencies) {
 
     if (whatsappError) {
       result.whatsappError = whatsappError;
+    }
+
+    if (!whatsappOpened && typeof dependencies.tracker?.recordWhatsAppRetry === 'function') {
+      Object.defineProperty(result, 'recordWhatsAppRetry', {
+        value: (retry) => dependencies.tracker.recordWhatsAppRetry(retry),
+        enumerable: false,
+      });
     }
 
     return result;

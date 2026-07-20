@@ -11,170 +11,22 @@ service cloud.firestore {
              request.auth.token.email in ['sshibinthomass@gmail.com', 'rosaryplanthouse@gmail.com'];
     }
 
-    function isValidCheckoutAttemptCustomer(customer) {
-      return customer is map
-             && customer.keys().hasOnly(['name', 'email', 'phone', 'phoneSearch'])
-             && customer.keys().hasAll(['name', 'email', 'phone', 'phoneSearch'])
-             && customer.name is string
-             && customer.name.size() <= 200
-             && customer.email is string
-             && customer.email.size() <= 320
-             && customer.phone is string
-             && customer.phone.size() <= 32
-             && customer.phoneSearch is string
-             && customer.phoneSearch.size() <= 32;
-    }
-
-    function isValidCheckoutAttemptDelivery(delivery) {
-      return delivery is map
-             && delivery.keys().hasOnly([
-               'name', 'phone', 'whatsapp', 'address', 'pincode', 'district', 'state'
-             ])
-             && delivery.keys().hasAll([
-               'name', 'phone', 'whatsapp', 'address', 'pincode', 'district', 'state'
-             ])
-             && delivery.name is string
-             && delivery.name.size() <= 200
-             && delivery.phone is string
-             && delivery.phone.size() <= 32
-             && delivery.whatsapp is string
-             && delivery.whatsapp.size() <= 32
-             && delivery.address is string
-             && delivery.address.size() <= 1000
-             && delivery.pincode is string
-             && delivery.pincode.size() <= 20
-             && delivery.district is string
-             && delivery.district.size() <= 120
-             && delivery.state is string
-             && delivery.state.size() <= 120;
-    }
-
-    function isValidCheckoutAttemptError(error) {
-      return error is map
-             && error.keys().hasOnly(['category', 'code', 'message'])
-             && error.keys().hasAll(['category', 'code', 'message'])
-             && error.category in ['permission', 'network', 'verification', 'whatsapp', 'validation', 'unknown']
-             && error.code in [
-               'permission-denied', 'unavailable', 'network-request-failed',
-               'deadline-exceeded', 'verification-failed', 'whatsapp-launch-failed',
-               'invalid-argument', 'validation-failed', 'unknown'
-             ]
-             && error.message is string
-             && error.message.size() <= 200;
-    }
-
-    function isValidCheckoutAttemptEvent(event) {
-      return event is map
-             && event.keys().hasOnly(['eventId', 'stage', 'outcome', 'occurredAt', 'error'])
-             && event.keys().hasAll(['eventId', 'stage', 'outcome', 'occurredAt'])
-             && event.eventId is string
-             && event.eventId.size() > 0
-             && event.eventId.size() <= 128
-             && event.stage in [
-               'started', 'details_validated', 'order_saved',
-               'order_verified', 'whatsapp_opened', 'completed'
-             ]
-             && event.outcome in ['success', 'failed']
-             && event.occurredAt is timestamp
-             && (!event.keys().hasAny(['error']) || isValidCheckoutAttemptError(event.error));
-    }
-
-    function isValidCheckoutAttemptClientCreate() {
+    function isValidCheckoutAttemptAdminUpdate() {
       let data = request.resource.data;
-      return data.keys().hasOnly([
-               'supportCode', 'clientWriteToken', 'orderId', 'customer', 'delivery',
-               'totalAmount', 'itemsJson', 'currentStage', 'result', 'resolutionStatus',
-               'createdAt', 'updatedAt', 'expiresAt', 'events'
+      return data.diff(resource.data).affectedKeys().hasOnly([
+               'resolutionStatus', 'adminNotes', 'resolvedAt', 'updatedAt'
              ])
-             && data.keys().hasAll([
-               'supportCode', 'clientWriteToken', 'orderId', 'customer', 'delivery',
-               'totalAmount', 'itemsJson', 'currentStage', 'result', 'resolutionStatus',
-               'createdAt', 'updatedAt', 'expiresAt', 'events'
-             ])
-             && data.clientWriteToken is string
-             && data.clientWriteToken.size() == 64
-             && data.supportCode is string
-             && data.supportCode.matches('^CHK-[A-Z0-9]{6}$')
-             && data.orderId is string
-             && isValidCheckoutAttemptCustomer(data.customer)
-             && isValidCheckoutAttemptDelivery(data.delivery)
-             && data.totalAmount is number
-             && data.totalAmount >= 0
-             && data.totalAmount <= 1000000000
-             && data.itemsJson is string
-             && data.itemsJson.size() <= 12000
-             && data.currentStage == 'started'
-             && data.result == 'in_progress'
-             && data.resolutionStatus == 'open'
-             && data.createdAt is timestamp
-             && data.updatedAt is timestamp
-             && data.updatedAt == data.createdAt
-             && data.expiresAt is timestamp
-             && data.expiresAt > request.time
-             && data.expiresAt <= request.time + duration.value(181, 'd')
-             && data.events is list
-             && data.events.size() <= 100
-             && data.events.size() == 1
-             && isValidCheckoutAttemptEvent(data.events[0])
-             && data.events[0].stage == 'started'
-             && data.events[0].outcome == 'success';
-    }
-
-    function isValidCheckoutAttemptClientUpdate() {
-      let data = request.resource.data;
-      return data.keys().hasOnly([
-               'supportCode', 'clientWriteToken', 'orderId', 'customer', 'delivery',
-               'totalAmount', 'itemsJson', 'currentStage', 'result', 'resolutionStatus',
-               'createdAt', 'updatedAt', 'expiresAt', 'events',
-               'linkedOrderDocumentId', 'linkedOrderId', 'error', 'adminNotes', 'resolvedAt'
-             ])
-             && data.keys().hasAll([
-               'supportCode', 'clientWriteToken', 'orderId', 'customer', 'delivery',
-               'totalAmount', 'itemsJson', 'currentStage', 'result', 'resolutionStatus',
-               'createdAt', 'updatedAt', 'expiresAt', 'events'
-             ])
-             && data.diff(resource.data).affectedKeys().hasOnly([
-               'currentStage', 'result', 'updatedAt', 'events',
-               'linkedOrderDocumentId', 'linkedOrderId', 'error'
-             ])
-             && request.resource.data.clientWriteToken == resource.data.clientWriteToken
-             && request.resource.data.supportCode == resource.data.supportCode
-             && request.resource.data.orderId == resource.data.orderId
-             && request.resource.data.customer == resource.data.customer
-             && request.resource.data.delivery == resource.data.delivery
-             && request.resource.data.totalAmount == resource.data.totalAmount
-             && request.resource.data.itemsJson == resource.data.itemsJson
-             && request.resource.data.createdAt == resource.data.createdAt
-             && request.resource.data.expiresAt == resource.data.expiresAt
-             && request.resource.data.resolutionStatus == resource.data.resolutionStatus
-             && request.resource.data.get('adminNotes', null) == resource.data.get('adminNotes', null)
-             && request.resource.data.get('resolvedAt', null) == resource.data.get('resolvedAt', null)
-             && data.currentStage in [
-               'started', 'details_validated', 'order_saved',
-               'order_verified', 'whatsapp_opened', 'completed'
-             ]
-             && data.result in ['in_progress', 'successful', 'failed']
-             && isValidCheckoutAttemptCustomer(data.customer)
-             && isValidCheckoutAttemptDelivery(data.delivery)
-             && data.totalAmount is number
-             && data.totalAmount >= 0
-             && data.totalAmount <= 1000000000
-             && data.itemsJson is string
-             && data.itemsJson.size() <= 12000
-             && data.updatedAt is timestamp
-             && data.events is list
-             && data.events.size() <= 100
+             && data.resolutionStatus in ['open', 'investigating', 'resolved']
+             && data.adminNotes is string
+             && data.adminNotes.size() <= 2000
+             && data.updatedAt == request.time
              && (
-               data.events == resource.data.events
+               (data.resolutionStatus == 'resolved' && data.resolvedAt == request.time)
                || (
-                 data.events.size() == resource.data.events.size() + 1
-                 && data.events == resource.data.events.concat([data.events[data.events.size() - 1]])
-                 && isValidCheckoutAttemptEvent(data.events[data.events.size() - 1])
+                 data.resolutionStatus != 'resolved'
+                 && !data.keys().hasAny(['resolvedAt'])
                )
-             )
-             && (!data.keys().hasAny(['linkedOrderDocumentId']) || data.linkedOrderDocumentId is string)
-             && (!data.keys().hasAny(['linkedOrderId']) || data.linkedOrderId is string)
-             && (!data.keys().hasAny(['error']) || isValidCheckoutAttemptError(data.error));
+             );
     }
 
     // Products: public read of available items, only admin write
@@ -244,12 +96,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Short-lived checkout diagnostics: clients may create and advance only their own snapshot.
+    // Customer writes go through the Vercel Firebase Admin API. Browser access is admin-only.
     match /checkoutAttempts/{attemptId} {
       allow get, list: if isAdmin();
-      allow create: if request.resource.data.clientWriteToken is string
-        && isValidCheckoutAttemptClientCreate();
-      allow update: if isAdmin() || isValidCheckoutAttemptClientUpdate();
+      allow create: if false;
+      allow update: if isAdmin() && isValidCheckoutAttemptAdminUpdate();
       allow delete: if false;
     }
 

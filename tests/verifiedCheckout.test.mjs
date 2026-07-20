@@ -2,6 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { runVerifiedCheckout } from '../src/services/verifiedCheckout.js';
+import { createExternalNavigation } from '../src/utils/externalNavigation.js';
+
+const externalUrlReservation = {
+  status: 'reserved',
+  handle: { name: 'initial-checkout-window' },
+};
 
 const checkoutInput = {
   cartItems: [
@@ -12,6 +18,7 @@ const checkoutInput = {
   userInfo: { name: 'Customer' },
   userId: null,
   promoInfo: { code: 'GREEN10', discount: 10, type: 'fixed', value: 10 },
+  externalUrlReservation,
 };
 
 function createDependencies({ verifiedOrder } = {}) {
@@ -49,9 +56,14 @@ function createDependencies({ verifiedOrder } = {}) {
         events.push('promo');
         assert.equal(code, 'GREEN10');
       },
-      openExternalUrl: async (url) => {
+      openExternalUrl: async (url, reservation) => {
         events.push('open');
         assert.equal(url, 'https://wa.me/917904050237?text=verified-order');
+        assert.equal(reservation, externalUrlReservation);
+      },
+      closeExternalUrlReservation: (reservation) => {
+        events.push('close');
+        assert.equal(reservation, externalUrlReservation);
       },
       tracker: {
         attemptId: 'attempt-123',
@@ -139,7 +151,7 @@ test('checkout reports create failures once and rethrows the original error', as
     (error) => error === createError
   );
 
-  assert.deepEqual(events, ['track:details_validated', 'create', 'track:failed']);
+  assert.deepEqual(events, ['track:details_validated', 'create', 'close', 'track:failed']);
   assert.deepEqual(trackerFailures, [createError]);
 });
 
@@ -158,7 +170,7 @@ test('checkout reports verification failures once and rethrows the original erro
 
   assert.deepEqual(events, [
     'track:details_validated', 'create', 'track:order_saved',
-    'verify', 'track:failed',
+    'verify', 'close', 'track:failed',
   ]);
   assert.equal(trackerFailures.length, 1);
   assert.equal(trackerFailures[0].code, 'verification-failed');
@@ -180,7 +192,7 @@ for (const [label, verifiedOrder] of [
 
     assert.deepEqual(events, [
       'track:details_validated', 'create', 'track:order_saved',
-      'verify', 'track:failed',
+      'verify', 'close', 'track:failed',
     ]);
     assert.equal(trackerFailures.length, 1);
     assert.match(trackerFailures[0].message, /could not be verified after saving/i);
@@ -199,6 +211,59 @@ test('generic native launcher rejection is classified at the WhatsApp boundary',
   assert.equal(trackerFailures.length, 1);
   assert.equal(trackerFailures[0].code, 'whatsapp-launch-failed');
   assert.equal(trackerFailures[0].cause, nativeError);
+});
+
+test('a blocked initial reservation remains a saved order with truthful retry state', async () => {
+  let browserOpenCalls = 0;
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => false,
+    openBrowser: () => {
+      browserOpenCalls += 1;
+      return null;
+    },
+    openNative: async () => assert.fail('native launcher must not run'),
+  });
+  const reservation = navigation.reserveExternalUrlWindow();
+  const { dependencies, createdOrder, trackerFailures } = createDependencies();
+  dependencies.openExternalUrl = navigation.openExternalUrl;
+
+  const result = await runVerifiedCheckout({
+    ...checkoutInput,
+    externalUrlReservation: reservation,
+  }, dependencies);
+
+  assert.equal(result.order, createdOrder);
+  assert.equal(result.savedToFirestore, true);
+  assert.equal(result.whatsappOpened, false);
+  assert.equal(typeof result.recordWhatsAppRetry, 'function');
+  assert.equal(trackerFailures[0].code, 'whatsapp-launch-failed');
+  assert.equal(browserOpenCalls, 1);
+});
+
+test('a business failure closes the exact reserved browser window before reporting failure', async () => {
+  let closeCalls = 0;
+  const browserWindow = {
+    opener: {},
+    location: { href: 'about:blank' },
+    close() { closeCalls += 1; },
+  };
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => false,
+    openBrowser: () => browserWindow,
+    openNative: async () => assert.fail('native launcher must not run'),
+  });
+  const reservation = navigation.reserveExternalUrlWindow();
+  const { dependencies } = createDependencies();
+  dependencies.createOrder = async () => { throw new Error('Order save failed'); };
+  dependencies.closeExternalUrlReservation = navigation.closeExternalUrlReservation;
+
+  await assert.rejects(runVerifiedCheckout({
+    ...checkoutInput,
+    externalUrlReservation: reservation,
+  }, dependencies), /Order save failed/);
+
+  assert.equal(reservation.handle, browserWindow);
+  assert.equal(closeCalls, 1);
 });
 
 test('only a failed WhatsApp handoff exposes an opaque non-persisted retry callback for the same tracker', async () => {

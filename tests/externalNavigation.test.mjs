@@ -2,9 +2,96 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createExternalUrlOpener } from '../src/utils/externalNavigation.js';
+import {
+  createExternalNavigation,
+  createExternalUrlOpener,
+} from '../src/utils/externalNavigation.js';
 
 const moduleUrl = new URL('../src/utils/externalNavigation.js', import.meta.url);
+
+test('reserves one browser handle synchronously and navigates that exact handle without reopening', async () => {
+  const openCalls = [];
+  const browserWindow = {
+    opener: { unsafe: true },
+    location: { href: 'about:blank' },
+  };
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => false,
+    openBrowser: (...args) => {
+      openCalls.push(args);
+      return browserWindow;
+    },
+    openNative: async () => assert.fail('native launcher must not run'),
+  });
+
+  const reservation = navigation.reserveExternalUrlWindow();
+  assert.equal(reservation.status, 'reserved');
+  assert.equal(reservation.handle, browserWindow);
+  assert.deepEqual(openCalls, [['', '_blank']]);
+
+  const opening = navigation.openExternalUrl('https://wa.me/example', reservation);
+  assert.equal(browserWindow.opener, null);
+  assert.equal(browserWindow.location.href, 'https://wa.me/example');
+  assert.deepEqual(openCalls, [['', '_blank']]);
+  assert.equal(await opening, true);
+});
+
+test('a blocked reservation keeps a stable error and never attempts a late second popup', async () => {
+  let openCalls = 0;
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => false,
+    openBrowser: () => {
+      openCalls += 1;
+      return null;
+    },
+    openNative: async () => assert.fail('native launcher must not run'),
+  });
+
+  const reservation = navigation.reserveExternalUrlWindow();
+  assert.equal(reservation.status, 'blocked');
+  assert.equal(reservation.error.code, 'whatsapp-launch-failed');
+
+  await assert.rejects(
+    navigation.openExternalUrl('https://wa.me/example', reservation),
+    (error) => error === reservation.error,
+  );
+  assert.equal(openCalls, 1);
+});
+
+test('native reservation never opens a browser window', async () => {
+  let browserCalls = 0;
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => true,
+    openBrowser: () => {
+      browserCalls += 1;
+      return {};
+    },
+    openNative: async (url) => {
+      assert.equal(url, 'https://wa.me/example');
+      return { completed: true };
+    },
+  });
+
+  const reservation = navigation.reserveExternalUrlWindow();
+  assert.equal(reservation.status, 'native');
+  assert.equal(browserCalls, 0);
+  assert.equal(await navigation.openExternalUrl('https://wa.me/example', reservation), true);
+  assert.equal(browserCalls, 0);
+});
+
+test('direct web opening reserves and navigates synchronously for click-driven retries', async () => {
+  const browserWindow = { opener: {}, location: { href: 'about:blank' } };
+  const navigation = createExternalNavigation({
+    isNativePlatform: () => false,
+    openBrowser: () => browserWindow,
+    openNative: async () => assert.fail('native launcher must not run'),
+  });
+
+  const opening = navigation.openExternalUrl('https://wa.me/example');
+  assert.equal(browserWindow.opener, null);
+  assert.equal(browserWindow.location.href, 'https://wa.me/example');
+  assert.equal(await opening, true);
+});
 
 test('opens a blank browser target, clears its opener, and then navigates the handle', async () => {
   const calls = [];

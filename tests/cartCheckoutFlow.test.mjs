@@ -94,6 +94,28 @@ test('cart clears a previous checkout issue when starting a new attempt', () => 
   );
 });
 
+test('cart reserves the initial browser window before any awaited checkout action', () => {
+  assert.match(
+    cartPageSource,
+    /import \{ openExternalUrl, reserveExternalUrlWindow \} from ['"]\.\.\/utils\/externalNavigation['"]/,
+  );
+  const handlerStart = cartPageSource.indexOf('const handleCheckoutClick = async () => {');
+  const handlerEnd = cartPageSource.indexOf('const handleItemClick', handlerStart);
+  const handler = cartPageSource.slice(handlerStart, handlerEnd);
+  const guardIndex = handler.indexOf('if (isSaving) return;');
+  const reservationIndex = handler.indexOf('const externalUrlReservation = reserveExternalUrlWindow();');
+  const firstAwaitIndex = handler.indexOf('await ');
+
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart);
+  assert.ok(guardIndex >= 0);
+  assert.ok(reservationIndex > guardIndex);
+  assert.ok(reservationIndex < firstAwaitIndex);
+  assert.match(
+    handler,
+    /initiateWhatsAppCheckout\([\s\S]*?promoInfo,\s*externalUrlReservation,?\s*\)/,
+  );
+});
+
 test('cart clears stale location through the shared pincode normalizer', () => {
   assert.match(cartPageSource, /normalizeCheckoutPincode/);
   assert.match(

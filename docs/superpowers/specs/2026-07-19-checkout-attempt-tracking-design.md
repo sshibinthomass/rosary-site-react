@@ -63,7 +63,7 @@ If processing fails, the record keeps the last successful stage and appends a `f
 
 Diagnostic writes are best-effort and must never prevent a valid order from being placed. Retryable network, rate-limit, and server failures place the create anchor plus its updates in one bounded, expiring local outbox group. Groups preserve per-attempt FIFO order and idempotent operation IDs; capacity eviction never splits a group. Expired, malformed, and orphan-update groups are pruned. A permanent client error drops only its unchanged group, while a retryable group does not block later attempts.
 
-The outbox stores no Firebase ID tokens or authorization objects. After a browser restart, Firebase restores the secondary anonymous identity and a fresh writer token is acquired at send time; an attempt created under a different/lost writer identity receives a permanent mismatch without blocking later groups. Flush removal compares processed operation IDs with current storage so operations enqueued during an awaited request survive with their create anchor and expiry.
+The outbox stores no Firebase ID tokens or authorization objects. After a browser restart, Firebase restores the secondary anonymous identity and a fresh writer token is acquired at send time. Each replay operation, including writer-token refresh, optional primary-token refresh, and the API fetch, is bounded to 750 ms. A timeout retains that group as retryable and processing continues with later groups; a late rejection is already observed and cannot become unhandled. An attempt created under a different/lost writer identity receives `attempt-conflict` when its create anchor replays, while an update sent by the wrong writer receives `writer-mismatch`. Both are permanent and isolated to the unchanged affected group. Flush removal compares processed operation IDs with current storage so operations enqueued during an awaited request survive with their create anchor and expiry.
 
 No browser-only design can guarantee delivery when a customer goes offline and never returns. The admin page will therefore describe the data as recorded checkout attempts rather than a guaranteed record of every button press.
 
@@ -104,7 +104,7 @@ The tracking collection is not used as permanent order history. Orders continue 
 - An order failure records the last completed stage, error category, and support code when diagnostics are available.
 - An admin load or update failure shows a retryable error without discarding unsaved notes in the current page session.
 - A missing linked order is shown explicitly rather than treated as a tracking-page failure.
-- Browser popup blocking and native launcher rejection are both `whatsapp-launch-failed`; `whatsapp_opened` is recorded only after a positive handoff. Web launch first opens a blank `_blank` handle, clears `opener`, and then navigates it; navigation failure closes the blank handle.
+- Browser popup blocking and native launcher rejection are both `whatsapp-launch-failed`; `whatsapp_opened` is recorded only after a positive handoff. The originating web click reserves one blank `_blank` handle synchronously before any checkout await. After verification, the navigation adapter clears `opener` and navigates that exact handle without another `window.open`. Business failure before handoff and navigation-assignment failure close the reservation. A blocked reservation remains a saved-order launch failure with direct-click retry, while native checkout reserves no browser window.
 - A saved-order WhatsApp retry reports success or failure through the same in-memory tracker session and never creates a second order.
 
 ## Testing
@@ -122,6 +122,8 @@ Automated tests will verify:
 - the secondary app persists anonymous writer identity without affecting primary auth, and refreshes its ID token for every request;
 - the Vercel API verifies immutable writer ownership plus optional independent primary identity, rejects extra PII, and enforces idempotent forward transitions;
 - concurrent outbox enqueues survive successful and permanent responses to an older flush snapshot;
+- hanging writer-token refreshes or API fetches time out per operation without blocking later outbox groups or leaking late rejections;
+- the initial web click reserves exactly one popup before awaited work, propagates its exact handle through verified checkout, closes it on failure, and never reserves a browser popup on native;
 - resolved notes preserve `resolvedAt`, first resolution sets it, and reopening clears it;
 - Firestore rules deny every public checkout-attempt operation and allow only constrained admin investigation updates;
 - the Firestore Emulator authorization matrix covers public denial, admin reads/updates, protected deletes, and unrelated admin fallback access;
@@ -135,7 +137,7 @@ Automated tests will verify:
 3. Publish `firestore.rules` so browser checkout-attempt access is denied, then publish `firestore.indexes.json`.
 4. Confirm the `checkoutAttempts.expiresAt` TTL field override is enabled in Firestore.
 5. Deploy the Vercel release containing both `/api/checkout-attempts` and the web client.
-6. Perform the success, cold-reload outbox, writer-mismatch, blocked-popup/retry, admin resolution/notes, and minimal-PII live smoke checks documented in `README.md`.
+6. Perform the success, cold-reload outbox create-conflict, wrong-writer PATCH mismatch, blocked-popup/retry, admin resolution/notes, and minimal-PII live smoke checks documented in `README.md`.
 
 ## Non-goals
 

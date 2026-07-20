@@ -8,36 +8,83 @@ function whatsappLaunchError(cause) {
 }
 
 export function createExternalUrlOpener({ isNativePlatform, openNative, openBrowser }) {
-  return async function openUrl(url) {
-    if (!url) throw new Error('Cannot open an empty URL.');
-    if (isNativePlatform()) {
+  return createExternalNavigation({ isNativePlatform, openNative, openBrowser }).openExternalUrl;
+}
+
+export function createExternalNavigation({ isNativePlatform, openNative, openBrowser }) {
+  function reserveExternalUrlWindow() {
+    try {
+      if (isNativePlatform()) return { status: 'native' };
+      const handle = openBrowser('', '_blank');
+      if (!handle) return { status: 'blocked', error: whatsappLaunchError() };
+      return { status: 'reserved', handle, closed: false, consumed: false };
+    } catch (error) {
+      return { status: 'blocked', error: whatsappLaunchError(error) };
+    }
+  }
+
+  function closeExternalUrlReservation(reservation) {
+    if (
+      reservation?.status !== 'reserved'
+      || reservation.closed
+      || reservation.consumed
+    ) return false;
+    reservation.closed = true;
+    try {
+      reservation.handle?.close?.();
+    } catch {
+      // Best-effort cleanup must not replace the checkout result.
+    }
+    return true;
+  }
+
+  async function openExternalUrl(url, reservation) {
+    if (!url) {
+      if (reservation) closeExternalUrlReservation(reservation);
+      throw new Error('Cannot open an empty URL.');
+    }
+    const target = reservation || reserveExternalUrlWindow();
+    if (target?.status === 'native') {
       const result = await openNative(url);
       if (result?.completed === false) throw whatsappLaunchError();
       return true;
     }
-    const openedWindow = openBrowser('', '_blank');
-    if (!openedWindow) throw whatsappLaunchError();
+    if (target?.status === 'blocked') throw target.error || whatsappLaunchError();
+    if (target?.status !== 'reserved' || !target.handle || target.closed || target.consumed) {
+      throw whatsappLaunchError();
+    }
     try {
-      openedWindow.opener = null;
-      openedWindow.location.href = url;
+      target.handle.opener = null;
+      target.handle.location.href = url;
+      target.consumed = true;
     } catch (error) {
-      try {
-        openedWindow.close?.();
-      } catch {
-        // Best-effort cleanup must not hide the stable launch failure.
-      }
+      closeExternalUrlReservation(target);
       throw whatsappLaunchError(error);
     }
     return true;
+  }
+
+  return {
+    closeExternalUrlReservation,
+    openExternalUrl,
+    reserveExternalUrlWindow,
   };
 }
 
-const productionExternalUrlOpener = createExternalUrlOpener({
+const productionExternalNavigation = createExternalNavigation({
   isNativePlatform: () => Capacitor.isNativePlatform(),
   openNative: (url) => AppLauncher.openUrl({ url }),
   openBrowser: (...args) => window.open(...args),
 });
 
-export function openExternalUrl(url) {
-  return productionExternalUrlOpener(url);
+export function reserveExternalUrlWindow() {
+  return productionExternalNavigation.reserveExternalUrlWindow();
+}
+
+export function closeExternalUrlReservation(reservation) {
+  return productionExternalNavigation.closeExternalUrlReservation(reservation);
+}
+
+export function openExternalUrl(url, reservation) {
+  return productionExternalNavigation.openExternalUrl(url, reservation);
 }

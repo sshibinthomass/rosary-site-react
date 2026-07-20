@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
-import { openExternalUrl } from '../utils/externalNavigation';
+import { openExternalUrl, reserveExternalUrlWindow } from '../utils/externalNavigation';
 import { buildWhatsAppUrlForOrder } from '../utils/orderWhatsApp';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getOrdersByUserId, getOrderUrl } from '../services/orderService';
@@ -487,6 +487,7 @@ export default function CartPage() {
 
   const handleCheckoutClick = async () => {
     if (isSaving) return;
+    const externalUrlReservation = reserveExternalUrlWindow();
     setCheckoutIssue(null);
     setIsSaving(true);
 
@@ -508,7 +509,14 @@ export default function CartPage() {
         }
       }
 
-      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
+      const checkoutResult = await initiateWhatsAppCheckout(
+        inStockItems,
+        discountedTotal,
+        checkoutInfo,
+        user?.uid || null,
+        promoInfo,
+        externalUrlReservation,
+      );
       await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
       console.error('Checkout failed:', err);

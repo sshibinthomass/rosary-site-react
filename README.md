@@ -23,6 +23,8 @@ Customer checkout diagnostics use the Vercel `/api/checkout-attempts` endpoint a
 
 The browser initializes a named secondary Firebase app only for diagnostic writers, uses `browserLocalPersistence`, and signs in anonymously. This does not change the default Firebase app or the customer/admin login in `AuthContext`. Every diagnostic request refreshes the secondary writer ID token and sends it as `Authorization: Bearer <token>`. A create request may separately send a freshly refreshed primary-user token in `X-Checkout-User-Token` when the current primary user still matches the optional diagnostic `userId`.
 
+On web checkout, the originating button click synchronously reserves one blank `_blank` window before profile, tracking, order, or verification awaits. After verification, the exact reserved handle has its `opener` cleared and is navigated to WhatsApp; no second popup is opened. Pre-handoff business failures and navigation-assignment failures close the reservation. A blocked reservation still allows the order to be saved and produces the truthful WhatsApp retry state. Native checkout does not reserve a browser window, and direct retry buttons perform their own immediate reservation.
+
 Configure exactly one of these server-only Vercel environment variables:
 
 - `FIREBASE_SERVICE_ACCOUNT_BASE64` (recommended for a single-line Vercel value)
@@ -42,7 +44,7 @@ After deployment, run these live smoke checks without using production credentia
 
 1. Complete a normal test checkout. Confirm its support code and canonical order ID find the same attempt under Admin -> Checkout Tracking.
 2. Block the WhatsApp popup/launcher. Confirm the saved-order panel appears, then use `Open WhatsApp again`; the same attempt should recover without a duplicate order.
-3. Queue a diagnostic while offline, fully reload the app, reconnect, and confirm the same anonymously authenticated writer can flush it. Confirm a changed/lost writer receives a permanent mismatch for only that attempt group while later groups continue.
+3. Queue a diagnostic while offline, fully reload the app, reconnect, and confirm the same anonymously authenticated writer can flush it. Confirm each replay operation finishes or times out within 750 ms and that a hanging group does not block later groups. A changed/lost writer replaying the create anchor receives permanent `attempt-conflict`; a direct update by the wrong writer receives permanent `writer-mismatch`. Either failure affects only that attempt group.
 4. Confirm Firestore stores `writerUid` but no ID token, email, street address, pincode, district, or state.
 5. Save notes on an already resolved attempt and confirm its original `resolvedAt` is unchanged. Reopening clears `resolvedAt`; resolving again sets a new server timestamp. The record should hide by default but remain findable by its explicit support-code/order-ID URL.
 6. Confirm an unauthenticated browser cannot create, update, get, list, or delete `checkoutAttempts`, and that an admin still cannot delete a checkout attempt or protected order.

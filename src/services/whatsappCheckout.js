@@ -1,6 +1,6 @@
 import { createOrder, generateOrderId, getOrderByIdFromServer, getOrderUrl } from './orderService';
 import { incrementPromoUsage } from './promoService';
-import { openExternalUrl } from '../utils/externalNavigation';
+import { closeExternalUrlReservation, openExternalUrl } from '../utils/externalNavigation';
 import { generateWhatsAppOrderRequestUrl } from '../utils/orderWhatsApp';
 import { runVerifiedCheckout } from './verifiedCheckout';
 import { createCheckoutTracker } from './checkoutAttemptService';
@@ -27,9 +27,17 @@ export function generateWhatsAppCheckoutUrl(cartItems, total, userInfo = {}, ord
  * @param {Object} userInfo - User name and address details
  * @param {string|null} userId - User ID if logged in
  * @param {Object|null} promoInfo - { code, discount, type, value, promo } or null
+ * @param {Object|null} externalUrlReservation - Synchronously reserved browser handoff target
  * @returns {Object} Order details and WhatsApp URL
  */
-export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userId = null, promoInfo = null) {
+export async function initiateWhatsAppCheckout(
+  cartItems,
+  total,
+  userInfo,
+  userId = null,
+  promoInfo = null,
+  externalUrlReservation = null,
+) {
   let tracker;
   try {
     tracker = await createCheckoutTracker({
@@ -53,6 +61,7 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
       userInfo,
       userId,
       promoInfo,
+      externalUrlReservation,
     }, {
       createOrder,
       generateOrderId,
@@ -61,6 +70,7 @@ export async function initiateWhatsAppCheckout(cartItems, total, userInfo, userI
       buildWhatsAppUrl: generateWhatsAppCheckoutUrl,
       incrementPromoUsage,
       openExternalUrl,
+      closeExternalUrlReservation,
       tracker,
     });
   } catch (error) {

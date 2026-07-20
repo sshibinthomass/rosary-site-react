@@ -25,6 +25,7 @@ async function loadWhatsAppCheckoutAdapter(overrides = {}) {
     getOrderUrl: () => '',
     incrementPromoUsage: async () => {},
     openExternalUrl: async () => {},
+    closeExternalUrlReservation: () => {},
     generateWhatsAppOrderRequestUrl: () => '',
     runVerifiedCheckout: async () => {},
     createCheckoutTracker: async () => ({
@@ -41,6 +42,7 @@ async function loadWhatsAppCheckoutAdapter(overrides = {}) {
     'getOrderUrl',
     'incrementPromoUsage',
     'openExternalUrl',
+    'closeExternalUrlReservation',
     'generateWhatsAppOrderRequestUrl',
     'runVerifiedCheckout',
     'createCheckoutTracker',
@@ -191,6 +193,24 @@ test('production adapter maps storefront checkout fields into a complete model s
   assert.deepEqual(attempt.items, [{
     productId: 'plant-49', name: 'Hydrangea', price: 39, quantity: 2,
   }]);
+});
+
+test('production adapter passes the exact initial window reservation through verified checkout', async () => {
+  const externalUrlReservation = { status: 'reserved', handle: { id: 'checkout-window' } };
+  let verifiedInput;
+  let verifiedDependencies;
+  const adapter = await loadWhatsAppCheckoutAdapter({
+    runVerifiedCheckout: async (input, dependencies) => {
+      verifiedInput = input;
+      verifiedDependencies = dependencies;
+      return { savedToFirestore: true };
+    },
+  });
+
+  await adapter.initiateWhatsAppCheckout([], 0, {}, null, null, externalUrlReservation);
+
+  assert.equal(verifiedInput.externalUrlReservation, externalUrlReservation);
+  assert.equal(typeof verifiedDependencies.closeExternalUrlReservation, 'function');
 });
 
 test('production adapter preserves a primitive business failure value', async () => {

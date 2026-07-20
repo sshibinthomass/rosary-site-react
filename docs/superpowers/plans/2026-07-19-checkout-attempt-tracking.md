@@ -185,7 +185,7 @@ Use only `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64` on
 
 - [ ] **Step 3: Implement failure-isolated tracking and grouped flush**
 
-Bound each diagnostic call. Queue a whole create-anchored attempt group after retryable/time-out failures, preserve FIFO/idempotency, refresh writer identity at send time after reload, continue to later groups after one group fails, retain retryable groups, and drop only an unchanged permanently failed/unauthorizable group. Compare processed operation IDs before removal so concurrent enqueues survive. Never let diagnostic I/O change checkout business behavior.
+Bound each diagnostic call and each replay operation to at most 750 ms, including writer-token refresh, optional primary identity, and API fetch. Queue a whole create-anchored attempt group after retryable/time-out failures, preserve FIFO/idempotency, refresh writer identity at send time after reload, continue to later groups after one group fails or hangs, retain retryable groups, observe late rejections, and drop only an unchanged permanently failed/unauthorizable group. Compare processed operation IDs before removal so concurrent enqueues survive. Never let diagnostic I/O change checkout business behavior.
 
 - [ ] **Step 4: Lock down Firestore and add the authorization matrix**
 
@@ -431,7 +431,7 @@ Add a `Checkout diagnostic deployment` section that states:
 3. Deploy firestore.rules so direct browser checkout-attempt access is denied.
 4. Deploy firestore.indexes.json and confirm the checkoutAttempts.expiresAt TTL override is enabled.
 5. Deploy the Vercel release containing both /api/checkout-attempts and the web build.
-6. Run success, cold-reload flush, writer mismatch, blocked-popup/retry, admin workflow, authorization, and minimal-PII live smoke checks.
+6. Run success, cold-reload create-conflict, wrong-writer PATCH mismatch, blocked-popup/retry, admin workflow, authorization, and minimal-PII live smoke checks.
 ```
 
 Do not include service-account values or environment secrets.
@@ -480,3 +480,11 @@ Place successful and deliberately blocked-WhatsApp test checkouts. Queue an offl
 - [x] Compare flushed operation IDs with current storage so concurrent enqueues survive awaited success or permanent responses.
 - [x] Preserve `resolvedAt` for resolved notes, set it only on transition into resolved, and clear it only on reopen.
 - [x] Map `deadline-exceeded` to the network diagnostic category.
+
+## Final important-findings correction (2026-07-20)
+
+- [x] Reserve the initial web popup synchronously in `CartPage.handleCheckoutClick` before every checkout await; native reserves no browser window.
+- [x] Pass the exact reservation through `initiateWhatsAppCheckout` and `runVerifiedCheckout`, then clear its opener and navigate it without a second `window.open`.
+- [x] Close the reservation for pre-handoff business failures and navigation-assignment failures; keep blocked reservations truthful and retryable after the order is saved.
+- [x] Bound every outbox replay operation, including writer/primary token work and fetch, retain timed-out groups, continue later groups, and observe late rejections.
+- [x] Document replayed-create `attempt-conflict` separately from PATCH `writer-mismatch`.

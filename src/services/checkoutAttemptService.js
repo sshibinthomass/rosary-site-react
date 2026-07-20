@@ -398,10 +398,13 @@ export async function flushCheckoutAttemptOutbox(storage, dependencies = {}) {
   for (const group of groups) {
     let outcome = 'success';
     for (const operation of group.operations) {
-      try {
-        await persistOperation(operation);
-      } catch (error) {
-        outcome = classifyCheckoutAttemptFailure(error);
+      const persistenceResult = await settlePersistence(
+        persistOperation,
+        operation,
+        persistenceDeadlineMs,
+      );
+      if (persistenceResult.outcome !== 'success') {
+        outcome = persistenceResult.outcome;
         break;
       }
     }

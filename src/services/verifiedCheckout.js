@@ -74,7 +74,7 @@ export async function runVerifiedCheckout(input, dependencies) {
     let whatsappError;
 
     try {
-      await dependencies.openExternalUrl(whatsappUrl);
+      await dependencies.openExternalUrl(whatsappUrl, input.externalUrlReservation);
       await track('stage', 'whatsapp_opened');
       await track('complete');
     } catch (error) {
@@ -111,6 +111,11 @@ export async function runVerifiedCheckout(input, dependencies) {
 
     return result;
   } catch (error) {
+    try {
+      dependencies.closeExternalUrlReservation?.(input.externalUrlReservation);
+    } catch {
+      // Closing a reserved blank window must never replace the business failure.
+    }
     await track('fail', error);
     throw error;
   }

@@ -23,6 +23,20 @@ function createStorage(initial = {}) {
   };
 }
 
+async function withinTestDeadline(promise, message, deadlineMs = 500) {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(message)), deadlineMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function operation(attemptId, type, index = 0) {
   return {
     operationId: `${attemptId}:${type}:${index}`,
@@ -125,7 +139,7 @@ test('drops an expired group when the app returns after its retention deadline',
   assert.equal(storage.getItem(CHECKOUT_OUTBOX_KEY), null);
 });
 
-test('a permanent writer mismatch drops only that group and flushes a newer group', async () => {
+test('a permanent create conflict drops only that group and flushes a newer group', async () => {
   const storage = createStorage();
   enqueueCheckoutAttemptGroup(storage, group('bad'), { now: () => NOW });
   enqueueCheckoutAttemptGroup(storage, group('good'), { now: () => NOW });
@@ -137,8 +151,8 @@ test('a permanent writer mismatch drops only that group and flushes a newer grou
     persistOperation: async (queuedOperation) => {
       calls.push(queuedOperation.operationId);
       if (queuedOperation.attemptId === 'bad') {
-        throw Object.assign(new Error('writer mismatch'), {
-          classification: 'permanent', status: 403, code: 'writer-mismatch',
+        throw Object.assign(new Error('attempt conflict'), {
+          classification: 'permanent', status: 409, code: 'attempt-conflict',
         });
       }
     },
@@ -269,6 +283,76 @@ test('never stores ID tokens or authorization objects in an attempt group', () =
   assert.equal(storage.getItem(CHECKOUT_OUTBOX_KEY), null);
 });
 
+test('a hanging writer-token refresh times out its group and later groups still replay', async () => {
+  const storage = createStorage();
+  enqueueCheckoutAttemptGroup(storage, group('token-hang'), { now: () => NOW });
+  enqueueCheckoutAttemptGroup(storage, group('after-token-hang'), { now: () => NOW });
+  let tokenCalls = 0;
+  const persisted = [];
+
+  const flush = flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    persistenceDeadlineMs: 20,
+    getWriterIdToken: () => {
+      tokenCalls += 1;
+      return tokenCalls === 1 ? new Promise(() => {}) : Promise.resolve('writer-token');
+    },
+    persistOperation: async (queuedOperation) => persisted.push(queuedOperation.operationId),
+  });
+  const result = await withinTestDeadline(
+    flush,
+    'flush did not continue after writer-token timeout',
+  );
+
+  assert.deepEqual(persisted, ['after-token-hang:create:0']);
+  assert.deepEqual(readCheckoutOutbox(storage).map(({ attemptId }) => attemptId), ['token-hang']);
+  assert.deepEqual(result, {
+    flushedGroups: 1,
+    droppedGroups: 0,
+    retainedGroups: 1,
+    remainingGroups: 1,
+  });
+});
+
+test('a hanging fetch times out without blocking later groups or leaking a late rejection', async () => {
+  const storage = createStorage();
+  enqueueCheckoutAttemptGroup(storage, group('fetch-hang'), { now: () => NOW });
+  enqueueCheckoutAttemptGroup(storage, group('after-fetch-hang'), { now: () => NOW });
+  let rejectLateFetch;
+  const hangingFetch = new Promise((_, reject) => { rejectLateFetch = reject; });
+  const persisted = [];
+  const unhandledRejections = [];
+  const captureUnhandled = (error) => unhandledRejections.push(error);
+  process.on('unhandledRejection', captureUnhandled);
+
+  try {
+    const flush = flushCheckoutAttemptOutbox(storage, {
+      now: () => NOW,
+      persistenceDeadlineMs: 20,
+      getWriterIdToken: async () => 'writer-token',
+      persistOperation: async (queuedOperation) => {
+        if (queuedOperation.attemptId === 'fetch-hang') return hangingFetch;
+        persisted.push(queuedOperation.operationId);
+      },
+    });
+    const result = await withinTestDeadline(
+      flush,
+      'flush did not continue after fetch timeout',
+    );
+
+    assert.deepEqual(persisted, ['after-fetch-hang:create:0']);
+    assert.deepEqual(readCheckoutOutbox(storage).map(({ attemptId }) => attemptId), ['fetch-hang']);
+    assert.equal(result.retainedGroups, 1);
+    assert.equal(result.flushedGroups, 1);
+
+    rejectLateFetch(new Error('late fetch rejection'));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(unhandledRejections, []);
+  } finally {
+    process.off('unhandledRejection', captureUnhandled);
+  }
+});
+
 test('concurrent enqueue during flush retains the new operation with its create anchor', async () => {
   const storage = createStorage();
   const initialGroup = group('concurrent');
@@ -332,8 +416,8 @@ test('a permanent response cannot delete an operation enqueued while its request
     ...initialGroup,
     operations: [initialGroup.operations[0], operation('concurrent-permanent', 'update', 1)],
   }, { now: () => NOW });
-  rejectPersist(Object.assign(new Error('writer mismatch'), {
-    classification: 'permanent', status: 403, code: 'writer-mismatch',
+  rejectPersist(Object.assign(new Error('attempt conflict'), {
+    classification: 'permanent', status: 409, code: 'attempt-conflict',
   }));
   const result = await flush;
 

@@ -115,6 +115,17 @@ test('expanded detail shows a formatted resolution time only for persisted resol
   assert.match(details, /\) : null\}/);
 });
 
+test('resolution writes refresh the authoritative attempt so server timestamps are not stale', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const saveStart = source.indexOf('const saveResolution');
+  const saveEnd = source.indexOf('const toggleAttempt');
+  const saveSource = source.slice(saveStart, saveEnd);
+
+  assert.match(saveSource, /const refreshedAttempts = await getAllCheckoutAttempts\(\);/);
+  assert.match(saveSource, /setAttempts\(refreshedAttempts\);/);
+  assert.match(saveSource, /setNotes\(Object\.fromEntries\(refreshedAttempts\.map\(\(record\) => \[record\.id, record\.adminNotes \|\| ''\]\)\)\);/);
+});
+
 test('active-save helpers preserve concurrent attempt IDs immutably', () => {
   const addActiveCheckoutAttemptId = checkoutAttemptModel.addActiveCheckoutAttemptId;
   const removeActiveCheckoutAttemptId = checkoutAttemptModel.removeActiveCheckoutAttemptId;

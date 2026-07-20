@@ -283,14 +283,13 @@ export default function AdminCheckoutTrackingPage() {
     const notesOnly = resolutionStatus === undefined;
     setSavingAttemptIds((activeIds) => addActiveCheckoutAttemptId(activeIds, attempt.id));
     try {
-      const updated = await updateCheckoutAttemptResolution(
+      await updateCheckoutAttemptResolution(
         attempt,
         createCheckoutAttemptResolutionUpdate(attempt, notes[attempt.id] || '', resolutionStatus),
       );
-      setAttempts((current) => current.map((record) => (
-        record.id === attempt.id ? { ...record, ...updated } : record
-      )));
-      setNotes((current) => ({ ...current, [attempt.id]: updated.adminNotes }));
+      const refreshedAttempts = await getAllCheckoutAttempts();
+      setAttempts(refreshedAttempts);
+      setNotes(Object.fromEntries(refreshedAttempts.map((record) => [record.id, record.adminNotes || ''])));
       if (notesOnly) {
         success('Checkout notes saved');
       } else {

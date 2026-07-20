@@ -32,6 +32,7 @@ import { getCheckoutDiagnosticWriterIdToken } from './checkoutDiagnosticWriterAu
 
 const COLLECTION_NAME = 'checkoutAttempts';
 export const CHECKOUT_TRACKING_DEADLINE_MS = 750;
+export const CHECKOUT_OUTBOX_REPLAY_DEADLINE_MS = 5_000;
 const IDENTITY_DEADLINE_MS = 250;
 
 let productionTransport;
@@ -385,7 +386,7 @@ export async function flushCheckoutAttemptOutbox(storage, dependencies = {}) {
   const now = dependencies.now || (() => new Date());
   const persistenceDeadlineMs = Number.isFinite(dependencies.persistenceDeadlineMs)
     ? Math.max(1, dependencies.persistenceDeadlineMs)
-    : CHECKOUT_TRACKING_DEADLINE_MS;
+    : CHECKOUT_OUTBOX_REPLAY_DEADLINE_MS;
   const persistOperation = createAuthenticatedOperationPersistence(
     dependencies,
     persistenceDeadlineMs,

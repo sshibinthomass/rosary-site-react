@@ -314,6 +314,29 @@ test('a hanging writer-token refresh times out its group and later groups still 
   });
 });
 
+test('replay waits past the interactive checkout budget for a delayed writer token', async () => {
+  const storage = createStorage();
+  enqueueCheckoutAttemptGroup(storage, group('delayed-replay-token'), { now: () => NOW });
+  const persisted = [];
+
+  const result = await flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    getWriterIdToken: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return 'writer-token';
+    },
+    persistOperation: async (queuedOperation) => persisted.push(queuedOperation.operationId),
+  });
+
+  assert.deepEqual(persisted, ['delayed-replay-token:create:0']);
+  assert.deepEqual(result, {
+    flushedGroups: 1,
+    droppedGroups: 0,
+    retainedGroups: 0,
+    remainingGroups: 0,
+  });
+});
+
 test('a hanging fetch times out without blocking later groups or leaking a late rejection', async () => {
   const storage = createStorage();
   enqueueCheckoutAttemptGroup(storage, group('fetch-hang'), { now: () => NOW });

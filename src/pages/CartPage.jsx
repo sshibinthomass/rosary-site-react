@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { initiateWhatsAppCheckout } from '../services/whatsappCheckout';
-import { openExternalUrl } from '../utils/externalNavigation';
+import { openExternalUrl, reserveExternalUrlWindow } from '../utils/externalNavigation';
 import { buildWhatsAppUrlForOrder } from '../utils/orderWhatsApp';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getOrdersByUserId, getOrderUrl } from '../services/orderService';
@@ -173,6 +173,7 @@ export default function CartPage() {
   const [saveDetailsForNextOrder, setSaveDetailsForNextOrder] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [checkoutConfirmation, setCheckoutConfirmation] = useState(null);
+  const [checkoutIssue, setCheckoutIssue] = useState(null);
   const [pendingOrders, setPendingOrders] = useState([]);
   const [pendingOrdersLoading, setPendingOrdersLoading] = useState(false);
   const [openingPendingOrderId, setOpeningPendingOrderId] = useState(null);
@@ -278,6 +279,11 @@ export default function CartPage() {
 
     try {
       await openExternalUrl(checkoutConfirmation.whatsappUrl);
+      try {
+        await checkoutConfirmation.recordWhatsAppRetry?.({ success: true });
+      } catch (trackingError) {
+        console.warn('Checkout tracking warning:', trackingError);
+      }
       setCheckoutConfirmation(prev => prev ? {
         ...prev,
         whatsappOpened: true,
@@ -285,6 +291,11 @@ export default function CartPage() {
       } : prev);
       success('WhatsApp opened. Please tap Send there to confirm.');
     } catch (openError) {
+      try {
+        await checkoutConfirmation.recordWhatsAppRetry?.({ success: false, error: openError });
+      } catch (trackingError) {
+        console.warn('Checkout tracking warning:', trackingError);
+      }
       console.error('Failed to reopen WhatsApp checkout:', openError);
       error('Could not reopen WhatsApp. Please try again.');
     }
@@ -334,6 +345,11 @@ export default function CartPage() {
                 ? 'Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.'
                 : 'WhatsApp could not open, but this order is already saved. Use the button below to open WhatsApp again without creating another order.'}
             </p>
+            {checkoutConfirmation.supportCode && (
+              <p className="mt-2 font-mono text-xs font-semibold text-[var(--text-primary)]">
+                Support code: {checkoutConfirmation.supportCode}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <NavLink to="/" className="btn btn-secondary justify-center">
@@ -451,7 +467,9 @@ export default function CartPage() {
       whatsappUrl: checkoutResult?.whatsappUrl || '',
       savedToFirestore: Boolean(checkoutResult?.savedToFirestore),
       whatsappOpened: checkoutResult?.whatsappOpened !== false,
-      whatsappError: checkoutResult?.whatsappError || ''
+      whatsappError: checkoutResult?.whatsappError || '',
+      supportCode: checkoutResult?.supportCode || '',
+      recordWhatsAppRetry: checkoutResult?.recordWhatsAppRetry
     });
 
     if (checkoutResult?.savedToFirestore) {
@@ -469,6 +487,8 @@ export default function CartPage() {
 
   const handleCheckoutClick = async () => {
     if (isSaving) return;
+    const externalUrlReservation = reserveExternalUrlWindow();
+    setCheckoutIssue(null);
     setIsSaving(true);
 
     try {
@@ -489,12 +509,24 @@ export default function CartPage() {
         }
       }
 
-      const checkoutResult = await initiateWhatsAppCheckout(inStockItems, discountedTotal, checkoutInfo, user?.uid || null, promoInfo);
+      const checkoutResult = await initiateWhatsAppCheckout(
+        inStockItems,
+        discountedTotal,
+        checkoutInfo,
+        user?.uid || null,
+        promoInfo,
+        externalUrlReservation,
+      );
       await finalizeCheckoutResult(checkoutResult);
     } catch (err) {
       console.error('Checkout failed:', err);
       setShowCheckout(true);
-      error('Order was not confirmed. Your cart is safe—please try again.');
+      const message = 'Order was not confirmed. Your cart is safe—please try again.';
+      setCheckoutIssue({
+        supportCode: err?.supportCode || '',
+        message: 'Order was not confirmed. Your cart is safe—please try again.'
+      });
+      error(message);
     } finally {
       setIsSaving(false);
     }
@@ -880,6 +912,17 @@ export default function CartPage() {
                   Save these details for next order
                 </span>
               </label>
+            )}
+
+            {checkoutIssue && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300">
+                <p>{checkoutIssue.message}</p>
+                {checkoutIssue.supportCode && (
+                  <p className="mt-1 font-mono text-xs font-semibold">
+                    Support code: {checkoutIssue.supportCode}
+                  </p>
+                )}
+              </div>
             )}
 
             <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/50 p-3">

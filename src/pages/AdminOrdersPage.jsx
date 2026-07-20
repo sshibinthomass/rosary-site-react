@@ -1501,6 +1501,16 @@ export default function AdminOrdersPage() {
                         })()}
                       </div>
 
+                      <div className="pt-2 text-xs">
+                        <NavLink
+                          to={`/admin/checkout-attempts?orderId=${encodeURIComponent(order.orderId || order.id)}`}
+                          className="font-medium text-[var(--color-forest)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Checkout issues
+                        </NavLink>
+                      </div>
+
                       {/* User Link */}
                       {order.customer?.userId && (
                         <div className="pt-2 mt-2 border-t border-[var(--border-color)] text-xs">

@@ -76,6 +76,46 @@ test('cart keeps checkout open with a retryable error when order verification fa
   );
 });
 
+test('cart keeps a failed checkout support code visible for complaint lookup', () => {
+  assert.match(cartPageSource, /const \[checkoutIssue, setCheckoutIssue\] = useState\(null\)/);
+  assert.match(
+    cartPageSource,
+    /catch \(err\) \{[\s\S]*?setCheckoutIssue\(\{[\s\S]*?supportCode:\s*err\?\.supportCode\s*\|\|\s*''[\s\S]*?message:\s*'Order was not confirmed\.[^']+please try again\.'/
+  );
+  assert.match(cartPageSource, /\{checkoutIssue\.message\}/);
+  assert.match(cartPageSource, /checkoutIssue\.supportCode\s*&&/);
+  assert.match(cartPageSource, /Support code:\s*\{checkoutIssue\.supportCode\}/);
+});
+
+test('cart clears a previous checkout issue when starting a new attempt', () => {
+  assert.match(
+    cartPageSource,
+    /const handleCheckoutClick = async \(\) => \{[\s\S]*?setCheckoutIssue\(null\);[\s\S]*?initiateWhatsAppCheckout/
+  );
+});
+
+test('cart reserves the initial browser window before any awaited checkout action', () => {
+  assert.match(
+    cartPageSource,
+    /import \{ openExternalUrl, reserveExternalUrlWindow \} from ['"]\.\.\/utils\/externalNavigation['"]/,
+  );
+  const handlerStart = cartPageSource.indexOf('const handleCheckoutClick = async () => {');
+  const handlerEnd = cartPageSource.indexOf('const handleItemClick', handlerStart);
+  const handler = cartPageSource.slice(handlerStart, handlerEnd);
+  const guardIndex = handler.indexOf('if (isSaving) return;');
+  const reservationIndex = handler.indexOf('const externalUrlReservation = reserveExternalUrlWindow();');
+  const firstAwaitIndex = handler.indexOf('await ');
+
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart);
+  assert.ok(guardIndex >= 0);
+  assert.ok(reservationIndex > guardIndex);
+  assert.ok(reservationIndex < firstAwaitIndex);
+  assert.match(
+    handler,
+    /initiateWhatsAppCheckout\([\s\S]*?promoInfo,\s*externalUrlReservation,?\s*\)/,
+  );
+});
+
 test('cart clears stale location through the shared pincode normalizer', () => {
   assert.match(cartPageSource, /normalizeCheckoutPincode/);
   assert.match(
@@ -100,4 +140,33 @@ test('cart treats WhatsApp launch failure as a saved order with retry', () => {
     cartPageSource,
     /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
   );
+  assert.match(cartPageSource, /supportCode:\s*checkoutResult\?\.supportCode\s*\|\|\s*''/);
+  assert.match(cartPageSource, /Support code:\s*\{checkoutConfirmation\.supportCode\}/);
+  assert.match(cartPageSource, /Please tap Send there to confirm/);
+  assert.doesNotMatch(cartPageSource, /WhatsApp message was sent/);
+});
+
+test('cart always shows the confirmation support code, including successful WhatsApp handoffs', () => {
+  assert.match(cartPageSource, /\{checkoutConfirmation\.supportCode\s*&&\s*\(/);
+  assert.doesNotMatch(
+    cartPageSource,
+    /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
+  );
+});
+
+test('built-in WhatsApp retry reports success or failure through the opaque same-attempt callback', () => {
+  assert.match(
+    cartPageSource,
+    /recordWhatsAppRetry:\s*checkoutResult\?\.recordWhatsAppRetry/
+  );
+  assert.match(
+    cartPageSource,
+    /await checkoutConfirmation\.recordWhatsAppRetry\?\.\(\{\s*success:\s*true\s*\}\)/
+  );
+  assert.match(
+    cartPageSource,
+    /await checkoutConfirmation\.recordWhatsAppRetry\?\.\(\{\s*success:\s*false,\s*error:\s*openError\s*\}\)/
+  );
+  assert.doesNotMatch(cartPageSource, /checkoutConfirmation[\s\S]{0,80}(?:writerIdToken|primaryUserIdToken)/);
+  assert.doesNotMatch(cartPageSource, /initiateWhatsAppCheckout[\s\S]{0,240}handleOpenWhatsAppAgain/);
 });

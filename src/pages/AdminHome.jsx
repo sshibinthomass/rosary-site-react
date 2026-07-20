@@ -12,6 +12,15 @@ const ADMIN_ICON_PATHS = Object.freeze({
       <path d="M9 16h4" />
     </>
   ),
+  'checkout-tracking': (
+    <>
+      <path d="M4 6h4l2 3h4l2-3h4" />
+      <path d="M4 18h4l2-3h4l2 3h4" />
+      <path d="M4 12h16" />
+      <circle cx="4" cy="6" r="1" />
+      <circle cx="20" cy="18" r="1" />
+    </>
+  ),
   users: (
     <>
       <circle cx="9" cy="8" r="3" />
@@ -90,6 +99,13 @@ const cards = [
     description: 'View, filter and manage all customer orders.',
     icon: 'orders',
     path: '/admin/orders',
+  },
+  {
+    id: 'checkout-tracking',
+    title: 'Checkout Tracking',
+    description: 'Investigate customer checkout issues and trace each recorded step.',
+    icon: 'checkout-tracking',
+    path: '/admin/checkout-attempts',
   },
   {
     id: 'users',

@@ -21,12 +21,16 @@ This feature observes whether the site opened WhatsApp. It cannot determine whet
 
 Use a dedicated `checkoutAttempts` Firestore collection. Keeping diagnostics separate from `orders` allows an attempt to exist before an order is created, gives it an independent retention policy, and avoids expanding the operational order schema.
 
-Each checkout creates a random document ID, a separate high-entropy client write token, and a short human-readable support code before order processing begins. The document stores:
+Each checkout creates a random document ID and a short human-readable support code before order processing begins. Customer diagnostic writes go only to the Vercel endpoint at `/api/checkout-attempts`. A named secondary Firebase app uses `browserLocalPersistence` and anonymous sign-in exclusively for diagnostic writer authorization; it never changes the default Firebase app or primary customer/admin authentication. Every create, update, and outbox flush refreshes the anonymous writer ID token. The endpoint verifies that token with Firebase Admin, derives an immutable `writerUid`, and permits only that writer to create/replay/advance the attempt.
+
+An optional business `userId` uses a separate, freshly refreshed primary-user ID token only while the current primary user still matches. The API independently verifies that token and UID. No ID token is stored in Firestore, the outbox, URLs, logs, confirmation state, or customer-visible text.
+
+The document stores:
 
 - `supportCode`
-- `userId` when signed in
+- immutable anonymous `writerUid`
+- optional `userId` only when a Firebase ID token verifies to the same UID
 - customer `name`, `phone`, and `whatsapp`
-- normalized search values for the contact numbers
 - attempted `totalAmount`
 - a cart snapshot containing product ID, name, unit price, and quantity
 - `currentStage`, `result`, and `resolutionStatus`
@@ -36,7 +40,9 @@ Each checkout creates a random document ID, a separate high-entropy client write
 - admin notes and resolution timestamps
 - created, updated, and 180-day expiry timestamps
 
-The client write token is never shown in the admin interface. Firestore rules permit a client to create one attempt and update only its allowed diagnostic fields when the immutable token matches. Attempt reads and list queries are admin-only. Admin-only fields such as notes and resolution state cannot be changed through the customer update path.
+Email, street address, pincode, district, and state are deliberately excluded from diagnostics and the local outbox. The API uses exact field allowlists, bounded values, exact 180-day expiry, append-only matching events, idempotent operation identifiers, and forward-only lifecycle transitions. A repeated POST from the same writer returns the existing record state without overwriting it; a different writer conflicts.
+
+Firestore rules deny every public create, update, get, list, and delete operation on `checkoutAttempts`. Administrators may get/list records and update only `resolutionStatus`, `adminNotes`, `resolvedAt`, and `updatedAt` under exact rule constraints. Deletes remain denied. The recursive admin fallback explicitly excludes both `orders` and `checkoutAttempts`.
 
 ### Checkout stages
 
@@ -55,7 +61,9 @@ If processing fails, the record keeps the last successful stage and appends a `f
 
 ### Failure isolation and offline retry
 
-Diagnostic writes are best-effort and must never prevent a valid order from being placed. Failed diagnostic writes are placed in a bounded local outbox and retried on the next suitable page load or connectivity event. The support code is retained with the queued record.
+Diagnostic writes are best-effort and must never prevent a valid order from being placed. Retryable network, rate-limit, and server failures place the create anchor plus its updates in one bounded, expiring local outbox group. Groups preserve per-attempt FIFO order and idempotent operation IDs; capacity eviction never splits a group. Expired, malformed, and orphan-update groups are pruned. A permanent client error drops only its unchanged group, while a retryable group does not block later attempts.
+
+The outbox stores no Firebase ID tokens or authorization objects. After a browser restart, Firebase restores the secondary anonymous identity and a fresh writer token is acquired at send time. Each replay operation, including writer-token refresh, optional primary-token refresh, and the API fetch, is bounded to 750 ms. A timeout retains that group as retryable and processing continues with later groups; a late rejection is already observed and cannot become unhandled. An attempt created under a different/lost writer identity receives `attempt-conflict` when its create anchor replays, while an update sent by the wrong writer receives `writer-mismatch`. Both are permanent and isolated to the unchanged affected group. Flush removal compares processed operation IDs with current storage so operations enqueued during an awaited request survive with their create anchor and expiry.
 
 No browser-only design can guarantee delivery when a customer goes offline and never returns. The admin page will therefore describe the data as recorded checkout attempts rather than a guaranteed record of every button press.
 
@@ -77,9 +85,9 @@ The page shows summary counts for failures, open investigations, resolved issues
 - resolution status
 - attempt date and time
 
-Administrators can search by support code, business order ID, customer name, or phone/WhatsApp number, and filter by result, stage, resolution status, and date. Resolved records are excluded by default.
+Administrators can search by support code, canonical business/document order ID, customer name, or phone/WhatsApp number, and filter by result, stage, resolution status, and date. Resolved records are excluded by default, while an explicit support-code or order-ID URL query includes the matching resolved record.
 
-Expanding an attempt displays the cart snapshot, full stage timeline, sanitized diagnostic details, linked order, and internal notes. Administrators can change the resolution status and save notes. The existing Admin Orders page links to related checkout diagnostics when an attempt has produced an order.
+Expanding an attempt displays the cart snapshot, full stage timeline, sanitized diagnostic details, linked order, and internal notes. Administrators can mark a record `open`, `investigating`, or `resolved`, and a standalone `Save notes` action preserves its current status. Saves are isolated per record, and a failed save leaves the unsaved note in the page. The existing Admin Orders page links to related checkout diagnostics when an attempt has produced an order.
 
 When checkout fails, the customer-facing error includes the support code and asks the customer to provide it when contacting the business. Existing cart and delivery-detail preservation remains unchanged.
 
@@ -96,6 +104,8 @@ The tracking collection is not used as permanent order history. Orders continue 
 - An order failure records the last completed stage, error category, and support code when diagnostics are available.
 - An admin load or update failure shows a retryable error without discarding unsaved notes in the current page session.
 - A missing linked order is shown explicitly rather than treated as a tracking-page failure.
+- Browser popup blocking and native launcher rejection are both `whatsapp-launch-failed`; `whatsapp_opened` is recorded only after a positive handoff. The originating web click reserves one blank `_blank` handle synchronously before any checkout await. After verification, the navigation adapter clears `opener` and navigates that exact handle without another `window.open`. Business failure before handoff and navigation-assignment failure close the reservation. A blocked reservation remains a saved-order launch failure with direct-click retry, while native checkout reserves no browser window.
+- A saved-order WhatsApp retry reports success or failure through the same in-memory tracker session and never creates a second order.
 
 ## Testing
 
@@ -105,19 +115,29 @@ Automated tests will verify:
 - checkout stages occur in the correct order and link the created order;
 - failures identify the correct last successful stage and sanitized error category;
 - tracking failures never prevent verified checkout or WhatsApp handoff;
-- failed tracking writes enter the bounded local outbox and retry without duplicate timeline events;
+- failed tracking writes enter whole bounded/expiring attempt groups and retry without duplicate timeline events;
 - failed checkout keeps the cart and displays its support code;
 - admin search and filters cover support code, order ID, name, phone, result, stage, and resolution status;
 - admin notes and status updates persist;
-- Firestore rules deny public reads, lists, deletes, and unauthorized field changes;
+- the secondary app persists anonymous writer identity without affecting primary auth, and refreshes its ID token for every request;
+- the Vercel API verifies immutable writer ownership plus optional independent primary identity, rejects extra PII, and enforces idempotent forward transitions;
+- concurrent outbox enqueues survive successful and permanent responses to an older flush snapshot;
+- hanging writer-token refreshes or API fetches time out per operation without blocking later outbox groups or leaking late rejections;
+- the initial web click reserves exactly one popup before awaited work, propagates its exact handle through verified checkout, closes it on failure, and never reserves a browser popup on native;
+- resolved notes preserve `resolvedAt`, first resolution sets it, and reopening clears it;
+- Firestore rules deny every public checkout-attempt operation and allow only constrained admin investigation updates;
+- the Firestore Emulator authorization matrix covers public denial, admin reads/updates, protected deletes, and unrelated admin fallback access;
 - the admin route is protected and linked from Admin home and related orders; and
 - the full test suite, lint, and production build pass.
 
 ## Deployment Requirements
 
-- Deploy the web application.
-- Publish the updated Firestore security rules and any required indexes.
-- Enable Firestore TTL on `checkoutAttempts.expiresAt` so the 180-day policy is enforced.
+1. Enable Firebase Anonymous Authentication for the project used by the existing public web configuration. Do not replace or sign out the default primary app.
+2. Configure exactly one server-only credential value in Vercel: `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64`. Never expose either through a `VITE_` variable.
+3. Publish `firestore.rules` so browser checkout-attempt access is denied, then publish `firestore.indexes.json`.
+4. Confirm the `checkoutAttempts.expiresAt` TTL field override is enabled in Firestore.
+5. Deploy the Vercel release containing both `/api/checkout-attempts` and the web client.
+6. Perform the success, cold-reload outbox create-conflict, wrong-writer PATCH mismatch, blocked-popup/retry, admin resolution/notes, and minimal-PII live smoke checks documented in `README.md`.
 
 ## Non-goals
 

@@ -11,6 +11,33 @@ service cloud.firestore {
              request.auth.token.email in ['sshibinthomass@gmail.com', 'rosaryplanthouse@gmail.com'];
     }
 
+    function isValidCheckoutAttemptAdminUpdate() {
+      let data = request.resource.data;
+      return data.diff(resource.data).affectedKeys().hasOnly([
+               'resolutionStatus', 'adminNotes', 'resolvedAt', 'updatedAt'
+             ])
+             && data.resolutionStatus in ['open', 'investigating', 'resolved']
+             && data.adminNotes is string
+             && data.adminNotes.size() <= 2000
+             && data.updatedAt == request.time
+             && (
+               (
+                 resource.data.resolutionStatus != 'resolved'
+                 && data.resolutionStatus == 'resolved'
+                 && data.resolvedAt == request.time
+               )
+               || (
+                 resource.data.resolutionStatus == 'resolved'
+                 && data.resolutionStatus == 'resolved'
+                 && !data.diff(resource.data).affectedKeys().hasAny(['resolvedAt'])
+               )
+               || (
+                 data.resolutionStatus != 'resolved'
+                 && !data.keys().hasAny(['resolvedAt'])
+               )
+             );
+    }
+
     // Products: public read of available items, only admin write
     match /products/{productId} {
       allow read: if (resource.data.available == true) || isAdmin();
@@ -78,9 +105,19 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Admin fallback for any other collection
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // Customer writes go through the Vercel Firebase Admin API. Browser access is admin-only.
+    match /checkoutAttempts/{attemptId} {
+      allow get, list: if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin() && isValidCheckoutAttemptAdminUpdate();
+      allow delete: if false;
+    }
+
+    // Admin fallback for unprotected collections only. Overlapping matches are ORed.
+    match /{collection}/{document=**} {
+      allow read, write: if isAdmin()
+        && collection != 'orders'
+        && collection != 'checkoutAttempts';
     }
   }
 }

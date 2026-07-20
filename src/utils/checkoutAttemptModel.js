@@ -6,6 +6,7 @@ export const CHECKOUT_RESULTS = Object.freeze(['in_progress', 'successful', 'fai
 export const RESOLUTION_STATUSES = Object.freeze(['open', 'investigating', 'resolved']);
 export const CHECKOUT_RETENTION_DAYS = 180;
 export const CHECKOUT_ITEM_LIMIT = 20;
+export const CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE = 'Checkout attempt saved, but latest data could not be loaded. Retry loading attempts.';
 const CHECKOUT_MONEY_MAX = 1_000_000_000;
 const CHECKOUT_QUANTITY_MAX = 1_000_000;
 
@@ -51,6 +52,31 @@ export function createCheckoutAttemptResolutionUpdate(
       : currentStatus,
     adminNotes: safeString(adminNotes, 2000),
   };
+}
+
+export async function saveCheckoutAttemptResolutionWithRefresh(
+  attempt,
+  update,
+  { updateResolution, getAllAttempts },
+) {
+  const savedUpdate = await updateResolution(attempt, update);
+  try {
+    return {
+      refreshFailed: false,
+      attempts: await getAllAttempts(),
+      savedUpdate,
+    };
+  } catch {
+    const fallbackAttempt = { ...attempt, ...savedUpdate };
+    const preservesResolvedAt = attempt?.resolutionStatus === 'resolved'
+      && savedUpdate?.resolutionStatus === 'resolved';
+    if (!preservesResolvedAt) delete fallbackAttempt.resolvedAt;
+    return {
+      refreshFailed: true,
+      fallbackAttempt,
+      savedUpdate,
+    };
+  }
 }
 
 export function getCheckoutAttemptContacts(attempt = {}) {

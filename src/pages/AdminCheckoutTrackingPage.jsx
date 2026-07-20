@@ -7,6 +7,7 @@ import {
 } from '../services/checkoutAttemptService';
 import {
   addActiveCheckoutAttemptId,
+  CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE,
   createCheckoutAttemptResolutionUpdate,
   filterCheckoutAttempts,
   formatCheckoutEventOutcome,
@@ -14,6 +15,7 @@ import {
   getCheckoutAttemptDomIds,
   getCheckoutAttemptLinkedOrder,
   removeActiveCheckoutAttemptId,
+  saveCheckoutAttemptResolutionWithRefresh,
   CHECKOUT_STAGES,
   RESOLUTION_STATUSES,
 } from '../utils/checkoutAttemptModel';
@@ -283,13 +285,28 @@ export default function AdminCheckoutTrackingPage() {
     const notesOnly = resolutionStatus === undefined;
     setSavingAttemptIds((activeIds) => addActiveCheckoutAttemptId(activeIds, attempt.id));
     try {
-      await updateCheckoutAttemptResolution(
+      const outcome = await saveCheckoutAttemptResolutionWithRefresh(
         attempt,
         createCheckoutAttemptResolutionUpdate(attempt, notes[attempt.id] || '', resolutionStatus),
+        {
+          updateResolution: updateCheckoutAttemptResolution,
+          getAllAttempts: getAllCheckoutAttempts,
+        },
       );
-      const refreshedAttempts = await getAllCheckoutAttempts();
-      setAttempts(refreshedAttempts);
-      setNotes(Object.fromEntries(refreshedAttempts.map((record) => [record.id, record.adminNotes || ''])));
+      if (outcome.refreshFailed) {
+        setAttempts((current) => current.map((record) => (
+          record.id === attempt.id ? outcome.fallbackAttempt : record
+        )));
+        setNotes((current) => ({
+          ...current,
+          [attempt.id]: outcome.fallbackAttempt.adminNotes || '',
+        }));
+        setLoadError(CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE);
+        error(CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE);
+        return;
+      }
+      setAttempts(outcome.attempts);
+      setNotes(Object.fromEntries(outcome.attempts.map((record) => [record.id, record.adminNotes || ''])));
       if (notesOnly) {
         success('Checkout notes saved');
       } else {
@@ -449,7 +466,7 @@ export default function AdminCheckoutTrackingPage() {
                 <article key={attempt.id} className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
                   <div className="p-4">
                     <div className="min-w-0">
-                      <h2 className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</h2>
+                      <h2 className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'N/A'}</h2>
                       <AttemptContacts attempt={attempt} />
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
@@ -502,7 +519,7 @@ function FragmentRow({ attempt, expanded, note, onToggle, onNoteChange, onResolv
     <>
       <tr className="align-top hover:bg-[var(--bg-tertiary)]/60">
         <td className="px-3 py-3">
-          <p className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'Unknown customer'}</p>
+          <p className="truncate font-semibold text-[var(--text-primary)]">{attempt.customer?.name || attempt.delivery?.name || 'N/A'}</p>
           <AttemptContacts attempt={attempt} />
           <p className="mt-1 truncate font-mono text-[11px] text-[var(--text-secondary)]">{linkedOrder.displayId || 'No order ID'}</p>
         </td>

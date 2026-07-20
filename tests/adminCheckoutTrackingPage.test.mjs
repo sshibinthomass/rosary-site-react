@@ -21,7 +21,7 @@ test('checkout tracking page loads, filters, summarizes, and resolves attempts',
   assert.match(source, /attempts\.filter\([\s\S]*resolutionStatus\s*===\s*['"]investigating['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*resolutionStatus\s*===\s*['"]resolved['"]/);
   assert.match(source, /attempts\.filter\([\s\S]*result\s*===\s*['"]successful['"]/);
-  assert.match(source, /updateCheckoutAttemptResolution\(/);
+  assert.match(source, /updateResolution:\s*updateCheckoutAttemptResolution/);
   assert.match(source, /savingAttemptIds/);
   assert.match(source, /getCheckoutAttemptLinkedOrder\(attempt\)[\s\S]*\/order\//);
   assert.match(source, /md:hidden/);
@@ -115,15 +115,93 @@ test('expanded detail shows a formatted resolution time only for persisted resol
   assert.match(details, /\) : null\}/);
 });
 
+test('desktop and mobile customer summaries use the exact blank-name fallback N/A', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const fallbacks = source.match(/attempt\.customer\?\.name \|\| attempt\.delivery\?\.name \|\| 'N\/A'/g) || [];
+
+  assert.equal(fallbacks.length, 2);
+});
+
+test('durable resolution writes survive a refresh failure without stale resolvedAt state', async () => {
+  const saveWithRefresh = checkoutAttemptModel.saveCheckoutAttemptResolutionWithRefresh;
+  assert.equal(typeof saveWithRefresh, 'function');
+
+  const transition = await saveWithRefresh(
+    { id: 'attempt-1', resolutionStatus: 'open', resolvedAt: 'stale-value' },
+    { resolutionStatus: 'resolved', adminNotes: 'Done' },
+    {
+      updateResolution: async (_attempt, update) => ({ id: 'attempt-1', ...update }),
+      getAllAttempts: async () => { throw new Error('refresh failed'); },
+    },
+  );
+  assert.equal(transition.refreshFailed, true);
+  assert.deepEqual(transition.fallbackAttempt, {
+    id: 'attempt-1', resolutionStatus: 'resolved', adminNotes: 'Done',
+  });
+
+  const notesOnly = await saveWithRefresh(
+    { id: 'attempt-1', resolutionStatus: 'resolved', resolvedAt: '2026-07-20T10:00:00.000Z' },
+    { resolutionStatus: 'resolved', adminNotes: 'More context' },
+    {
+      updateResolution: async (_attempt, update) => ({ id: 'attempt-1', ...update }),
+      getAllAttempts: async () => { throw new Error('refresh failed'); },
+    },
+  );
+  assert.equal(notesOnly.fallbackAttempt.resolvedAt, '2026-07-20T10:00:00.000Z');
+
+  const reopened = await saveWithRefresh(
+    { id: 'attempt-1', resolutionStatus: 'resolved', resolvedAt: '2026-07-20T10:00:00.000Z' },
+    { resolutionStatus: 'open', adminNotes: 'Retrying' },
+    {
+      updateResolution: async (_attempt, update) => ({ id: 'attempt-1', ...update }),
+      getAllAttempts: async () => { throw new Error('refresh failed'); },
+    },
+  );
+  assert.equal('resolvedAt' in reopened.fallbackAttempt, false);
+});
+
+test('mutation failures remain distinct from post-save refresh failures', async () => {
+  const saveWithRefresh = checkoutAttemptModel.saveCheckoutAttemptResolutionWithRefresh;
+  assert.equal(typeof saveWithRefresh, 'function');
+  let refreshCalled = false;
+
+  await assert.rejects(
+    saveWithRefresh(
+      { id: 'attempt-1', resolutionStatus: 'open' },
+      { resolutionStatus: 'resolved', adminNotes: '' },
+      {
+        updateResolution: async () => { throw new Error('mutation failed'); },
+        getAllAttempts: async () => { refreshCalled = true; return []; },
+      },
+    ),
+    /mutation failed/,
+  );
+  assert.equal(refreshCalled, false);
+});
+
+test('page reports a saved refresh failure precisely and retains the retry loader', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const saveStart = source.indexOf('const saveResolution');
+  const saveEnd = source.indexOf('const toggleAttempt');
+  const saveSource = source.slice(saveStart, saveEnd);
+
+  assert.match(saveSource, /saveCheckoutAttemptResolutionWithRefresh\(/);
+  assert.match(saveSource, /if \(outcome\.refreshFailed\)/);
+  assert.match(saveSource, /setLoadError\(CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE\)/);
+  assert.match(saveSource, /error\(CHECKOUT_ATTEMPT_REFRESH_FAILURE_MESSAGE\)/);
+  assert.match(saveSource, /error\('Failed to update checkout attempt'\)/);
+  assert.match(source, />\s*Retry loading attempts\s*</);
+});
+
 test('resolution writes refresh the authoritative attempt so server timestamps are not stale', () => {
   const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
   const saveStart = source.indexOf('const saveResolution');
   const saveEnd = source.indexOf('const toggleAttempt');
   const saveSource = source.slice(saveStart, saveEnd);
 
-  assert.match(saveSource, /const refreshedAttempts = await getAllCheckoutAttempts\(\);/);
-  assert.match(saveSource, /setAttempts\(refreshedAttempts\);/);
-  assert.match(saveSource, /setNotes\(Object\.fromEntries\(refreshedAttempts\.map\(\(record\) => \[record\.id, record\.adminNotes \|\| ''\]\)\)\);/);
+  assert.match(saveSource, /getAllAttempts:\s*getAllCheckoutAttempts/);
+  assert.match(saveSource, /setAttempts\(outcome\.attempts\);/);
+  assert.match(saveSource, /setNotes\(Object\.fromEntries\(outcome\.attempts\.map\(\(record\) => \[record\.id, record\.adminNotes \|\| ''\]\)\)\);/);
 });
 
 test('active-save helpers preserve concurrent attempt IDs immutably', () => {

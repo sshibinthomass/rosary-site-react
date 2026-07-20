@@ -1,6 +1,15 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+
+const FIREBASE_ADMIN_AUTH_MODULE = ['firebase-admin', 'auth'].join('/');
+let firebaseAdminAuthModulePromise;
+
+function loadFirebaseAdminAuthModule() {
+  if (!firebaseAdminAuthModulePromise) {
+    firebaseAdminAuthModulePromise = import(FIREBASE_ADMIN_AUTH_MODULE);
+  }
+  return firebaseAdminAuthModulePromise;
+}
 
 function decodeServiceAccount(source, encoding) {
   try {
@@ -53,10 +62,16 @@ function initializeFirebaseAdmin(environment) {
   return initializeApp({ credential: cert(parseFirebaseServiceAccount(environment)) });
 }
 
-export function getFirebaseAdminServices(environment = process.env) {
+export function getFirebaseAdminServices(
+  environment = process.env,
+  { loadAuthModule = loadFirebaseAdminAuthModule } = {},
+) {
   const app = initializeFirebaseAdmin(environment);
   return {
     firestore: getFirestore(app),
-    verifyIdToken: (token) => getAuth(app).verifyIdToken(token),
+    verifyIdToken: async (token) => {
+      const { getAuth } = await loadAuthModule();
+      return getAuth(app).verifyIdToken(token);
+    },
   };
 }

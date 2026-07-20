@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { parseFirebaseServiceAccount } from '../api/firebase-admin.js';
+import {
+  getFirebaseAdminServices,
+  parseFirebaseServiceAccount,
+} from '../api/firebase-admin.js';
 import {
   createFirebaseCheckoutAttemptRepository,
   serializeCheckoutAttempt,
@@ -24,6 +27,30 @@ test('loads server-only Firebase credentials from JSON or base64 without Vite va
     () => parseFirebaseServiceAccount({ VITE_FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify(account) }),
     /FIREBASE_SERVICE_ACCOUNT_JSON.*FIREBASE_SERVICE_ACCOUNT_BASE64/,
   );
+});
+
+test('defers Firebase Auth loading until checkout token verification', async () => {
+  const source = await readFile(new URL('../api/firebase-admin.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /import\s*\{\s*getAuth\s*\}\s*from\s*['"]firebase-admin\/auth['"]/);
+
+  let loadCalls = 0;
+  const services = getFirebaseAdminServices({
+    FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+    GCLOUD_PROJECT: 'rosary-checkout-test',
+  }, {
+    loadAuthModule: async () => {
+      loadCalls += 1;
+      return {
+        getAuth: () => ({
+          verifyIdToken: async (token) => ({ uid: `verified:${token}` }),
+        }),
+      };
+    },
+  });
+
+  assert.equal(loadCalls, 0);
+  assert.deepEqual(await services.verifyIdToken('writer-token'), { uid: 'verified:writer-token' });
+  assert.equal(loadCalls, 1);
 });
 
 test('serializes diagnostic dates for Firebase Admin without changing approved data', () => {

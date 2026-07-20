@@ -147,6 +147,11 @@ function AttemptDetails({ attempt, idPrefix, note, onNoteChange, onResolve, onSa
       </section>
 
       <section>
+        {attempt.resolutionStatus === 'resolved' && attempt.resolvedAt ? (
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">
+            <span className="font-semibold">Resolved at</span> {formatDate(attempt.resolvedAt)}
+          </p>
+        ) : null}
         <label htmlFor={domIds.notesId} className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
           Internal notes
         </label>

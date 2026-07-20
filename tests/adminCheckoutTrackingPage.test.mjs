@@ -103,6 +103,18 @@ test('page exposes every resolution action and a separate save-notes action', ()
   assert.match(source, /onSaveNotes=\{\(\) => saveResolution\(attempt\)\}/);
 });
 
+test('expanded detail shows a formatted resolution time only for persisted resolved attempts', () => {
+  const source = read('src/pages/AdminCheckoutTrackingPage.jsx');
+  const detailStart = source.indexOf('function AttemptDetails');
+  const detailEnd = source.indexOf('function AttemptBadges');
+  const details = source.slice(detailStart, detailEnd);
+
+  assert.match(details, /attempt\.resolutionStatus === 'resolved' && attempt\.resolvedAt \? \(/);
+  assert.match(details, />Resolved at</);
+  assert.match(details, /formatDate\(attempt\.resolvedAt\)/);
+  assert.match(details, /\) : null\}/);
+});
+
 test('active-save helpers preserve concurrent attempt IDs immutably', () => {
   const addActiveCheckoutAttemptId = checkoutAttemptModel.addActiveCheckoutAttemptId;
   const removeActiveCheckoutAttemptId = checkoutAttemptModel.removeActiveCheckoutAttemptId;

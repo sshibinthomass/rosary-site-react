@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { flushCheckoutAttemptOutbox } from '../src/services/checkoutAttemptService.js';
+import {
+  CHECKOUT_OUTBOX_REPLAY_DEADLINE_MS,
+  flushCheckoutAttemptOutbox,
+} from '../src/services/checkoutAttemptService.js';
 import {
   CHECKOUT_OUTBOX_GROUP_LIMIT,
   CHECKOUT_OUTBOX_KEY,
@@ -315,6 +318,7 @@ test('a hanging writer-token refresh times out its group and later groups still 
 });
 
 test('replay waits past the interactive checkout budget for a delayed writer token', async () => {
+  assert.equal(CHECKOUT_OUTBOX_REPLAY_DEADLINE_MS, 5_000);
   const storage = createStorage();
   enqueueCheckoutAttemptGroup(storage, group('delayed-replay-token'), { now: () => NOW });
   const persisted = [];

@@ -7,7 +7,6 @@ import {
   createCheckoutAttemptTransport,
 } from '../src/utils/checkoutAttemptTransport.js';
 
-const token = 'ab'.repeat(32);
 const createOperation = {
   type: 'create',
   payload: {
@@ -30,7 +29,7 @@ const createOperation = {
   },
 };
 
-test('sends diagnostics only to the Vercel API with capability and optional Firebase auth headers', async () => {
+test('sends writer and optional primary identity tokens only in separate API headers', async () => {
   const calls = [];
   const transport = createCheckoutAttemptTransport(async (...args) => {
     calls.push(args);
@@ -42,18 +41,18 @@ test('sends diagnostics only to the Vercel API with capability and optional Fire
   });
 
   await transport.persist(createOperation, {
-    capabilityToken: token,
-    firebaseIdToken: 'firebase-id-token',
+    writerIdToken: 'writer-id-token',
+    primaryUserIdToken: 'primary-id-token',
   });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], '/api/checkout-attempts');
   assert.equal(calls[0][1].method, 'POST');
   assert.equal(calls[0][1].headers['Content-Type'], 'application/json');
-  assert.equal(calls[0][1].headers['X-Checkout-Attempt-Token'], token);
-  assert.equal(calls[0][1].headers.Authorization, 'Bearer firebase-id-token');
+  assert.equal(calls[0][1].headers.Authorization, 'Bearer writer-id-token');
+  assert.equal(calls[0][1].headers['X-Checkout-User-Token'], 'primary-id-token');
   assert.deepEqual(JSON.parse(calls[0][1].body), createOperation.payload);
-  assert.equal(calls[0][1].body.includes(token), false);
+  assert.doesNotMatch(calls[0][1].body, /writer-id-token|primary-id-token/);
 });
 
 test('classifies permanent HTTP failures separately from network, 429, and server failures', async () => {
@@ -64,7 +63,7 @@ test('classifies permanent HTTP failures separately from network, 429, and serve
       json: async () => ({ error: { code: `http-${status}`, message: 'safe message' } }),
     }));
     await assert.rejects(
-      transport.persist(createOperation, { capabilityToken: token }),
+      transport.persist(createOperation, { writerIdToken: 'writer-id-token' }),
       (error) => {
         assert.ok(error instanceof CheckoutAttemptTransportError);
         assert.equal(error.classification, classification);
@@ -78,7 +77,7 @@ test('classifies permanent HTTP failures separately from network, 429, and serve
     throw new TypeError('Failed to fetch');
   });
   await assert.rejects(
-    offline.persist(createOperation, { capabilityToken: token }),
+    offline.persist(createOperation, { writerIdToken: 'writer-id-token' }),
     (error) => error instanceof CheckoutAttemptTransportError
       && error.classification === 'retryable'
       && error.status === 0,
@@ -88,7 +87,7 @@ test('classifies permanent HTTP failures separately from network, 429, and serve
   assert.equal(classifyCheckoutAttemptFailure(new TypeError('network')), 'retryable');
 });
 
-test('uses PATCH for lifecycle operations and rejects missing in-memory authorization', async () => {
+test('uses PATCH for lifecycle operations and rejects a missing writer ID token', async () => {
   const calls = [];
   const transport = createCheckoutAttemptTransport(async (...args) => {
     calls.push(args);
@@ -111,8 +110,8 @@ test('uses PATCH for lifecycle operations and rejects missing in-memory authoriz
 
   await assert.rejects(
     transport.persist(update, {}),
-    (error) => error.classification === 'permanent' && error.code === 'missing-capability-token',
+    (error) => error.classification === 'permanent' && error.code === 'missing-writer-id-token',
   );
-  await transport.persist(update, { capabilityToken: token });
+  await transport.persist(update, { writerIdToken: 'writer-id-token' });
   assert.equal(calls[0][1].method, 'PATCH');
 });

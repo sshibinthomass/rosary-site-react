@@ -36,8 +36,10 @@ test('creates a complete 180-day checkout attempt snapshot', () => {
 
   assert.equal(attempt.id, 'document-123');
   assert.equal(attempt.supportCode, 'CHK-7K2M9Q');
-  assert.notEqual(attempt.capabilityToken, attempt.id);
-  assert.equal(attempt.capabilityToken.length, 64);
+  assert.deepEqual(Object.keys(attempt).sort(), [
+    'createdAt', 'customer', 'expiresAt', 'id', 'items', 'resolutionStatus',
+    'result', 'supportCode', 'totalAmount', 'currentStage',
+  ].sort());
   assert.equal(attempt.customer.name, 'Anu');
   assert.equal(attempt.customer.phone, '919876543210');
   assert.equal(attempt.customer.whatsapp, '919988776655');
@@ -134,6 +136,7 @@ test('sanitizes event errors to allowlisted diagnostic fields', () => {
 for (const [name, error, expected] of [
   ['Firebase permission', { code: 'permission-denied', message: 'missing permission' }, { category: 'permission', code: 'permission-denied' }],
   ['network', { code: 'unavailable', message: 'network unavailable' }, { category: 'network', code: 'unavailable' }],
+  ['deadline', { code: 'deadline-exceeded', message: 'operation took too long' }, { category: 'network', code: 'deadline-exceeded' }],
   ['verification', { code: 'verification-failed', message: 'verification did not pass' }, { category: 'verification', code: 'verification-failed' }],
   ['WhatsApp launch', { code: 'whatsapp-launch-failed', message: 'WhatsApp could not launch' }, { category: 'whatsapp', code: 'whatsapp-launch-failed' }],
   ['validation', { code: 'invalid-argument', message: 'phone is required' }, { category: 'validation', code: 'invalid-argument' }],

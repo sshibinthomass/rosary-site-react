@@ -141,7 +141,6 @@ export function createCheckoutAttempt(input = {}, generators = {}) {
   return {
     id: randomUUID(),
     supportCode: `CHK-${Array.from(supportBytes).slice(0, 6).map((byte) => SUPPORT_ALPHABET[byte % SUPPORT_ALPHABET.length]).join('')}`,
-    capabilityToken: Array.from(randomBytes(32), (byte) => byte.toString(16).padStart(2, '0')).join(''),
     customer: {
       name: safeString(customer.name, 200),
       phone: normalizeContact(customer.phone),
@@ -166,6 +165,7 @@ export function sanitizeCheckoutError(error) {
 
   if (code === 'whatsapp-launch-failed') category = 'whatsapp';
   else if (code === 'verification-failed') category = 'verification';
+  else if (code === 'deadline-exceeded') category = 'network';
   else if (source.includes('permission')) category = 'permission';
   else if (source.includes('network') || source.includes('unavailable') || source.includes('timeout')) category = 'network';
   else if (source.includes('verification') || source.includes('verify')) category = 'verification';

@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  CHECKOUT_ATTEMPT_TOKEN_HEADER,
+  CHECKOUT_PRIMARY_USER_TOKEN_HEADER,
   CHECKOUT_RETENTION_MS,
   classifyCheckoutAttemptResponse,
   createCheckoutAttemptsHandler,
-  hashCapabilityToken,
 } from '../api/checkout-attempts-core.js';
 
 const NOW = new Date('2026-07-20T10:00:00.000Z');
 const ATTEMPT_ID = '00000000-0000-4000-8000-000000000001';
-const TOKEN = '11'.repeat(32);
-const OTHER_TOKEN = '22'.repeat(32);
+const WRITER_TOKEN = 'writer-token';
+const OTHER_WRITER_TOKEN = 'other-writer-token';
+const PRIMARY_TOKEN = 'primary-user-token';
 
 function createMemoryRepository(initial = {}) {
   const documents = new Map(Object.entries(structuredClone(initial)));
@@ -78,43 +78,77 @@ function patchBody(stage, overrides = {}) {
   };
 }
 
+async function verifyTestIdToken(token) {
+  if (token === WRITER_TOKEN) {
+    return { uid: 'writer-1', firebase: { sign_in_provider: 'anonymous' } };
+  }
+  if (token === OTHER_WRITER_TOKEN) {
+    return { uid: 'writer-2', firebase: { sign_in_provider: 'anonymous' } };
+  }
+  if (token === PRIMARY_TOKEN) {
+    return { uid: 'user-123', firebase: { sign_in_provider: 'google.com' } };
+  }
+  if (token === 'wrong-primary-token') {
+    return { uid: 'someone-else', firebase: { sign_in_provider: 'google.com' } };
+  }
+  if (token === 'non-anonymous-writer-token') {
+    return { uid: 'signed-in-user', firebase: { sign_in_provider: 'google.com' } };
+  }
+  throw new Error('invalid token');
+}
+
+function createHandler(repository, overrides = {}) {
+  return createCheckoutAttemptsHandler({
+    repository,
+    now: () => NOW,
+    verifyIdToken: verifyTestIdToken,
+    ...overrides,
+  });
+}
+
 async function request(handler, method, body, options = {}) {
   return handler({
     method,
     headers: {
       'content-type': 'application/json',
-      [CHECKOUT_ATTEMPT_TOKEN_HEADER]: TOKEN,
+      authorization: `Bearer ${WRITER_TOKEN}`,
       ...(options.headers || {}),
     },
     body,
   });
 }
 
-test('requires a valid high-entropy capability token and hashes it before storage', async () => {
+test('requires a verified anonymous writer token and stores only its immutable UID', async () => {
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({ repository, now: () => NOW });
+  const handler = createHandler(repository);
 
   const missing = await handler({
     method: 'POST', headers: { 'content-type': 'application/json' }, body: createBody(),
   });
-  const malformed = await request(handler, 'POST', createBody(), {
-    headers: { [CHECKOUT_ATTEMPT_TOKEN_HEADER]: 'too-short' },
+  const invalid = await request(handler, 'POST', createBody(), {
+    headers: { authorization: 'Bearer invalid-token' },
+  });
+  const nonAnonymous = await request(handler, 'POST', createBody(), {
+    headers: { authorization: 'Bearer non-anonymous-writer-token' },
   });
   const created = await request(handler, 'POST', createBody());
   const stored = repository.documents.get(ATTEMPT_ID);
 
   assert.equal(missing.status, 401);
-  assert.equal(missing.body.error.code, 'capability-token-required');
-  assert.equal(malformed.status, 400);
+  assert.equal(missing.body.error.code, 'writer-token-required');
+  assert.equal(invalid.status, 401);
+  assert.equal(invalid.body.error.code, 'invalid-writer-token');
+  assert.equal(nonAnonymous.status, 403);
+  assert.equal(nonAnonymous.body.error.code, 'anonymous-writer-required');
   assert.equal(created.status, 201);
-  assert.equal(stored.capabilityTokenHash, hashCapabilityToken(TOKEN));
-  assert.equal(JSON.stringify(stored).includes(TOKEN), false);
-  assert.equal(JSON.stringify(created).includes(TOKEN), false);
+  assert.equal(stored.writerUid, 'writer-1');
+  assert.doesNotMatch(JSON.stringify(stored), /writer-token|primary-user-token/);
+  assert.doesNotMatch(JSON.stringify(created), /writer-1|writer-token/);
 });
 
-test('POST is idempotent only for the same attempt token and never overwrites an advanced record', async () => {
+test('POST is idempotent only for the same writer and never overwrites an advanced record', async () => {
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({ repository, now: () => NOW });
+  const handler = createHandler(repository);
 
   assert.equal((await request(handler, 'POST', createBody())).status, 201);
   const advanced = {
@@ -126,7 +160,7 @@ test('POST is idempotent only for the same attempt token and never overwrites an
 
   const replay = await request(handler, 'POST', createBody());
   const conflict = await request(handler, 'POST', createBody(), {
-    headers: { [CHECKOUT_ATTEMPT_TOKEN_HEADER]: OTHER_TOKEN },
+    headers: { authorization: `Bearer ${OTHER_WRITER_TOKEN}` },
   });
 
   assert.equal(replay.status, 200);
@@ -136,16 +170,16 @@ test('POST is idempotent only for the same attempt token and never overwrites an
   assert.equal(conflict.body.error.code, 'attempt-conflict');
 });
 
-test('PATCH rejects a mismatched token, backward stages, and updates without a matching event', async () => {
+test('PATCH rejects a different writer, backward stages, and updates without a matching event', async () => {
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({ repository, now: () => NOW });
+  const handler = createHandler(repository);
   await request(handler, 'POST', createBody());
   await request(handler, 'PATCH', patchBody('details_validated'));
 
-  const wrongToken = await request(handler, 'PATCH', patchBody('order_saved', {
+  const wrongWriter = await request(handler, 'PATCH', patchBody('order_saved', {
     linkedOrderDocumentId: 'firestore-order-id',
     linkedOrderId: 'RPH-20260720-ABC123',
-  }), { headers: { [CHECKOUT_ATTEMPT_TOKEN_HEADER]: OTHER_TOKEN } });
+  }), { headers: { authorization: `Bearer ${OTHER_WRITER_TOKEN}` } });
   const backward = await request(handler, 'PATCH', patchBody('started', { suffix: 'backward' }));
   const mismatchedEvent = await request(handler, 'PATCH', {
     ...patchBody('order_saved', {
@@ -155,8 +189,8 @@ test('PATCH rejects a mismatched token, backward stages, and updates without a m
     event: event('details_validated', { suffix: 'mismatch' }),
   });
 
-  assert.equal(wrongToken.status, 403);
-  assert.equal(wrongToken.body.error.code, 'capability-token-mismatch');
+  assert.equal(wrongWriter.status, 403);
+  assert.equal(wrongWriter.body.error.code, 'writer-mismatch');
   assert.equal(backward.status, 409);
   assert.equal(backward.body.error.code, 'invalid-lifecycle-transition');
   assert.equal(mismatchedEvent.status, 400);
@@ -165,7 +199,7 @@ test('PATCH rejects a mismatched token, backward stages, and updates without a m
 
 test('PATCH permits ordered transitions, appends one event, and replays event IDs idempotently', async () => {
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({ repository, now: () => NOW });
+  const handler = createHandler(repository);
   await request(handler, 'POST', createBody());
   await request(handler, 'PATCH', patchBody('details_validated'));
   const orderSaved = patchBody('order_saved', {
@@ -183,12 +217,13 @@ test('PATCH permits ordered transitions, appends one event, and replays event ID
   assert.equal(replay.body.idempotent, true);
   assert.equal(stored.currentStage, 'order_saved');
   assert.equal(stored.linkedOrderDocumentId, 'firestore-order-id');
+  assert.equal(stored.writerUid, 'writer-1');
   assert.equal(stored.events.filter(({ eventId }) => eventId === orderSaved.event.eventId).length, 1);
 });
 
 test('PATCH requires the appended event timestamp to match and introduces order links only at order_saved', async () => {
   const timestampRepository = createMemoryRepository();
-  const timestampHandler = createCheckoutAttemptsHandler({ repository: timestampRepository, now: () => NOW });
+  const timestampHandler = createHandler(timestampRepository);
   await request(timestampHandler, 'POST', createBody());
   const updatedAt = new Date(NOW.getTime() + 2_000).toISOString();
   const mismatchedTimestamp = await request(timestampHandler, 'PATCH', patchBody('details_validated', {
@@ -200,7 +235,7 @@ test('PATCH requires the appended event timestamp to match and introduces order 
   }));
 
   const linkRepository = createMemoryRepository();
-  const linkHandler = createCheckoutAttemptsHandler({ repository: linkRepository, now: () => NOW });
+  const linkHandler = createHandler(linkRepository);
   await request(linkHandler, 'POST', createBody());
   const prematureLink = await request(linkHandler, 'PATCH', patchBody('details_validated', {
     suffix: 'premature-link',
@@ -214,44 +249,48 @@ test('PATCH requires the appended event timestamp to match and introduces order 
   assert.equal(prematureLink.body.error.code, 'invalid-order-link');
 });
 
-test('verifies an optional diagnostic user ID and rejects extra PII or unknown fields', async () => {
+test('independently verifies optional primary identity and rejects extra PII or stale identity', async () => {
   const verifiedTokens = [];
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({
-    repository,
-    now: () => NOW,
+  const handler = createHandler(repository, {
     verifyIdToken: async (token) => {
       verifiedTokens.push(token);
-      return { uid: 'user-123' };
+      return verifyTestIdToken(token);
     },
   });
 
-  const missingIdToken = await request(handler, 'POST', createBody({ userId: 'user-123' }));
-  const wrongUid = await request(handler, 'POST', createBody({ userId: 'user-999' }), {
-    headers: { authorization: 'Bearer firebase-id-token' },
+  const missingPrimaryToken = await request(handler, 'POST', createBody({ userId: 'user-123' }));
+  const wrongUid = await request(handler, 'POST', createBody({ userId: 'user-123' }), {
+    headers: { [CHECKOUT_PRIMARY_USER_TOKEN_HEADER]: 'wrong-primary-token' },
   });
   const extraPii = await request(handler, 'POST', createBody({
     customer: {
       name: 'Anu', phone: '919876543210', whatsapp: '919988776655',
       email: 'private@example.com', address: 'Rose Lane', pincode: '682001',
     },
-  }), { headers: { authorization: 'Bearer firebase-id-token' } });
+  }), { headers: { [CHECKOUT_PRIMARY_USER_TOKEN_HEADER]: PRIMARY_TOKEN } });
   const accepted = await request(handler, 'POST', createBody({ userId: 'user-123' }), {
-    headers: { authorization: 'Bearer firebase-id-token' },
+    headers: { [CHECKOUT_PRIMARY_USER_TOKEN_HEADER]: PRIMARY_TOKEN },
   });
 
-  assert.equal(missingIdToken.status, 401);
+  assert.equal(missingPrimaryToken.status, 401);
+  assert.equal(missingPrimaryToken.body.error.code, 'primary-id-token-required');
   assert.equal(wrongUid.status, 403);
+  assert.equal(wrongUid.body.error.code, 'user-id-mismatch');
   assert.equal(extraPii.status, 400);
   assert.equal(accepted.status, 201);
-  assert.deepEqual(verifiedTokens, ['firebase-id-token', 'firebase-id-token']);
+  assert.equal(verifiedTokens.filter((token) => token === WRITER_TOKEN).length, 4);
+  assert.deepEqual(
+    verifiedTokens.filter((token) => token !== WRITER_TOKEN),
+    ['wrong-primary-token', PRIMARY_TOKEN],
+  );
   assert.equal(repository.documents.get(ATTEMPT_ID).userId, 'user-123');
   assert.deepEqual(Object.keys(repository.documents.get(ATTEMPT_ID).customer).sort(), ['name', 'phone', 'whatsapp']);
 });
 
 test('validates methods, JSON content, bounded bodies, exact expiry, and stable retry classes', async () => {
   const repository = createMemoryRepository();
-  const handler = createCheckoutAttemptsHandler({ repository, now: () => NOW });
+  const handler = createHandler(repository);
 
   const method = await handler({ method: 'DELETE', headers: {}, body: {} });
   const mediaType = await handler({ method: 'POST', headers: {}, body: createBody() });

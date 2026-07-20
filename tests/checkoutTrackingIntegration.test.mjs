@@ -89,6 +89,7 @@ test('checkout tracker support identifiers flow through verified checkout result
     userInfo: { name: 'Anu' },
     userId: null,
   }, {
+    getWriterIdToken: async () => 'writer-token',
     generators: {
       randomUUID: () => `00000000-0000-4000-8000-${String(++uuidIndex).padStart(12, '0')}`,
       now: () => new Date('2026-07-19T10:00:00.000Z'),

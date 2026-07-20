@@ -1,6 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
-
-export const CHECKOUT_ATTEMPT_TOKEN_HEADER = 'x-checkout-attempt-token';
+export const CHECKOUT_PRIMARY_USER_TOKEN_HEADER = 'x-checkout-user-token';
 export const CHECKOUT_RETENTION_MS = 180 * 24 * 60 * 60 * 1_000;
 export const CHECKOUT_API_BODY_MAX_BYTES = 32_768;
 
@@ -23,7 +21,6 @@ const ERROR_CODES = new Set([
 ]);
 const ATTEMPT_ID_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
 const SUPPORT_CODE_PATTERN = /^CHK-[A-Z0-9]{6}$/;
-const CAPABILITY_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 const PHONE_PATTERN = /^\d{0,32}$/;
 const MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60 * 1_000;
 const MAX_EVENTS = 100;
@@ -272,21 +269,14 @@ function parseJsonBody(request) {
   return body;
 }
 
-function validateCapabilityToken(request) {
-  const token = headerValue(request.headers, CHECKOUT_ATTEMPT_TOKEN_HEADER).trim();
-  if (!token) fail(401, 'capability-token-required', 'Checkout attempt capability token is required.');
-  if (!CAPABILITY_TOKEN_PATTERN.test(token)) {
-    fail(400, 'invalid-capability-token', 'Checkout attempt capability token is invalid.');
+async function decodeIdToken(token, verifyIdToken, code, message) {
+  if (!(verifyIdToken instanceof Function)) {
+    fail(500, 'identity-verifier-unavailable', 'Identity verification is unavailable.');
   }
-  return token;
-}
-
-function equalTokenHashes(left, right) {
-  if (typeof left !== 'string' || typeof right !== 'string' || left.length !== right.length) return false;
   try {
-    return timingSafeEqual(Buffer.from(left, 'hex'), Buffer.from(right, 'hex'));
+    return await verifyIdToken(token);
   } catch {
-    return false;
+    fail(401, code, message);
   }
 }
 
@@ -309,19 +299,41 @@ function success(status, body) {
   return { status, body };
 }
 
+async function verifyWriter(request, verifyIdToken) {
+  const authorization = headerValue(request.headers, 'authorization');
+  const match = /^Bearer\s+([^\s]+)$/i.exec(authorization.trim());
+  if (!match || match[1].length > 8_192) {
+    fail(401, 'writer-token-required', 'An anonymous checkout writer token is required.');
+  }
+  const decoded = await decodeIdToken(
+    match[1],
+    verifyIdToken,
+    'invalid-writer-token',
+    'Anonymous checkout writer token is invalid.',
+  );
+  if (typeof decoded?.uid !== 'string' || !decoded.uid || decoded.uid.length > 128) {
+    fail(401, 'invalid-writer-token', 'Anonymous checkout writer token is invalid.');
+  }
+  if (decoded.firebase?.sign_in_provider !== 'anonymous') {
+    fail(403, 'anonymous-writer-required', 'Checkout diagnostics require an anonymous writer identity.');
+  }
+  return decoded.uid;
+}
+
 async function verifyOptionalUser(body, request, verifyIdToken) {
   if (!body.userId) return;
-  const authorization = headerValue(request.headers, 'authorization');
-  const match = /^Bearer\s+(.+)$/i.exec(authorization);
-  if (!match) fail(401, 'id-token-required', 'A Firebase ID token is required for userId.');
-  if (!(verifyIdToken instanceof Function)) {
-    fail(500, 'identity-verifier-unavailable', 'Identity verification is unavailable.');
+  const token = headerValue(request.headers, CHECKOUT_PRIMARY_USER_TOKEN_HEADER).trim();
+  if (!token || token.length > 8_192) {
+    fail(401, 'primary-id-token-required', 'A primary Firebase ID token is required for userId.');
   }
-  let decoded;
-  try {
-    decoded = await verifyIdToken(match[1]);
-  } catch {
-    fail(401, 'invalid-id-token', 'Firebase ID token is invalid.');
+  const decoded = await decodeIdToken(
+    token,
+    verifyIdToken,
+    'invalid-primary-id-token',
+    'Primary Firebase ID token is invalid.',
+  );
+  if (decoded.firebase?.sign_in_provider === 'anonymous') {
+    fail(403, 'primary-user-required', 'A signed-in primary user is required for userId.');
   }
   if (decoded?.uid !== body.userId) fail(403, 'user-id-mismatch', 'Firebase user ID does not match.');
 }
@@ -396,10 +408,6 @@ function validatePatchTransition(existing, patch, now) {
   }
 }
 
-export function hashCapabilityToken(token) {
-  return createHash('sha256').update(token, 'utf8').digest('hex');
-}
-
 export function classifyCheckoutAttemptResponse(status) {
   if (Number.isInteger(status) && status >= 200 && status < 300) return 'success';
   if (status === 429 || (Number.isInteger(status) && status >= 500)) return 'retryable';
@@ -433,15 +441,14 @@ export function createCheckoutAttemptsHandler({ repository, verifyIdToken, now =
       if (!(currentTime instanceof Date) || Number.isNaN(currentTime.getTime())) {
         throw new TypeError('now() must return a valid Date.');
       }
-      const capabilityToken = validateCapabilityToken(request);
-      const capabilityTokenHash = hashCapabilityToken(capabilityToken);
+      const writerUid = await verifyWriter(request, verifyIdToken);
 
       if (method === 'POST') {
         const input = validateCreateBody(body, currentTime);
         await verifyOptionalUser(input, request, verifyIdToken);
         return await repository.transact(input.attemptId, async (existing) => {
           if (existing) {
-            if (!equalTokenHashes(existing.capabilityTokenHash, capabilityTokenHash)) {
+            if (existing.writerUid !== writerUid) {
               fail(409, 'attempt-conflict', 'Checkout attempt already exists.');
             }
             return {
@@ -465,7 +472,7 @@ export function createCheckoutAttemptsHandler({ repository, verifyIdToken, now =
             updatedAt: input.updatedAt,
             expiresAt: input.expiresAt,
             events: [input.event],
-            capabilityTokenHash,
+            writerUid,
           };
           return {
             document,
@@ -481,8 +488,8 @@ export function createCheckoutAttemptsHandler({ repository, verifyIdToken, now =
       const input = validatePatchBody(body);
       return await repository.transact(input.attemptId, async (existing) => {
         if (!existing) fail(404, 'attempt-not-found', 'Checkout attempt was not found.');
-        if (!equalTokenHashes(existing.capabilityTokenHash, capabilityTokenHash)) {
-          fail(403, 'capability-token-mismatch', 'Checkout attempt capability token does not match.');
+        if (existing.writerUid !== writerUid) {
+          fail(403, 'writer-mismatch', 'Checkout attempt writer does not match.');
         }
         const events = Array.isArray(existing.events) ? existing.events : [];
         if (events.some(({ eventId }) => eventId === input.event.eventId)) {

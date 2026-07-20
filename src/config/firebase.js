@@ -6,7 +6,7 @@ import { getStorage } from 'firebase/storage';
 import { firebaseConfig } from './firebaseOptions';
 
 // Initialize Firebase
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const app = getApps().find(({ name }) => name === '[DEFAULT]') || initializeApp(firebaseConfig);
 
 // Firestore
 export const db = getFirestore(app);

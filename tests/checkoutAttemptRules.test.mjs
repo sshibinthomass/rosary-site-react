@@ -35,7 +35,8 @@ test('admin updates can change only bounded investigation fields', async () => {
   assert.match(helper, /adminNotes\s+is\s+string/);
   assert.match(helper, /adminNotes\.size\(\)\s*<=\s*2000/);
   assert.match(helper, /updatedAt\s*==\s*request\.time/);
-  assert.match(helper, /resolutionStatus\s*==\s*['"]resolved['"][\s\S]*resolvedAt\s*==\s*request\.time/);
+  assert.match(helper, /resource\.data\.resolutionStatus\s*!=\s*['"]resolved['"][\s\S]*data\.resolutionStatus\s*==\s*['"]resolved['"][\s\S]*data\.resolvedAt\s*==\s*request\.time/);
+  assert.match(helper, /resource\.data\.resolutionStatus\s*==\s*['"]resolved['"][\s\S]*data\.resolutionStatus\s*==\s*['"]resolved['"][\s\S]*affectedKeys\(\)\.hasAny\(\[['"]resolvedAt['"]\]\)/);
 });
 
 test('excludes orders and checkoutAttempts from the recursive admin fallback', async () => {

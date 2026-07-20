@@ -279,7 +279,7 @@ export default function AdminCheckoutTrackingPage() {
     setSavingAttemptIds((activeIds) => addActiveCheckoutAttemptId(activeIds, attempt.id));
     try {
       const updated = await updateCheckoutAttemptResolution(
-        attempt.id,
+        attempt,
         createCheckoutAttemptResolutionUpdate(attempt, notes[attempt.id] || '', resolutionStatus),
       );
       setAttempts((current) => current.map((record) => (

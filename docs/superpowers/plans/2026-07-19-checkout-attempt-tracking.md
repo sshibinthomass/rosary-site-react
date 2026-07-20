@@ -4,7 +4,7 @@
 
 **Goal:** Record every observable checkout attempt with a support code and stage timeline, then give administrators a searchable workflow for diagnosing and resolving customer complaints.
 
-**Architecture:** A pure model creates stable diagnostic records and sanitized events. Customer writes go through the Vercel `/api/checkout-attempts` endpoint, whose Firebase Admin transaction validates a high-entropy capability token and stores only its SHA-256 hash. A bounded, expiring local-storage outbox keeps whole attempt groups while the raw token stays in an opaque in-memory session. Firestore browser access is admin-only. The verified checkout orchestrator reports stages through a failure-isolated tracker, and a protected admin page lists, filters, expands, and resolves the records.
+**Architecture:** A pure model creates stable diagnostic records and sanitized events. A named secondary Firebase app persists an anonymous diagnostic-writer identity without affecting primary authentication and refreshes its ID token for each Vercel `/api/checkout-attempts` request. Firebase Admin binds each record to immutable `writerUid`. A bounded, expiring, token-free local-storage outbox keeps whole attempt groups across reloads and removes only processed snapshot operations. Firestore browser access is admin-only. The verified checkout orchestrator reports stages through a failure-isolated tracker, and a protected admin page lists, filters, expands, and resolves the records.
 
 **Tech Stack:** React 19, React Router 7, Firebase/Firestore 12, Vite 7, Tailwind CSS 4, Node.js built-in test runner, ESLint.
 
@@ -19,7 +19,7 @@
 - Diagnostic persistence is best-effort and must never block or change a valid checkout result.
 - Diagnostic PII is limited to name, phone, WhatsApp, safe cart fields, and an optional server-verified user ID; never persist email or delivery-location fields.
 - Public clients cannot create, update, read, list, or delete checkout-attempt records directly.
-- Never persist or return the raw capability token; Firestore stores only its SHA-256 hash.
+- Never persist Firebase ID tokens or authorization objects in Firestore, the outbox, URLs, logs, or customer-visible state.
 - Never persist stack traces, credentials, Firebase configuration, or arbitrary serialized error objects.
 - Preserve the existing order archive behavior and cart preservation on checkout failure.
 
@@ -30,7 +30,8 @@
 - Create `src/utils/checkoutAttemptModel.js`: pure IDs, snapshots, event creation, error sanitization, and admin filtering.
 - Create `src/utils/checkoutAttemptOutbox.js`: bounded/expiring local-storage attempt groups with operation deduplication.
 - Create `src/utils/checkoutAttemptTransport.js`: exact POST/PATCH requests to `/api/checkout-attempts` and stable response classification.
-- Create `src/services/checkoutAttemptService.js`: API-backed customer tracking, admin-only Firestore queries/updates, opaque authorization sessions, and grouped outbox flushing.
+- Create `src/services/checkoutDiagnosticWriterAuth.js`: named secondary-app initialization, local anonymous persistence, and forced writer-token refresh.
+- Create `src/services/checkoutAttemptService.js`: API-backed customer tracking, fresh writer/optional primary identity acquisition, admin-only Firestore queries/updates, and grouped outbox flushing.
 - Create `api/checkout-attempts-core.js`, `api/checkout-attempts-firebase.js`, `api/firebase-admin.js`, and `api/checkout-attempts.js`: validation, transactional Firebase Admin persistence, credential initialization, and the Vercel entry point.
 - Modify `src/services/verifiedCheckout.js`: emit the verified checkout stages without importing Firebase.
 - Modify `src/services/whatsappCheckout.js`: create a tracker session and return its support code.
@@ -60,7 +61,7 @@
 
 - [ ] **Step 1: Write failing model tests**
 
-Create deterministic tests that pass fixed `randomUUID`, `randomBytes`, and `now` generators. Assert the output includes `supportCode: 'CHK-7K2M9Q'`, a separate in-memory capability token, normalized digits-only contact fields, item snapshots, `currentStage: 'started'`, `result: 'in_progress'`, `resolutionStatus: 'open'`, and `expiresAt` exactly 180 days after `createdAt`. Assert email and delivery-location fields are absent.
+Create deterministic tests that pass fixed `randomUUID`, `randomBytes`, and `now` generators. Assert the output includes `supportCode: 'CHK-7K2M9Q'`, normalized digits-only contact fields, item snapshots, `currentStage: 'started'`, `result: 'in_progress'`, `resolutionStatus: 'open'`, and `expiresAt` exactly 180 days after `createdAt`. Assert authorization, email, and delivery-location fields are absent.
 
 ```js
 test('creates a complete 180-day checkout attempt snapshot', () => {
@@ -115,7 +116,7 @@ export function createCheckoutEvent(stage, details = {}, now = () => new Date())
 }
 ```
 
-Implement `createCheckoutAttempt` with primitive fields and plain ISO dates so it is unit-testable and safe to encode for the API. Copy only product ID, name, numeric price, and numeric quantity. Generate a random document ID with `randomUUID()`, a separate 32-byte capability token that never enters the persisted payload, and a six-character support suffix using an alphabet without ambiguous `0/O/1/I` characters.
+Implement `createCheckoutAttempt` with primitive fields and plain ISO dates so it is unit-testable and safe to encode for the API. Copy only product ID, name, numeric price, and numeric quantity. Generate a random document ID with `randomUUID()` and a six-character support suffix using an alphabet without ambiguous `0/O/1/I` characters.
 
 Implement `sanitizeCheckoutError` by inspecting only `error.code` and `error.message`; map stable categories and return a generic safe fallback. Implement `filterCheckoutAttempts` as a pure client-side filter and descending created-time sort.
 
@@ -163,27 +164,28 @@ git commit -m "feat: add checkout diagnostic model"
 **Files:**
 - Create: `api/checkout-attempts-core.js`, `api/checkout-attempts-firebase.js`, `api/firebase-admin.js`, `api/checkout-attempts.js`
 - Create: `src/utils/checkoutAttemptTransport.js`
+- Create: `src/services/checkoutDiagnosticWriterAuth.js`
 - Create: `src/services/checkoutAttemptService.js`
 - Modify: `firestore.rules`, `firebase.json`, `firestore.indexes.json`
 - Create: focused API, service, rules, transport, Firebase adapter, and emulator-matrix tests
 
 **Interfaces:**
-- `POST /api/checkout-attempts` creates an exact minimal-PII record; replay with the same attempt/token is idempotent and never overwrites advanced state.
-- `PATCH /api/checkout-attempts` hashes and compares the capability token inside one Firebase Admin transaction, then permits only the next lifecycle stage or a matching same-stage failure event.
-- `createCheckoutTracker(input)` returns a failure-isolated tracker with `{ attemptId, supportCode, stage, fail, linkOrder, complete, recordWhatsAppRetry }`; its raw capability stays in module-private memory.
+- `POST /api/checkout-attempts` creates an exact minimal-PII record bound to the verified anonymous `writerUid`; replay by the same writer is idempotent and never overwrites advanced state.
+- `PATCH /api/checkout-attempts` verifies the same immutable writer inside one Firebase Admin transaction, then permits only the next lifecycle stage or a matching same-stage failure event.
+- `createCheckoutTracker(input)` returns a failure-isolated tracker with `{ attemptId, supportCode, stage, fail, linkOrder, complete, recordWhatsAppRetry }`; authorization is acquired freshly for each API request.
 - Admin `getAllCheckoutAttempts()` and `updateCheckoutAttemptResolution(...)` continue through authenticated Firestore client access.
 
 - [ ] **Step 1: Test the API and transport contracts RED**
 
-Cover exact methods/content type/body size and field allowlists, identifiers, numeric/string bounds, exact 180-day expiry, token format/hash matching, idempotent create, append-only matching events, forward transitions, immutable order links, optional Firebase ID-token UID matching, minimal PII, and permanent/retryable HTTP classification.
+Cover exact methods/content type/body size and field allowlists, identifiers, numeric/string bounds, exact 180-day expiry, verified anonymous writer ownership/mismatch, idempotent create, append-only matching events, forward transitions, immutable order links, optional independent primary ID-token UID matching, minimal PII, and permanent/retryable HTTP classification. Inject tests for restored anonymous state, forced writer refresh, and primary-token expiry/omission.
 
 - [ ] **Step 2: Implement injectable Vercel and Firebase Admin modules**
 
-Use only `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64` on the server. Store `capabilityTokenHash`, never the raw token. Return stable error objects with `code`, safe `message`, and `retryable`. The browser sends POST/PATCH requests only to `/api/checkout-attempts`; optional `userId` is included only with a matching Firebase ID token.
+Use only `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64` on the server. Verify the refreshed anonymous writer token from `Authorization`, store only immutable `writerUid`, and verify the optional primary token independently from `X-Checkout-User-Token`. Return stable error objects with `code`, safe `message`, and `retryable`. The browser sends POST/PATCH requests only to `/api/checkout-attempts`; optional `userId` is sent only while the current primary user still matches.
 
 - [ ] **Step 3: Implement failure-isolated tracking and grouped flush**
 
-Bound each diagnostic call. Queue a whole create-anchored attempt group after retryable/time-out failures, preserve FIFO/idempotency, continue to later groups after one group fails, retain only retryable groups, and drop only the permanently failed or unauthorizable group. Never let diagnostic I/O change checkout business behavior.
+Bound each diagnostic call. Queue a whole create-anchored attempt group after retryable/time-out failures, preserve FIFO/idempotency, refresh writer identity at send time after reload, continue to later groups after one group fails, retain retryable groups, and drop only an unchanged permanently failed/unauthorizable group. Compare processed operation IDs before removal so concurrent enqueues survive. Never let diagnostic I/O change checkout business behavior.
 
 - [ ] **Step 4: Lock down Firestore and add the authorization matrix**
 
@@ -196,7 +198,7 @@ match /checkoutAttempts/{attemptId} {
 }
 ```
 
-The admin helper allows only bounded `resolutionStatus`, `adminNotes`, `resolvedAt`, and server `updatedAt`. The recursive admin fallback excludes `orders` and `checkoutAttempts`. The emulator matrix covers public create/update/get/list/delete denial, admin get/list/resolution update, forbidden lifecycle update/delete, protected order delete, and unrelated admin fallback access.
+The admin helper allows only bounded `resolutionStatus`, `adminNotes`, `resolvedAt`, and server `updatedAt`. It sets `resolvedAt` only when entering resolved, preserves it on resolved notes/status saves, and clears it only when reopening. The recursive admin fallback excludes `orders` and `checkoutAttempts`. The emulator matrix covers public create/update/get/list/delete denial, admin get/list/resolution update, timestamp preservation/reopen behavior, forbidden lifecycle update/delete, protected order delete, and unrelated admin fallback access.
 
 - [ ] **Step 5: Run focused tests**
 
@@ -215,7 +217,7 @@ Run the API, Firebase adapter, transport, service, rules, grouped outbox, and em
 **Interfaces:**
 - Consumes: `createCheckoutTracker(input)` from Task 2.
 - Produces: `runVerifiedCheckout(input, dependencies)` with optional `dependencies.tracker`.
-- Produces: checkout results containing `attemptId` and `supportCode` whenever tracker creation succeeds locally; a failed WhatsApp handoff also carries a non-enumerable retry callback that closes over the same authorized tracker session.
+- Produces: checkout results containing `attemptId` and `supportCode` whenever tracker creation succeeds locally; a failed WhatsApp handoff also carries a non-enumerable retry callback that closes over the same tracker.
 
 - [ ] **Step 1: Write failing orchestration tests**
 
@@ -424,11 +426,12 @@ git commit -m "feat: add admin checkout tracking"
 Add a `Checkout diagnostic deployment` section that states:
 
 ```text
-1. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64 as a server-only Vercel variable; never use a VITE_ prefix.
-2. Deploy firestore.rules so direct browser checkout-attempt access is denied.
-3. Deploy firestore.indexes.json and confirm the checkoutAttempts.expiresAt TTL override is enabled.
-4. Deploy the Vercel release containing both /api/checkout-attempts and the web build.
-5. Run success, blocked-popup/retry, admin workflow, authorization, and minimal-PII live smoke checks.
+1. Enable Firebase Anonymous Authentication for the existing web Firebase project without changing primary login providers.
+2. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64 as a server-only Vercel variable; never use a VITE_ prefix.
+3. Deploy firestore.rules so direct browser checkout-attempt access is denied.
+4. Deploy firestore.indexes.json and confirm the checkoutAttempts.expiresAt TTL override is enabled.
+5. Deploy the Vercel release containing both /api/checkout-attempts and the web build.
+6. Run success, cold-reload flush, writer mismatch, blocked-popup/retry, admin workflow, authorization, and minimal-PII live smoke checks.
 ```
 
 Do not include service-account values or environment secrets.
@@ -466,4 +469,14 @@ git commit -m "docs: document checkout tracking deployment"
 
 - [ ] **Step 7: Perform a manual smoke test after Firebase deployment**
 
-Place successful and deliberately blocked-WhatsApp test checkouts. Confirm the customer sees a support code; `Admin -> Checkout Tracking` finds it by support code and order ID; only approved diagnostic PII is stored; the last stage matches the outcome; retry recovery updates the same attempt without a second order; notes persist independently; all three resolution states work; and resolved records hide by default but remain explicitly searchable. Confirm direct unauthenticated Firestore checkout-attempt access and admin deletes fail.
+Place successful and deliberately blocked-WhatsApp test checkouts. Queue an offline attempt and reload before reconnecting to prove the persisted anonymous writer can flush it. Confirm the customer sees a support code; `Admin -> Checkout Tracking` finds it by support code and order ID; only approved diagnostic PII plus `writerUid` is stored and no ID token is stored; the last stage matches the outcome; retry recovery updates the same attempt without a second order; resolved notes preserve the original timestamp; all three resolution states work; and resolved records hide by default but remain explicitly searchable. Confirm direct unauthenticated Firestore checkout-attempt access and admin deletes fail.
+
+## Re-review correction wave (2026-07-20)
+
+- [x] Replace process-memory writer secrets with named-secondary-app anonymous Firebase Auth using local persistence and forced token refresh.
+- [x] Bind API transactions to immutable verified `writerUid` and independently verify optional primary identity.
+- [x] Keep every ID token out of Firestore and local storage while supporting cold-reload outbox flush.
+- [x] Open a blank web popup handle, clear its opener, navigate it, and close it on navigation failure.
+- [x] Compare flushed operation IDs with current storage so concurrent enqueues survive awaited success or permanent responses.
+- [x] Preserve `resolvedAt` for resolved notes, set it only on transition into resolved, and clear it only on reopen.
+- [x] Map `deadline-exceeded` to the network diagnostic category.

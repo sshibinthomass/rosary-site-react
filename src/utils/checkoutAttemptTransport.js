@@ -36,10 +36,10 @@ export function createCheckoutAttemptTransport(fetchImpl = globalThis.fetch) {
 
   return {
     async persist(operation, authorization = {}) {
-      if (!authorization.capabilityToken) {
+      if (!authorization.writerIdToken) {
         throw new CheckoutAttemptTransportError('Checkout diagnostic authorization is unavailable.', {
           status: 0,
-          code: 'missing-capability-token',
+          code: 'missing-writer-id-token',
           classification: 'permanent',
         });
       }
@@ -57,10 +57,10 @@ export function createCheckoutAttemptTransport(fetchImpl = globalThis.fetch) {
       }
       const headers = {
         'Content-Type': 'application/json',
-        'X-Checkout-Attempt-Token': authorization.capabilityToken,
+        Authorization: `Bearer ${authorization.writerIdToken}`,
       };
-      if (authorization.firebaseIdToken) {
-        headers.Authorization = `Bearer ${authorization.firebaseIdToken}`;
+      if (authorization.primaryUserIdToken) {
+        headers['X-Checkout-User-Token'] = authorization.primaryUserIdToken;
       }
 
       let response;

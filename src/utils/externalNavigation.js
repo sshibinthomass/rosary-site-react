@@ -1,16 +1,33 @@
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Capacitor } from '@capacitor/core';
 
+function whatsappLaunchError(cause) {
+  const error = new Error('External URL could not be opened.', cause ? { cause } : undefined);
+  error.code = 'whatsapp-launch-failed';
+  return error;
+}
+
 export function createExternalUrlOpener({ isNativePlatform, openNative, openBrowser }) {
   return async function openUrl(url) {
     if (!url) throw new Error('Cannot open an empty URL.');
     if (isNativePlatform()) {
       const result = await openNative(url);
-      if (result?.completed === false) throw new Error('External URL could not be opened.');
+      if (result?.completed === false) throw whatsappLaunchError();
       return true;
     }
-    const openedWindow = openBrowser(url);
-    if (openedWindow === null) throw new Error('External URL could not be opened.');
+    const openedWindow = openBrowser('', '_blank');
+    if (!openedWindow) throw whatsappLaunchError();
+    try {
+      openedWindow.opener = null;
+      openedWindow.location.href = url;
+    } catch (error) {
+      try {
+        openedWindow.close?.();
+      } catch {
+        // Best-effort cleanup must not hide the stable launch failure.
+      }
+      throw whatsappLaunchError(error);
+    }
     return true;
   };
 }
@@ -18,7 +35,7 @@ export function createExternalUrlOpener({ isNativePlatform, openNative, openBrow
 const productionExternalUrlOpener = createExternalUrlOpener({
   isNativePlatform: () => Capacitor.isNativePlatform(),
   openNative: (url) => AppLauncher.openUrl({ url }),
-  openBrowser: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
+  openBrowser: (...args) => window.open(...args),
 });
 
 export function openExternalUrl(url) {

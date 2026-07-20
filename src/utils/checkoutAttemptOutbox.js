@@ -3,8 +3,8 @@ export const CHECKOUT_OUTBOX_GROUP_LIMIT = 20;
 export const CHECKOUT_OUTBOX_LIMIT = CHECKOUT_OUTBOX_GROUP_LIMIT;
 
 const FORBIDDEN_PERSISTED_KEYS = new Set([
-  'address', 'authorization', 'capabilityToken', 'clientToken', 'clientWriteToken',
-  'district', 'email', 'firebaseIdToken', 'pincode', 'state',
+  'address', 'authorization', 'clientToken', 'clientWriteToken', 'district', 'email',
+  'firebaseIdToken', 'idToken', 'pincode', 'primaryUserIdToken', 'state', 'writerIdToken',
 ]);
 
 function isPlainObject(value) {
@@ -127,14 +127,59 @@ export function enqueueCheckoutAttemptGroup(storage, incomingGroup, options = {}
   }
 }
 
-export function removeCheckoutAttemptGroup(storage, attemptId) {
+export function removeCheckoutAttemptGroup(storage, attemptId, options = {}) {
   try {
     const groups = readCheckoutOutbox(storage);
+    const currentGroup = groups.find((group) => group?.attemptId === attemptId);
+    if (Array.isArray(options.expectedOperationIds)) {
+      const currentIds = (currentGroup?.operations || []).map(({ operationId }) => operationId);
+      if (
+        currentIds.length !== options.expectedOperationIds.length
+        || currentIds.some((operationId, index) => operationId !== options.expectedOperationIds[index])
+      ) return false;
+    }
     const nextGroups = groups.filter((group) => group?.attemptId !== attemptId);
     if (groups.length === nextGroups.length) return false;
     return writeCheckoutOutbox(storage, nextGroups);
   } catch {
     return false;
+  }
+}
+
+export function removeCheckoutAttemptOperations(storage, attemptId, operationIds) {
+  try {
+    const processedIds = new Set(operationIds || []);
+    if (processedIds.size === 0) return { changed: false, removedGroup: false };
+    const groups = readCheckoutOutbox(storage);
+    const groupIndex = groups.findIndex((group) => group?.attemptId === attemptId);
+    if (groupIndex < 0) return { changed: false, removedGroup: false };
+    const group = groups[groupIndex];
+    const remaining = group.operations.filter(({ operationId }) => !processedIds.has(operationId));
+    if (remaining.length === group.operations.length) {
+      return { changed: false, removedGroup: false };
+    }
+    if (remaining.length === 0) {
+      const nextGroups = groups.filter((_, index) => index !== groupIndex);
+      return {
+        changed: writeCheckoutOutbox(storage, nextGroups),
+        removedGroup: true,
+      };
+    }
+
+    const anchor = group.operations.find(({ type }) => type === 'create');
+    const operations = remaining[0]?.type === 'create'
+      ? remaining
+      : [anchor, ...remaining].filter(Boolean);
+    const nextGroup = { ...group, operations };
+    const nextGroups = groups.map((storedGroup, index) => (
+      index === groupIndex ? nextGroup : storedGroup
+    ));
+    return {
+      changed: writeCheckoutOutbox(storage, nextGroups),
+      removedGroup: false,
+    };
+  } catch {
+    return { changed: false, removedGroup: false };
   }
 }
 

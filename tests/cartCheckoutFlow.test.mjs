@@ -145,6 +145,6 @@ test('built-in WhatsApp retry reports success or failure through the opaque same
     cartPageSource,
     /await checkoutConfirmation\.recordWhatsAppRetry\?\.\(\{\s*success:\s*false,\s*error:\s*openError\s*\}\)/
   );
-  assert.doesNotMatch(cartPageSource, /checkoutConfirmation[\s\S]{0,80}capabilityToken/);
+  assert.doesNotMatch(cartPageSource, /checkoutConfirmation[\s\S]{0,80}(?:writerIdToken|primaryUserIdToken)/);
   assert.doesNotMatch(cartPageSource, /initiateWhatsAppCheckout[\s\S]{0,240}handleOpenWhatsAppAgain/);
 });

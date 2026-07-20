@@ -21,7 +21,16 @@ service cloud.firestore {
              && data.adminNotes.size() <= 2000
              && data.updatedAt == request.time
              && (
-               (data.resolutionStatus == 'resolved' && data.resolvedAt == request.time)
+               (
+                 resource.data.resolutionStatus != 'resolved'
+                 && data.resolutionStatus == 'resolved'
+                 && data.resolvedAt == request.time
+               )
+               || (
+                 resource.data.resolutionStatus == 'resolved'
+                 && data.resolutionStatus == 'resolved'
+                 && !data.diff(resource.data).affectedKeys().hasAny(['resolvedAt'])
+               )
                || (
                  data.resolutionStatus != 'resolved'
                  && !data.keys().hasAny(['resolvedAt'])

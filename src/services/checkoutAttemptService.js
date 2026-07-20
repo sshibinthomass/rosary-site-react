@@ -22,17 +22,18 @@ import {
   pruneCheckoutOutbox,
   readCheckoutOutbox,
   removeCheckoutAttemptGroup,
+  removeCheckoutAttemptOperations,
 } from '../utils/checkoutAttemptOutbox.js';
 import {
   classifyCheckoutAttemptFailure,
   createCheckoutAttemptTransport,
 } from '../utils/checkoutAttemptTransport.js';
+import { getCheckoutDiagnosticWriterIdToken } from './checkoutDiagnosticWriterAuth.js';
 
 const COLLECTION_NAME = 'checkoutAttempts';
 export const CHECKOUT_TRACKING_DEADLINE_MS = 750;
 const IDENTITY_DEADLINE_MS = 250;
 
-const authorizationSessions = new Map();
 let productionTransport;
 
 async function getDatabase() {
@@ -44,8 +45,9 @@ async function getDefaultIdentity(requestedUserId) {
   const { auth } = await import('../config/firebaseAuth.js');
   const currentUser = auth.currentUser;
   if (!currentUser || currentUser.uid !== requestedUserId) return null;
-  const firebaseIdToken = await currentUser.getIdToken();
-  return { userId: currentUser.uid, firebaseIdToken };
+  const primaryUserIdToken = await currentUser.getIdToken(true);
+  if (auth.currentUser !== currentUser || auth.currentUser?.uid !== requestedUserId) return null;
+  return { userId: currentUser.uid, primaryUserIdToken };
 }
 
 async function persistApiOperation(operation, authorization) {
@@ -65,13 +67,28 @@ async function fetchAllAttempts() {
   }));
 }
 
-async function persistResolution(id, updates) {
-  const database = await getDatabase();
-  await updateDoc(doc(database, COLLECTION_NAME, id), {
+export function buildCheckoutAttemptResolutionWrite(
+  attempt,
+  updates,
+  operations = { serverTimestamp, deleteField },
+) {
+  const write = {
     ...updates,
-    updatedAt: serverTimestamp(),
-    resolvedAt: updates.resolutionStatus === 'resolved' ? serverTimestamp() : deleteField(),
-  });
+    updatedAt: operations.serverTimestamp(),
+  };
+  const wasResolved = attempt?.resolutionStatus === 'resolved';
+  const willBeResolved = updates.resolutionStatus === 'resolved';
+  if (!wasResolved && willBeResolved) write.resolvedAt = operations.serverTimestamp();
+  if (wasResolved && !willBeResolved) write.resolvedAt = operations.deleteField();
+  return write;
+}
+
+async function persistResolution(id, updates, attempt) {
+  const database = await getDatabase();
+  await updateDoc(
+    doc(database, COLLECTION_NAME, id),
+    buildCheckoutAttemptResolutionWrite(attempt, updates),
+  );
 }
 
 const productionPersistence = {
@@ -111,10 +128,10 @@ function resolveWithinDeadline(promise, deadlineMs) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
-async function settlePersistence(persist, operation, authorization, deadlineMs) {
+async function settlePersistence(persist, operation, deadlineMs) {
   let timeoutId;
   const persistence = Promise.resolve()
-    .then(() => persist(operation, authorization))
+    .then(() => persist(operation))
     .then(
       () => ({ outcome: 'success' }),
       (error) => ({ outcome: classifyCheckoutAttemptFailure(error), error }),
@@ -135,8 +152,8 @@ async function resolveIdentity(requestedUserId, getIdentity, deadlineMs) {
   const identity = Promise.resolve()
     .then(() => getIdentity(requestedUserId))
     .then((result) => (
-      result?.userId === requestedUserId && typeof result.firebaseIdToken === 'string'
-        ? { userId: requestedUserId, firebaseIdToken: result.firebaseIdToken }
+      result?.userId === requestedUserId && typeof result.primaryUserIdToken === 'string'
+        ? { userId: requestedUserId, primaryUserIdToken: result.primaryUserIdToken }
         : null
     ))
     .catch(() => null);
@@ -162,25 +179,51 @@ function createOperationPersistence(dependencies) {
   return productionPersistence.persistOperation;
 }
 
+function omitOperationUserId(operation) {
+  if (!operation?.payload || !('userId' in operation.payload)) return operation;
+  const payload = { ...operation.payload };
+  delete payload.userId;
+  return { ...operation, payload };
+}
+
+function createAuthenticatedOperationPersistence(dependencies, deadlineMs) {
+  const persistOperation = createOperationPersistence(dependencies);
+  const getWriterIdToken = dependencies.getWriterIdToken || getCheckoutDiagnosticWriterIdToken;
+  const getIdentity = dependencies.getIdentity || getDefaultIdentity;
+
+  return async (operation) => {
+    const writerIdToken = await getWriterIdToken();
+    if (typeof writerIdToken !== 'string' || !writerIdToken) {
+      throw new Error('Anonymous checkout diagnostic authentication is unavailable.');
+    }
+    const authorization = { writerIdToken };
+    let outgoingOperation = operation;
+    const requestedUserId = operation?.type === 'create' ? operation.payload?.userId : '';
+    if (requestedUserId) {
+      const identity = await resolveIdentity(requestedUserId, getIdentity, deadlineMs);
+      if (identity) authorization.primaryUserIdToken = identity.primaryUserIdToken;
+      else outgoingOperation = omitOperationUserId(operation);
+    }
+    return persistOperation(outgoingOperation, authorization);
+  };
+}
+
 export async function createCheckoutTrackerSession(input, dependencies = {}) {
   const generators = dependencies.generators || {};
   const now = generators.now || (() => new Date());
   const randomUUID = generators.randomUUID || globalThis.crypto.randomUUID.bind(globalThis.crypto);
-  const persistOperation = createOperationPersistence(dependencies);
   const enqueueGroup = dependencies.enqueueGroup || defaultEnqueueGroup;
-  const getIdentity = dependencies.getIdentity || getDefaultIdentity;
   const persistenceDeadlineMs = Number.isFinite(dependencies.persistenceDeadlineMs)
     ? Math.max(1, dependencies.persistenceDeadlineMs)
     : CHECKOUT_TRACKING_DEADLINE_MS;
+  const persistOperation = createAuthenticatedOperationPersistence(
+    dependencies,
+    persistenceDeadlineMs,
+  );
   const attempt = createCheckoutAttempt(input, generators);
   const initialEvent = createCheckoutEvent('started', { eventId: randomUUID() }, now);
-  const identity = await resolveIdentity(input?.userId, getIdentity, persistenceDeadlineMs);
-  const { id, capabilityToken } = attempt;
-  const authorization = {
-    capabilityToken,
-    ...(identity ? { firebaseIdToken: identity.firebaseIdToken } : {}),
-  };
-  authorizationSessions.set(id, authorization);
+  const { id } = attempt;
+  const requestedUserId = typeof input?.userId === 'string' ? input.userId.slice(0, 128) : '';
 
   const createOperation = {
     operationId: `${id}:create`,
@@ -199,7 +242,7 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
       updatedAt: attempt.createdAt,
       expiresAt: attempt.expiresAt,
       event: initialEvent,
-      ...(identity ? { userId: identity.userId } : {}),
+      ...(requestedUserId ? { userId: requestedUserId } : {}),
     }),
   };
 
@@ -231,7 +274,6 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
   const createResult = await settlePersistence(
     persistOperation,
     createOperation,
-    authorization,
     persistenceDeadlineMs,
   );
   if (createResult.outcome === 'retryable') {
@@ -261,7 +303,6 @@ export async function createCheckoutTrackerSession(input, dependencies = {}) {
       const persistenceResult = await settlePersistence(
         persistOperation,
         operation,
-        authorization,
         remainingMs,
       );
       if (persistenceResult.outcome === 'retryable') {
@@ -342,26 +383,23 @@ export function createCheckoutTracker(input) {
 
 export async function flushCheckoutAttemptOutbox(storage, dependencies = {}) {
   const now = dependencies.now || (() => new Date());
-  const persistOperation = dependencies.persistOperation || productionPersistence.persistOperation;
-  const getAuthorization = dependencies.getAuthorization
-    || ((attemptId) => authorizationSessions.get(attemptId));
+  const persistenceDeadlineMs = Number.isFinite(dependencies.persistenceDeadlineMs)
+    ? Math.max(1, dependencies.persistenceDeadlineMs)
+    : CHECKOUT_TRACKING_DEADLINE_MS;
+  const persistOperation = createAuthenticatedOperationPersistence(
+    dependencies,
+    persistenceDeadlineMs,
+  );
   const { groups } = pruneCheckoutOutbox(storage, { now });
   let flushedGroups = 0;
   let droppedGroups = 0;
   let retainedGroups = 0;
 
   for (const group of groups) {
-    const authorization = await getAuthorization(group.attemptId);
-    if (!authorization?.capabilityToken) {
-      if (removeCheckoutAttemptGroup(storage, group.attemptId)) droppedGroups += 1;
-      else retainedGroups += 1;
-      continue;
-    }
-
     let outcome = 'success';
     for (const operation of group.operations) {
       try {
-        await persistOperation(operation, authorization);
+        await persistOperation(operation);
       } catch (error) {
         outcome = classifyCheckoutAttemptFailure(error);
         break;
@@ -372,9 +410,18 @@ export async function flushCheckoutAttemptOutbox(storage, dependencies = {}) {
       retainedGroups += 1;
       continue;
     }
-    if (removeCheckoutAttemptGroup(storage, group.attemptId)) {
-      if (outcome === 'success') flushedGroups += 1;
-      else droppedGroups += 1;
+    if (outcome === 'success') {
+      const removal = removeCheckoutAttemptOperations(
+        storage,
+        group.attemptId,
+        group.operations.map(({ operationId }) => operationId),
+      );
+      if (removal.changed && removal.removedGroup) flushedGroups += 1;
+      else retainedGroups += 1;
+    } else if (removeCheckoutAttemptGroup(storage, group.attemptId, {
+      expectedOperationIds: group.operations.map(({ operationId }) => operationId),
+    })) {
+      droppedGroups += 1;
     } else {
       retainedGroups += 1;
     }
@@ -441,7 +488,7 @@ export async function getAllCheckoutAttempts(persistence = productionPersistence
   });
 }
 
-export async function updateCheckoutAttemptResolution(id, input, persistence = productionPersistence) {
+export async function updateCheckoutAttemptResolution(attemptOrId, input, persistence = productionPersistence) {
   if (!RESOLUTION_STATUSES.includes(input?.resolutionStatus)) {
     throw new TypeError('Invalid checkout attempt resolution status.');
   }
@@ -449,6 +496,10 @@ export async function updateCheckoutAttemptResolution(id, input, persistence = p
     resolutionStatus: input.resolutionStatus,
     adminNotes: String(input.adminNotes ?? '').trim().slice(0, 2_000),
   };
-  await persistence.updateResolution(id, updates);
+  const attempt = typeof attemptOrId === 'object' && attemptOrId
+    ? attemptOrId
+    : { id: attemptOrId };
+  const id = attempt.id;
+  await persistence.updateResolution(id, updates, attempt);
   return { id, ...updates };
 }

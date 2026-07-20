@@ -215,7 +215,7 @@ test('only a failed WhatsApp handoff exposes an opaque non-persisted retry callb
 
   assert.equal(typeof result.recordWhatsAppRetry, 'function');
   assert.equal(Object.keys(result).includes('recordWhatsAppRetry'), false);
-  assert.doesNotMatch(JSON.stringify(result), /capabilityToken|clientWriteToken/);
+  assert.doesNotMatch(JSON.stringify(result), /writerIdToken|primaryUserIdToken|clientWriteToken/);
 
   await result.recordWhatsAppRetry({ success: false, error: new Error('still blocked') });
   assert.equal(events.at(-1), 'track:retry:failed');

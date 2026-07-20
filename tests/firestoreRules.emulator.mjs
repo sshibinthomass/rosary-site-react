@@ -9,6 +9,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -79,6 +80,33 @@ test('admins can get, list, and update only investigation fields', async () => {
     currentStage: 'completed',
     updatedAt: serverTimestamp(),
   }));
+});
+
+test('resolved notes preserve resolvedAt while reopening removes it', async () => {
+  const attempt = doc(adminDatabase, 'checkoutAttempts', attemptId);
+  await assertSucceeds(updateDoc(attempt, {
+    resolutionStatus: 'resolved',
+    adminNotes: 'Resolved.',
+    resolvedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+  const originalResolvedAt = (await getDoc(attempt)).data().resolvedAt;
+
+  await assertSucceeds(updateDoc(attempt, {
+    resolutionStatus: 'resolved',
+    adminNotes: 'Resolved with additional notes.',
+    updatedAt: serverTimestamp(),
+  }));
+  const preservedResolvedAt = (await getDoc(attempt)).data().resolvedAt;
+  assert.equal(preservedResolvedAt.isEqual(originalResolvedAt), true);
+
+  await assertSucceeds(updateDoc(attempt, {
+    resolutionStatus: 'open',
+    adminNotes: 'Reopened.',
+    resolvedAt: deleteField(),
+    updatedAt: serverTimestamp(),
+  }));
+  assert.equal('resolvedAt' in (await getDoc(attempt)).data(), false);
 });
 
 test('admins cannot delete checkout attempts or protected orders', async () => {

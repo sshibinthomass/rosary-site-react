@@ -116,7 +116,7 @@ test('drops an expired group when the app returns after its retention deadline',
 
   const result = await flushCheckoutAttemptOutbox(storage, {
     now: () => NOW,
-    getAuthorization: () => ({ capabilityToken: 'token' }),
+    getWriterIdToken: async () => 'writer-token',
     persistOperation: async (queuedOperation) => calls.push(queuedOperation.operationId),
   });
 
@@ -125,7 +125,7 @@ test('drops an expired group when the app returns after its retention deadline',
   assert.equal(storage.getItem(CHECKOUT_OUTBOX_KEY), null);
 });
 
-test('a permanent first-group failure drops only that group and flushes a newer group', async () => {
+test('a permanent writer mismatch drops only that group and flushes a newer group', async () => {
   const storage = createStorage();
   enqueueCheckoutAttemptGroup(storage, group('bad'), { now: () => NOW });
   enqueueCheckoutAttemptGroup(storage, group('good'), { now: () => NOW });
@@ -133,11 +133,13 @@ test('a permanent first-group failure drops only that group and flushes a newer 
 
   const result = await flushCheckoutAttemptOutbox(storage, {
     now: () => NOW,
-    getAuthorization: () => ({ capabilityToken: 'token' }),
+    getWriterIdToken: async () => 'writer-token',
     persistOperation: async (queuedOperation) => {
       calls.push(queuedOperation.operationId);
       if (queuedOperation.attemptId === 'bad') {
-        throw Object.assign(new Error('invalid'), { classification: 'permanent', status: 400 });
+        throw Object.assign(new Error('writer mismatch'), {
+          classification: 'permanent', status: 403, code: 'writer-mismatch',
+        });
       }
     },
   });
@@ -159,7 +161,7 @@ test('a retryable group remains without blocking later groups', async () => {
 
   const result = await flushCheckoutAttemptOutbox(storage, {
     now: () => NOW,
-    getAuthorization: () => ({ capabilityToken: 'token' }),
+    getWriterIdToken: async () => 'writer-token',
     persistOperation: async (queuedOperation) => {
       calls.push(queuedOperation.operationId);
       if (queuedOperation.attemptId === 'offline') {
@@ -185,13 +187,160 @@ test('flushes operations FIFO and removes a group only after every operation suc
 
   await flushCheckoutAttemptOutbox(storage, {
     now: () => NOW,
-    getAuthorization: () => ({ capabilityToken: 'opaque-session-token' }),
+    getWriterIdToken: async () => 'refreshed-writer-token',
     persistOperation: async (queuedOperation, authorization) => {
-      assert.equal(authorization.capabilityToken, 'opaque-session-token');
+      assert.equal(authorization.writerIdToken, 'refreshed-writer-token');
       calls.push(queuedOperation.operationId);
     },
   });
 
   assert.deepEqual(calls, ['ordered:create:0', 'ordered:update:1', 'ordered:update:2']);
   assert.deepEqual(readCheckoutOutbox(storage), []);
+});
+
+test('a cold reload flush signs in or refreshes the writer for every queued operation', async () => {
+  const storage = createStorage();
+  enqueueCheckoutAttemptGroup(storage, group('cold-reload', 1), { now: () => NOW });
+  const authorizations = [];
+  let tokenSequence = 0;
+
+  const result = await flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    getWriterIdToken: async () => `restored-writer-token-${++tokenSequence}`,
+    persistOperation: async (queuedOperation, authorization) => {
+      authorizations.push({ queuedOperation, authorization });
+    },
+  });
+
+  assert.deepEqual(authorizations.map(({ authorization }) => authorization.writerIdToken), [
+    'restored-writer-token-1', 'restored-writer-token-2',
+  ]);
+  assert.ok(authorizations.every(({ authorization }) => !authorization.primaryUserIdToken));
+  assert.equal(result.flushedGroups, 1);
+  assert.deepEqual(readCheckoutOutbox(storage), []);
+});
+
+test('a cold create flush reacquires matching primary identity and omits it when refresh expires', async () => {
+  const matchingStorage = createStorage();
+  const matchingGroup = group('matching-primary');
+  matchingGroup.operations[0].payload.userId = 'user-123';
+  enqueueCheckoutAttemptGroup(matchingStorage, matchingGroup, { now: () => NOW });
+  const matchingCalls = [];
+
+  await flushCheckoutAttemptOutbox(matchingStorage, {
+    now: () => NOW,
+    getWriterIdToken: async () => 'writer-token',
+    getIdentity: async () => ({ userId: 'user-123', primaryUserIdToken: 'fresh-primary-token' }),
+    persistOperation: async (queuedOperation, authorization) => {
+      matchingCalls.push({ queuedOperation, authorization });
+    },
+  });
+
+  assert.equal(matchingCalls[0].queuedOperation.payload.userId, 'user-123');
+  assert.equal(matchingCalls[0].authorization.primaryUserIdToken, 'fresh-primary-token');
+
+  const expiredStorage = createStorage();
+  const expiredGroup = group('expired-primary');
+  expiredGroup.operations[0].payload.userId = 'user-123';
+  enqueueCheckoutAttemptGroup(expiredStorage, expiredGroup, { now: () => NOW });
+  const expiredCalls = [];
+
+  await flushCheckoutAttemptOutbox(expiredStorage, {
+    now: () => NOW,
+    getWriterIdToken: async () => 'writer-token',
+    getIdentity: async () => { throw Object.assign(new Error('expired'), { code: 'auth/user-token-expired' }); },
+    persistOperation: async (queuedOperation, authorization) => {
+      expiredCalls.push({ queuedOperation, authorization });
+    },
+  });
+
+  assert.equal('userId' in expiredCalls[0].queuedOperation.payload, false);
+  assert.equal(expiredCalls[0].authorization.primaryUserIdToken, undefined);
+  assert.equal(expiredGroup.operations[0].payload.userId, 'user-123');
+});
+
+test('never stores ID tokens or authorization objects in an attempt group', () => {
+  const storage = createStorage();
+  const unsafe = group('unsafe-token');
+  unsafe.operations[0].payload.writerIdToken = 'must-not-persist';
+  unsafe.operations[0].payload.primaryUserIdToken = 'must-not-persist';
+
+  assert.equal(enqueueCheckoutAttemptGroup(storage, unsafe, { now: () => NOW }), false);
+  assert.equal(storage.getItem(CHECKOUT_OUTBOX_KEY), null);
+});
+
+test('concurrent enqueue during flush retains the new operation with its create anchor', async () => {
+  const storage = createStorage();
+  const initialGroup = group('concurrent');
+  enqueueCheckoutAttemptGroup(storage, initialGroup, { now: () => NOW });
+  let releasePersist;
+  let markStarted;
+  const persistStarted = new Promise((resolve) => { markStarted = resolve; });
+  const persistGate = new Promise((resolve) => { releasePersist = resolve; });
+
+  const firstFlush = flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    getWriterIdToken: async () => 'writer-token',
+    persistOperation: async () => {
+      markStarted();
+      await persistGate;
+    },
+  });
+  await persistStarted;
+  assert.equal(enqueueCheckoutAttemptGroup(storage, {
+    ...initialGroup,
+    operations: [initialGroup.operations[0], operation('concurrent', 'update', 1)],
+  }, { now: () => NOW }), true);
+  releasePersist();
+  const firstResult = await firstFlush;
+
+  assert.deepEqual(
+    readCheckoutOutbox(storage)[0].operations.map(({ operationId }) => operationId),
+    ['concurrent:create:0', 'concurrent:update:1'],
+  );
+  assert.equal(firstResult.remainingGroups, 1);
+
+  const replayed = [];
+  await flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    getWriterIdToken: async () => 'writer-token',
+    persistOperation: async (queuedOperation) => replayed.push(queuedOperation.operationId),
+  });
+  assert.deepEqual(replayed, ['concurrent:create:0', 'concurrent:update:1']);
+  assert.deepEqual(readCheckoutOutbox(storage), []);
+});
+
+test('a permanent response cannot delete an operation enqueued while its request was awaiting', async () => {
+  const storage = createStorage();
+  const initialGroup = group('concurrent-permanent');
+  enqueueCheckoutAttemptGroup(storage, initialGroup, { now: () => NOW });
+  let rejectPersist;
+  let markStarted;
+  const persistStarted = new Promise((resolve) => { markStarted = resolve; });
+  const persistGate = new Promise((_, reject) => { rejectPersist = reject; });
+
+  const flush = flushCheckoutAttemptOutbox(storage, {
+    now: () => NOW,
+    getWriterIdToken: async () => 'different-writer-token',
+    persistOperation: async () => {
+      markStarted();
+      await persistGate;
+    },
+  });
+  await persistStarted;
+  enqueueCheckoutAttemptGroup(storage, {
+    ...initialGroup,
+    operations: [initialGroup.operations[0], operation('concurrent-permanent', 'update', 1)],
+  }, { now: () => NOW });
+  rejectPersist(Object.assign(new Error('writer mismatch'), {
+    classification: 'permanent', status: 403, code: 'writer-mismatch',
+  }));
+  const result = await flush;
+
+  assert.deepEqual(
+    readCheckoutOutbox(storage)[0].operations.map(({ operationId }) => operationId),
+    ['concurrent-permanent:create:0', 'concurrent-permanent:update:1'],
+  );
+  assert.equal(result.droppedGroups, 0);
+  assert.equal(result.retainedGroups, 1);
 });

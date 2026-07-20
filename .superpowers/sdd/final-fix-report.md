@@ -2,40 +2,44 @@
 
 Status: **DONE_WITH_CONCERNS**
 
-Implementation commit: `392114a fix: secure checkout attempt tracking`
+Baseline implementation commit: `392114a fix: secure checkout attempt tracking`
+
+Re-review correction: included in the single correction commit reported in the final handoff.
 
 No Firebase, Vercel, or other production-state deployment was performed.
 
 ## Outcome
 
-The final review fix wave is implemented. Customer diagnostic writes now use a capability-authorized Vercel endpoint backed by Firebase Admin; public Firestore access to checkout attempts is denied; the local outbox stores bounded whole-attempt groups; diagnostic PII is reduced to the approved allowlist; linked-order handling and resolved searches are canonical; WhatsApp handoff/retry outcomes are truthful; and the admin investigation workflow supports open, investigating, resolved, and notes-only saves.
+The final re-review findings are implemented. Customer diagnostic writes use the Vercel endpoint with a named secondary Firebase app, local anonymous-auth persistence, and a freshly refreshed anonymous writer ID token for every create, update, and outbox replay. The server verifies that token, requires the anonymous sign-in provider, and stores the immutable `writerUid`. An optional customer `userId` is sent only when a separate, freshly refreshed primary-user token still matches the same primary auth user before and after refresh.
 
-The raw per-attempt capability token is held only in module-private browser memory. Firestore stores only its SHA-256 hash, and the token is not stored in the outbox, URLs, logs, confirmation state, or customer-visible text.
+No writer or primary ID token is stored in the outbox, local storage, request body, URL, log, confirmation state, or customer-visible text. A cold reload can restore the secondary anonymous writer and replay queued operations. If the restored writer differs from the document owner, the stable permanent `writer-mismatch` response isolates and removes only the unchanged affected group.
 
-## TDD evidence
+The web WhatsApp handoff now opens a synchronous blank tab, clears `opener`, and then navigates it. Blocked popups and navigation failures use the stable `whatsapp-launch-failed` code, and a failed navigation closes the blank tab on a best-effort basis.
 
-Focused tests were added or changed before each implementation area. Representative RED to GREEN evidence:
+Outbox flushes remove only the operation IDs in the sent snapshot. Operations appended while a request is in flight survive both successful and permanent responses. Admin `resolvedAt` is set only when entering `resolved`, preserved during notes-only saves while resolved, and deleted when reopening. Direct `deadline-exceeded` errors are classified as network failures.
+
+## Re-review TDD evidence
+
+Focused tests were made red before each correction and then driven green:
 
 | Area | RED evidence | GREEN evidence |
 | --- | --- | --- |
-| Server API and rules | New API/rules tests failed for missing modules and direct public-rule behavior. | API validation, authorization, idempotency, transitions, matching events, user-token verification, and rule source contracts pass. |
-| Firebase adapter | Import failed because the adapter did not exist. | Transactional adapter and timestamp serialization tests pass, including `resolvedAt`. |
-| Emulator matrix | Matrix/source-contract test failed while the emulator test file was absent. | The authorization matrix is present and its source contract passes; runtime execution is environment-blocked as recorded below. |
-| Transport/model/outbox | Tests failed for missing API transport, raw-token persistence shape, and legacy individual-operation eviction. | API transport, minimal PII model, grouped capacity/expiry/pruning, FIFO, idempotency, and group-isolated failure tests pass. |
-| Service/client writes | Tests detected direct customer Firestore writes and legacy behavior. | Customer writes use POST/PATCH API transport; admin reads/updates remain Firestore; optional verified user ID is best-effort. |
-| Linked orders/admin search | Canonical accessor and resolved explicit-query integration tests failed. | Legacy/current linked IDs work for display, filter, search, and linking; explicit queries include resolved attempts. |
-| WhatsApp truthfulness | Blocked popup, native rejection, and stable classification tests failed. | `window.open(null)`, rejected native launches, and native `{completed:false}` are failures; known failure codes are stable. |
-| Admin/retry | Initial combined run was 40 passed / 6 failed. | Status buttons, notes-only save, per-record isolation, retained failed notes, and same-attempt retry recovery pass. |
-| Self-review regressions | Focused additions caught missing `resolvedAt` conversion, legacy PII in admin reads, loose event timestamps/order-link timing, retry callback exposure after initial success, and native explicit-false handling. | All focused regressions pass after their narrow fixes. |
+| Writer auth, transport, and API | 0 passed / 5 failed because the secondary writer module and server contract did not exist; the final primary-app isolation regression then failed 1 of 3 focused tests. | 13 passed / 0 failed after named-app isolation, explicit default-app selection, local anonymous persistence, forced token refresh, separate headers, immutable writer ownership, and optional primary identity. |
+| Service and model | 34 passed / 6 failed for cached authorization, stale identity, and old model shape. | 40 passed / 0 failed for fresh per-operation writer tokens, primary-user rechecks, omission on refresh failure, and no token-bearing model state. |
+| Durable outbox | 9 passed / 2 failed for token persistence and successful-flush deletion races; a strengthened permanent-response race then produced 11 passed / 1 failed. | 12 passed / 0 failed for cold reload replay, token-free storage, compare-and-remove behavior, group isolation, and permanent writer mismatch handling. |
+| Web popup contract | 2 passed / 5 failed for the old direct navigation behavior. | 30 passed / 0 failed across popup, checkout, and retry suites for blank-tab opening, opener clearing, navigation, cleanup, and stable failure codes. |
+| Resolution and error semantics | 33 passed / 3 failed for the missing transition helper, stale rules behavior, and deadline classification. | 60 passed / 0 failed across model, service, admin, and rules-contract tests, including the executable emulator transition matrix. |
+| Full integration | The first full run exposed one legacy fixture that did not inject writer auth: 292 passed / 1 failed. | The corrected fixture passed 5 / 5, followed by the fresh full suite at 295 passed / 0 failed, including the final default-app regression. |
 
 ## Files
 
+- Secondary writer identity and primary-app isolation: `src/services/checkoutDiagnosticWriterAuth.js`, `src/config/firebase.js`, `src/config/firebaseAuth.js`.
 - Server endpoint and Firebase Admin: `api/checkout-attempts-core.js`, `api/checkout-attempts-firebase.js`, `api/checkout-attempts.js`, `api/firebase-admin.js`.
 - Client tracking: `src/services/checkoutAttemptService.js`, `src/services/verifiedCheckout.js`, `src/services/whatsappCheckout.js`, `src/utils/checkoutAttemptModel.js`, `src/utils/checkoutAttemptOutbox.js`, `src/utils/checkoutAttemptTransport.js`, `src/utils/externalNavigation.js`.
 - UI: `src/pages/AdminCheckoutTrackingPage.jsx`, `src/pages/CartPage.jsx`.
 - Security/tooling: `firestore.rules`, `eslint.config.js`, `package.json`, `package-lock.json`, `.env.example`.
 - Documentation: `README.md`, the checkout tracking design, and the implementation plan.
-- Tests: API, Firebase adapter, Firestore rules/matrix, transport, model, outbox, service, integration, admin, cart, external navigation, and verified checkout suites under `tests/`.
+- Tests: API, writer auth, Firebase adapter, Firestore rules/matrix, transport, model, outbox, service, integration, admin, cart, external navigation, and verified checkout suites under `tests/`.
 
 ## Fresh final verification
 
@@ -43,17 +47,17 @@ All commands ran in `D:\Projects\Website\rosary-site-react\.worktrees\checkout-a
 
 | Command | Exit | Result |
 | --- | ---: | --- |
-| `npm test` | 0 | 281 passed, 0 failed. |
-| `npm run build` | 0 | Vite 7.3.0 built 694 modules; PWA output, 313 plant pages, 16 category pages, and 14 guide pages generated. |
-| Focused ESLint over every modified/new API and tracking JS/MJS/JSX file | 0 | 0 errors; 1 warning in `CartPage.jsx` line 187. Running the `HEAD` version of that file through ESLint produces the same warning. |
-| `npm run lint` | 1 | 52 errors and 12 warnings, exactly matching the historical repository baseline documented in `task-6-report.md`; no new scoped lint errors. |
-| `git diff --check` | 0 | Clean before staging. |
-| `git diff --cached --check` | 0 | Clean before the implementation commit. |
-| `npm run test:firestore-rules` | 1 | Could not start because Java and the Firebase CLI are not installed; shell error: `'firebase' is not recognized as an internal or external command`. |
+| `npm test` | 0 | 295 passed, 0 failed. |
+| `npm run build` | 0 | Vite 7.3.0 built 695 modules; PWA output, 313 plant pages, 16 category pages, and 14 guide pages generated. |
+| Focused ESLint over every modified/new API and tracking JS/MJS/JSX file | 0 | 0 errors and 0 warnings. |
+| `npm run lint` | 1 | 52 errors and 12 warnings, exactly matching the historical repository baseline; no finding is in the changed scope. |
+| `npm run test:firestore-rules` | 1 | Could not start because the Firebase CLI is not installed. |
+| `java -version` | 1 | Java is not installed, so the local Firestore emulator cannot run on this workstation. |
+| `firebase --version` | 1 | The Firebase CLI is not installed. |
 
-The production build reported the existing/non-blocking warnings for large chunks and seven-month-old `caniuse-lite` data. It also skipped the optional Firebase storefront merge because local `VITE_FIREBASE_*` values were absent. Build-generated tracked SEO artifacts were restored exactly to the index after verification and are not part of the commit.
+The production build reported the existing/non-blocking large-chunk warning, seven-month-old `caniuse-lite` data, and the skipped optional Firebase storefront merge because local `VITE_FIREBASE_*` values were absent. Build-generated tracked SEO artifacts were restored exactly from the index after verification and are not part of the correction commit.
 
-`npm install --ignore-scripts` added the rules-unit-testing dependency and reported 23 audit findings (1 low, 11 moderate, 9 high, 2 critical). No broad dependency upgrades or audit fixes were attempted because they are outside this fix wave.
+The prior dependency installation reported 23 audit findings (1 low, 11 moderate, 9 high, 2 critical). No broad dependency upgrades or audit fixes were attempted because they are outside this correction wave.
 
 ## Emulator authorization matrix
 
@@ -61,6 +65,7 @@ The production build reported the existing/non-blocking warnings for large chunk
 
 - unauthenticated checkout-attempt create, update, get, list, and delete denial;
 - admin get, list, and exact investigation update allowance;
+- `resolvedAt` creation only on entry to resolved, preservation on resolved notes saves, and deletion on reopen;
 - admin checkout-attempt delete denial;
 - protected order delete denial; and
 - unrelated authenticated-admin fallback access.
@@ -70,32 +75,31 @@ The matrix and source-contract tests are committed, but runtime proof requires i
 ## Self-review
 
 - Request method, JSON content type, 32 KiB body limit, exact allowlists, identifier formats, string lengths, numeric ranges, expiry, event/error schema, immutable fields, and stable error classes are enforced.
-- POST is idempotent only for the same attempt/token and cannot overwrite advanced state.
-- PATCH hashes and timing-safely verifies the capability token inside the server flow, uses a Firestore Admin transaction, permits only forward lifecycle changes, and requires a same-stage/same-time appended event.
-- Linked order identifiers can first appear only with `order_saved`; canonical reads cover `linkedOrderId`, `orderId`, and `linkedOrderDocumentId`.
-- Optional diagnostic `userId` is accepted only when a Firebase ID token verifies to the same UID; unavailable identity verification is omitted without affecting checkout.
-- Diagnostic payloads and legacy admin reads strip email, delivery/street address, pincode, district, state, and unapproved top-level/event error fields.
+- Every customer write verifies a fresh anonymous writer token. POST is idempotent only for the same `writerUid`; PATCH requires the immutable stored writer UID and uses a Firestore Admin transaction.
+- Optional diagnostic `userId` requires a separate fresh primary-user token for the same UID; anonymous or mismatched primary identity is rejected, while unavailable client identity is omitted without affecting checkout.
+- Diagnostic payloads and legacy admin reads strip email, delivery/street address, pincode, district, state, internal writer ownership, and unapproved top-level/event error fields.
 - Public checkout-attempt CRUD is denied; admin deletes remain denied; the recursive fallback excludes both `orders` and `checkoutAttempts`.
 - Best-effort diagnostic failures do not change order saving, verification, or customer checkout results.
-- Outbox eviction, expiry, malformed/orphan pruning, permanent failures, and retryable failures operate per whole attempt group and allow later groups to progress.
+- Outbox expiry, malformed/orphan pruning, permanent failures, and retryable failures operate per whole attempt group. Successful flushes compare-and-remove the sent operations, and permanent responses remove a group only if its operation snapshot is unchanged.
+- Web popup handling preserves the synchronous user gesture while severing `window.opener` before navigation. Native launch rejection and `{completed:false}` are stable WhatsApp failures.
 - Retry success/failure closes the original authorized tracker and never creates another order.
-- Admin saves are isolated per record, preserve unsaved notes after failure, and support notes-only saves without forcing a status transition.
+- Admin saves are isolated per record, preserve unsaved notes after failure, and maintain `resolvedAt` according to state transitions rather than every save.
 
 ## Deployment prerequisites and smoke checks
 
-1. Configure exactly one server-only Firebase Admin credential: `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64`. Do not place it in a `VITE_*` variable.
-2. Install dependencies and run the complete test/build/lint checks in CI.
-3. Install Java and the Firebase CLI, then run `npm run test:firestore-rules` against the local emulator.
-4. Deploy `firestore.rules` before or together with the application release; deploy any required Firestore indexes.
-5. Enable a TTL policy for `checkoutAttempts.expiresAt`.
-6. Deploy the Vercel API and web application with the server credential available only to the API runtime.
-7. Smoke test a successful checkout, a blocked WhatsApp popup, a native launch failure, a verification failure, offline/retry behavior, and a successful saved-order WhatsApp retry.
-8. For each smoke test, confirm support-code lookup in Admin Checkout Tracking, expected timeline/stage/order link, notes/status actions, normal hiding of resolved records, and explicit-query retrieval of resolved records.
+1. Enable the Firebase Authentication Anonymous provider for the project before releasing the client or API changes.
+2. Configure exactly one server-only Firebase Admin credential: `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_BASE64`. Do not place it in a `VITE_*` variable.
+3. Install dependencies and run the complete test/build/lint checks in CI.
+4. Install Java and the Firebase CLI, then run `npm run test:firestore-rules` against the local emulator.
+5. Deploy `firestore.rules` before or together with the application release; deploy any required Firestore indexes.
+6. Enable a TTL policy for `checkoutAttempts.expiresAt`.
+7. Deploy the Vercel API and web application with the server credential available only to the API runtime.
+8. Smoke test a fresh anonymous checkout, a cold-reload outbox replay, a deliberate writer mismatch, a signed-in checkout, a blocked web popup, a web navigation failure, a native launch failure, a verification failure, offline/retry behavior, and a saved-order WhatsApp retry.
+9. For each smoke test, confirm support-code lookup in Admin Checkout Tracking, expected timeline/stage/order link, notes/status actions, stable `resolvedAt`, normal hiding of resolved records, and explicit-query retrieval of resolved records.
 
 ## Concerns
 
 - The Firestore emulator matrix could not execute in this workstation environment because Java and the Firebase CLI are missing.
-- Repository-wide lint remains nonzero at its unchanged historical baseline; scoped changed-file lint has no errors and one proven pre-existing warning.
-- Build warnings and the npm audit findings above remain outside this fix wave.
-- Production deployment, TTL/index configuration, and live smoke tests were intentionally not performed.
-- Because raw capability tokens are memory-only, an outbox group surviving a full browser-process restart cannot be authorized and is pruned instead of weakening the token boundary. Same-process offline retries remain supported.
+- Repository-wide lint remains nonzero at its unchanged historical baseline; scoped changed-file lint is clean.
+- Build warnings, npm audit findings, and repository-wide lint debt remain outside this correction wave.
+- Production Auth configuration, deployment, TTL/index configuration, and live smoke tests were intentionally not performed.

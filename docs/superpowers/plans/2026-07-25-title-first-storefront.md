@@ -23,7 +23,6 @@
 
 - Create `src/utils/productPresentation.js`: presentation-only title selection and size formatting.
 - Create `tests/productPresentation.test.mjs`: direct behavioral tests for the new utility.
-- Create `tests/storefrontProductTitles.test.mjs`: customer-surface and SEO-boundary regression checks.
 - Modify `src/components/ProductCard.jsx`: title-first card, accessibility, cart, and wishlist identity while preserving path generation.
 - Modify `src/components/ProductModal.jsx`: title-first Quick View identity while preserving its existing SEO product-data name.
 - Modify `src/pages/ProductPage.jsx`: title-first visible detail identity while preserving its existing SEO product-data name.
@@ -74,6 +73,7 @@ test('storefront product title uses approved legacy fallbacks', () => {
   assert.equal(getStorefrontProductTitle({ commonName: 'Red tip' }), 'Red tip');
   assert.equal(getStorefrontProductTitle({ name: 'Legacy plant' }), 'Legacy plant');
   assert.equal(getStorefrontProductTitle({}), 'Plant');
+  assert.equal(getStorefrontProductTitle(null), 'Plant');
 });
 
 test('storefront product title ignores blank identity fields and normalizes whitespace', () => {
@@ -100,11 +100,12 @@ function compactText(value) {
 }
 
 export function getStorefrontProductTitle(product = {}) {
-  const title = compactText(product.title)
-    || compactText(product.commonName)
-    || compactText(product.name)
+  const safeProduct = product || {};
+  const title = compactText(safeProduct.title)
+    || compactText(safeProduct.commonName)
+    || compactText(safeProduct.name)
     || 'Plant';
-  const size = compactText(product.size);
+  const size = compactText(safeProduct.size);
 
   return size && !title.toLocaleLowerCase('en-IN').includes(size.toLocaleLowerCase('en-IN'))
     ? `${title} – ${size}`
@@ -130,7 +131,6 @@ git commit -m "feat: add title-first storefront identity"
 ### Task 2: Customer-Facing Product Surfaces
 
 **Files:**
-- Create: `tests/storefrontProductTitles.test.mjs`
 - Modify: `tests/productVariantPublishing.test.mjs`
 - Modify: `src/components/ProductCard.jsx`
 - Modify: `src/components/ProductModal.jsx`
@@ -142,49 +142,9 @@ git commit -m "feat: add title-first storefront identity"
 - Consumes: `getStorefrontProductTitle(product)` from Task 1.
 - Produces: Title-first visible cards, Quick View, product detail, content recommendation, and accessible care identities; unchanged SEO names and paths.
 
-- [ ] **Step 1: Write failing source-boundary regression tests**
+- [ ] **Step 1: Update the existing browser-surface contract**
 
-Create `tests/storefrontProductTitles.test.mjs`:
-
-```js
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import test from 'node:test';
-
-const sources = {
-  card: fs.readFileSync(new URL('../src/components/ProductCard.jsx', import.meta.url), 'utf8'),
-  modal: fs.readFileSync(new URL('../src/components/ProductModal.jsx', import.meta.url), 'utf8'),
-  page: fs.readFileSync(new URL('../src/pages/ProductPage.jsx', import.meta.url), 'utf8'),
-  contentHub: fs.readFileSync(new URL('../src/pages/ContentHubPage.jsx', import.meta.url), 'utf8'),
-  care: fs.readFileSync(new URL('../src/components/ProductCareDetails.jsx', import.meta.url), 'utf8'),
-};
-
-test('customer product surfaces use the title-first presentation helper', () => {
-  for (const [surface, source] of Object.entries(sources)) {
-    assert.match(source, /getStorefrontProductTitle/, `${surface} should use the storefront title helper`);
-  }
-});
-
-test('product page keeps its SEO product name separate from its visible title', () => {
-  assert.match(sources.page, /const seoName = product \? getProductDisplayName\(product\) : ''/);
-  assert.match(sources.page, /const title = product \? getStorefrontProductTitle\(product\) : ''/);
-  assert.match(sources.page, /productData=\{\{ \.\.\.product, seo: \{ \.\.\.\(product\.seo \|\| \{\}\), canonicalUrl \}, name: seoName, price \}\}/);
-});
-
-test('quick view keeps its existing SEO product name separate from its visible title', () => {
-  assert.match(sources.modal, /const seoName = product\?\.title \|\| product\?\.name \|\| product\?\.commonName/);
-  assert.match(sources.modal, /const title = getStorefrontProductTitle\(product\)/);
-  assert.match(sources.modal, /name: seoName, price/);
-});
-
-test('product cards preserve SEO path generation while displaying storefront titles', () => {
-  assert.match(sources.card, /const seoName = getProductDisplayName\(product\)/);
-  assert.match(sources.card, /const name = getStorefrontProductTitle\(product\)/);
-  assert.match(sources.card, /getProductPath\(\{ \.\.\.product, title: seoName \}\)/);
-});
-```
-
-Update the first test in `tests/productVariantPublishing.test.mjs` to assert the separated presentation and SEO helpers:
+Update the existing first test in `tests/productVariantPublishing.test.mjs` so it no longer requires the SEO identity helper to provide visible titles, while retaining the existing SEO-helper and size-summary assertions:
 
 ```js
 test('browser product surfaces separate storefront titles from SEO identities', () => {
@@ -197,9 +157,9 @@ test('browser product surfaces separate storefront titles from SEO identities', 
 });
 ```
 
-- [ ] **Step 2: Run the source tests and verify they fail on missing storefront-helper usage**
+- [ ] **Step 2: Run the browser-surface test and verify it fails on missing storefront-helper usage**
 
-Run: `node --test tests/storefrontProductTitles.test.mjs tests/productVariantPublishing.test.mjs`
+Run: `node --test tests/productVariantPublishing.test.mjs`
 
 Expected: FAIL because the customer surfaces do not yet import or call `getStorefrontProductTitle`.
 
@@ -257,14 +217,14 @@ Do not alter care copy, sections, or SEO utilities used elsewhere.
 
 - [ ] **Step 7: Run focused tests**
 
-Run: `node --test tests/productPresentation.test.mjs tests/storefrontProductTitles.test.mjs tests/productVariantPublishing.test.mjs tests/productSeo.test.mjs`
+Run: `node --test tests/productPresentation.test.mjs tests/productVariantPublishing.test.mjs tests/productSeo.test.mjs`
 
 Expected: all focused tests pass, including the unchanged SEO behavior tests.
 
 - [ ] **Step 8: Commit customer-facing surface changes**
 
 ```powershell
-git add -- src/components/ProductCard.jsx src/components/ProductModal.jsx src/pages/ProductPage.jsx src/pages/ContentHubPage.jsx src/components/ProductCareDetails.jsx tests/storefrontProductTitles.test.mjs tests/productVariantPublishing.test.mjs
+git add -- src/components/ProductCard.jsx src/components/ProductModal.jsx src/pages/ProductPage.jsx src/pages/ContentHubPage.jsx src/components/ProductCareDetails.jsx tests/productVariantPublishing.test.mjs
 git commit -m "feat: show product titles across storefront"
 ```
 
@@ -273,67 +233,83 @@ git commit -m "feat: show product titles across storefront"
 ### Task 3: New Cart and Wishlist Snapshots
 
 **Files:**
-- Modify: `tests/storefrontProductTitles.test.mjs`
+- Modify: `tests/productPresentation.test.mjs`
+- Modify: `src/utils/productPresentation.js`
 - Modify: `src/components/ProductModalWrapper.jsx`
 - Modify: `src/context/CartContext.jsx`
 
 **Interfaces:**
 - Consumes: `getStorefrontProductTitle(product)` from Task 1.
+- Produces: `withStorefrontProductTitle(product = {}): object`.
 - Produces: Title-first `name` values for new cart and wishlist entries without migrating existing snapshots.
 
-- [ ] **Step 1: Add failing cart/wishlist source-boundary tests**
+- [ ] **Step 1: Add a failing saved-snapshot behavior test**
 
-Extend the `sources` object in `tests/storefrontProductTitles.test.mjs`:
-
-```js
-modalWrapper: fs.readFileSync(new URL('../src/components/ProductModalWrapper.jsx', import.meta.url), 'utf8'),
-cartContext: fs.readFileSync(new URL('../src/context/CartContext.jsx', import.meta.url), 'utf8'),
-```
-
-Add:
+Add to `tests/productPresentation.test.mjs`:
 
 ```js
-test('new cart and wishlist snapshots use title-first product names', () => {
-  assert.match(sources.modalWrapper, /getStorefrontProductTitle/);
-  assert.match(sources.modalWrapper, /name: getStorefrontProductTitle\(product\)/);
-  assert.match(sources.cartContext, /const name = getStorefrontProductTitle\(product\)/);
-  assert.match(sources.cartContext, /name,/);
-  assert.match(sources.cartContext, /addToCartService\(user\.uid, \{ \.\.\.product, name \}, quantity\)/);
-  assert.match(sources.cartContext, /addToWishlistService\(user\.uid, \{ \.\.\.product, name \}\)/);
+test('storefront product snapshots replace a legacy name without mutating the source product', () => {
+  const product = {
+    id: '1',
+    title: 'Sempervivum tectorum',
+    commonName: 'Red tip',
+    name: 'Red tip',
+    size: 'Small',
+  };
+
+  const snapshot = withStorefrontProductTitle(product);
+
+  assert.deepEqual(snapshot, {
+    ...product,
+    name: 'Sempervivum tectorum – Small',
+  });
+  assert.equal(product.name, 'Red tip');
 });
 ```
 
-- [ ] **Step 2: Run the regression test and verify it fails**
+- [ ] **Step 2: Run the behavior test and verify the missing export fails**
 
-Run: `node --test tests/storefrontProductTitles.test.mjs`
+Run: `node --test tests/productPresentation.test.mjs`
 
-Expected: FAIL because `ProductModalWrapper` and `CartContext` do not yet use the presentation helper.
+Expected: FAIL because `withStorefrontProductTitle` is not exported.
 
-- [ ] **Step 3: Update Quick View wishlist snapshots**
+- [ ] **Step 3: Implement the saved-snapshot normalizer**
 
-In `src/components/ProductModalWrapper.jsx`, import `getStorefrontProductTitle` and replace the current fallback expression in `handleToggleWishlist` with:
+Add to `src/utils/productPresentation.js`:
 
 ```js
-name: getStorefrontProductTitle(product),
+export function withStorefrontProductTitle(product = {}) {
+  return {
+    ...product,
+    name: getStorefrontProductTitle(product),
+  };
+}
 ```
 
-- [ ] **Step 4: Centralize new cart names in CartContext**
+- [ ] **Step 4: Update Quick View wishlist snapshots**
 
-Import `getStorefrontProductTitle` from `../utils/productPresentation`.
+In `src/components/ProductModalWrapper.jsx`, import `withStorefrontProductTitle` and normalize the wishlist payload before applying its ID and price:
+
+```js
+...withStorefrontProductTitle(product),
+```
+
+- [ ] **Step 5: Centralize new cart names in CartContext**
+
+Import `withStorefrontProductTitle` from `../utils/productPresentation`.
 
 At the start of `addToCart`, calculate:
 
 ```js
-const name = getStorefrontProductTitle(product);
+const normalizedProduct = withStorefrontProductTitle(product);
 ```
 
 Build `productData` with `...product` before the normalized fields so an incoming legacy `product.name` cannot overwrite the title-first snapshot:
 
 ```js
 const productData = {
-  ...product,
+  ...normalizedProduct,
   productId: product.id,
-  name,
   price: product.salesPrice || product.price,
   imageUrl: product.imageUrl,
   quantity,
@@ -343,17 +319,16 @@ const productData = {
 For logged-in persistence, call:
 
 ```js
-await addToCartService(user.uid, { ...product, name }, quantity);
+await addToCartService(user.uid, normalizedProduct, quantity);
 ```
 
 Repeat the same normalization in `addToWishlist`:
 
 ```js
-const name = getStorefrontProductTitle(product);
+const normalizedProduct = withStorefrontProductTitle(product);
 const productData = {
-  ...product,
+  ...normalizedProduct,
   productId: product.id,
-  name,
   price: product.salesPrice || product.price,
   imageUrl: product.imageUrl,
   addedAt: new Date().toISOString(),
@@ -363,21 +338,21 @@ const productData = {
 Persist with:
 
 ```js
-await addToWishlistService(user.uid, { ...product, name });
+await addToWishlistService(user.uid, normalizedProduct);
 ```
 
 Do not modify `cartService.js`, `wishlistService.js`, existing snapshot loading, merge behavior, or historical orders.
 
-- [ ] **Step 5: Run focused tests**
+- [ ] **Step 6: Run focused tests**
 
-Run: `node --test tests/productPresentation.test.mjs tests/storefrontProductTitles.test.mjs tests/productVariantPublishing.test.mjs tests/productSeo.test.mjs`
+Run: `node --test tests/productPresentation.test.mjs tests/productVariantPublishing.test.mjs tests/productSeo.test.mjs`
 
 Expected: all focused tests pass.
 
-- [ ] **Step 6: Commit cart and wishlist normalization**
+- [ ] **Step 7: Commit cart and wishlist normalization**
 
 ```powershell
-git add -- src/components/ProductModalWrapper.jsx src/context/CartContext.jsx tests/storefrontProductTitles.test.mjs
+git add -- src/components/ProductModalWrapper.jsx src/context/CartContext.jsx src/utils/productPresentation.js tests/productPresentation.test.mjs
 git commit -m "fix: persist storefront titles in new saved items"
 ```
 
@@ -440,7 +415,7 @@ Inspect the rendered metadata and structured product JSON on the same product pa
 Run:
 
 ```powershell
-git diff HEAD~3 --check
+git diff 312ffa5..HEAD --check
 git status --short
 ```
 

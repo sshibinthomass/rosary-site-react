@@ -3,11 +3,12 @@ function compactText(value) {
 }
 
 export function getStorefrontProductTitle(product = {}) {
-  const title = compactText(product.title)
-    || compactText(product.commonName)
-    || compactText(product.name)
+  const safeProduct = product || {};
+  const title = compactText(safeProduct.title)
+    || compactText(safeProduct.commonName)
+    || compactText(safeProduct.name)
     || 'Plant';
-  const size = compactText(product.size);
+  const size = compactText(safeProduct.size);
 
   return size && !title.toLocaleLowerCase('en-IN').includes(size.toLocaleLowerCase('en-IN'))
     ? `${title} – ${size}`

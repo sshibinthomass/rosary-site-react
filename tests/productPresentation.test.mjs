@@ -27,6 +27,7 @@ test('storefront product title uses approved legacy fallbacks', () => {
   assert.equal(getStorefrontProductTitle({ commonName: 'Red tip' }), 'Red tip');
   assert.equal(getStorefrontProductTitle({ name: 'Legacy plant' }), 'Legacy plant');
   assert.equal(getStorefrontProductTitle({}), 'Plant');
+  assert.equal(getStorefrontProductTitle(null), 'Plant');
 });
 
 test('storefront product title ignores blank identity fields and normalizes whitespace', () => {

@@ -10,6 +10,7 @@ import { CURRENCY } from '../config/constants';
 import SEO from '../components/SEO';
 import ProductCareDetails from '../components/ProductCareDetails';
 import ProductRelatedLinks from '../components/ProductRelatedLinks';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
 import {
   buildBreadcrumbStructuredData,
   buildFaqStructuredData,
@@ -61,7 +62,8 @@ export default function ProductPage() {
     fetchProduct();
   }, [productId]);
 
-  const title = product ? getProductDisplayName(product) : '';
+  const seoName = product ? getProductDisplayName(product) : '';
+  const title = product ? getStorefrontProductTitle(product) : '';
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
@@ -146,7 +148,7 @@ export default function ProductPage() {
         type="product"
         canonicalUrl={canonicalUrl}
         robots={getProductRobots(product)}
-        productData={{ ...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price }}
+        productData={{ ...product, seo: { ...(product.seo || {}), canonicalUrl }, name: seoName, price }}
         schemaData={schemaData}
       />
 

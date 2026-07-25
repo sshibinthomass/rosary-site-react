@@ -15,13 +15,14 @@ import {
 } from '../utils/contentHubs';
 import {
   getPrimaryProductImage,
-  getProductDisplayName,
   getProductPath,
   getProductPrice,
 } from '../utils/productSeo';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
 
 function ProductSuggestion({ product }) {
   const price = getProductPrice(product);
+  const title = getStorefrontProductTitle(product);
 
   return (
     <Link
@@ -31,7 +32,7 @@ function ProductSuggestion({ product }) {
       <div className="aspect-[4/3] bg-[var(--bg-tertiary)] overflow-hidden">
         <img
           src={getPrimaryProductImage(product)}
-          alt={getProductDisplayName(product)}
+          alt={title}
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(event) => {
@@ -42,7 +43,7 @@ function ProductSuggestion({ product }) {
       <div className="p-4">
         <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">{product.category || 'Plant'}</p>
         <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)] line-clamp-2">
-          {getProductDisplayName(product)}
+          {title}
         </h3>
         {price !== null && (
           <p className="mt-2 text-sm font-semibold text-[var(--color-forest)]">Rs. {price.toLocaleString('en-IN')}</p>

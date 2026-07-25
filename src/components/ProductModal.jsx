@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CURRENCY } from '../config/constants';
 import { resolveImageUrl } from '../utils/imageCompressor';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
 import { useSettings } from '../context/SettingsContext';
 import SEO from './SEO';
 import ProductCareSignals from './ProductCareSignals';
@@ -23,8 +24,8 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Normalize product fields — prefer the recognizable common name as the main display title
-  const title = product?.title || product?.name || product?.commonName;
+  const seoName = product?.title || product?.name || product?.commonName;
+  const title = getStorefrontProductTitle(product);
   const price = product?.salesPrice || product?.price;
   const originalPrice = product?.originalPrice;
   const inStock = product?.available !== false && (product?.qtyAvailable !== 'NA' || product?.inStock);
@@ -112,7 +113,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
         type="product"
         canonicalUrl={canonicalUrl}
         robots={getProductRobots(product)}
-        productData={{...product, seo: { ...(product.seo || {}), canonicalUrl }, name: title, price}}
+        productData={{...product, seo: { ...(product.seo || {}), canonicalUrl }, name: seoName, price}}
         schemaData={schemaData}
       />
       {/* Backdrop */}

@@ -2,9 +2,9 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   buildProductCareSections,
-  getProductDisplayName,
   getProductLongDescription,
 } from '../utils/productSeo';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
 import ProductLineArt from './ProductLineArt';
 
 const markdownComponents = {
@@ -485,7 +485,7 @@ export default function ProductCareDetails({ product, variant = 'compact' }) {
   if (!hasDetails) return null;
 
   return (
-    <div className="space-y-4" aria-label={`${getProductDisplayName(product)} care details`}>
+    <div className="space-y-4" aria-label={`${getStorefrontProductTitle(product)} care details`}>
       <CareFocusExplorer product={product} wide={wide} />
       <div className={wide ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-4' : 'space-y-4'}>
         <QuickAnswer text={quickAnswer} />

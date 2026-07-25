@@ -6,13 +6,13 @@ const productPageSource = fs.readFileSync(new URL('../src/pages/ProductPage.jsx'
 const productCardSource = fs.readFileSync(new URL('../src/components/ProductCard.jsx', import.meta.url), 'utf8');
 const generatorSource = fs.readFileSync(new URL('../scripts/generate-seo-artifacts.js', import.meta.url), 'utf8');
 
-test('browser product surfaces use the shared variety and size identity helpers', () => {
+test('browser product surfaces separate storefront titles from SEO identities', () => {
+  assert.match(productPageSource, /getStorefrontProductTitle/);
   assert.match(productPageSource, /getProductDisplayName/);
   assert.match(productPageSource, /getProductVariantSummary/);
-  assert.match(productPageSource, /const title = product \? getProductDisplayName\(product\) : ''/);
   assert.match(productPageSource, /getProductVariantSummary\(product\)/);
+  assert.match(productCardSource, /getStorefrontProductTitle/);
   assert.match(productCardSource, /getProductDisplayName/);
-  assert.match(productCardSource, /const name = getProductDisplayName\(product\)/);
   assert.doesNotMatch(productCardSource, /\{product\.size\s*&&/);
 });
 

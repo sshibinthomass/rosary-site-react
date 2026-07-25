@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import ProductModal from './ProductModal';
+import { withStorefrontProductTitle } from '../utils/productPresentation';
 import { extractProductIdFromParam } from '../utils/productSeo';
 
 export default function ProductModalWrapper() {
@@ -64,9 +65,8 @@ export default function ProductModalWrapper() {
         await removeFromWishlist(product.id);
       } else {
         await addToWishlist({ 
-          ...product, 
+          ...withStorefrontProductTitle(product),
           id: product.id, 
-          name: product.title || product.name || product.commonName, 
           price: product.salesPrice || product.price 
         });
       }

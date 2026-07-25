@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { withStorefrontProductTitle } from '../utils/productPresentation';
 
 const CartContext = createContext(null);
 let cartServicePromise = null;
@@ -267,12 +268,12 @@ export function CartProvider({ children }) {
   };
 
   const addToCart = useCallback(async (product, quantity = 1) => {
+    const normalizedProduct = withStorefrontProductTitle(product);
     const productData = {
+      ...normalizedProduct,
       productId: product.id,
-      name: product.name || product.title || product.commonName,
       price: product.salesPrice || product.price,
       imageUrl: product.imageUrl,
-      ...product,
       quantity
     };
 
@@ -280,7 +281,7 @@ export function CartProvider({ children }) {
       // Logged in - save to Firestore
       try {
         const { addToCart: addToCartService } = await loadCartService();
-        await addToCartService(user.uid, product, quantity);
+        await addToCartService(user.uid, normalizedProduct, quantity);
         setCart(prev => {
           const existing = prev.find(item => item.productId === product.id);
           if (existing) {
@@ -381,19 +382,19 @@ export function CartProvider({ children }) {
   }, [user]);
 
   const addToWishlist = useCallback(async (product) => {
+    const normalizedProduct = withStorefrontProductTitle(product);
     const productData = {
+      ...normalizedProduct,
       productId: product.id,
-      name: product.name || product.title || product.commonName,
       price: product.salesPrice || product.price,
       imageUrl: product.imageUrl,
-      ...product,
       addedAt: new Date().toISOString()
     };
 
     if (user) {
       try {
         const { addToWishlist: addToWishlistService } = await loadWishlistService();
-        await addToWishlistService(user.uid, product);
+        await addToWishlistService(user.uid, normalizedProduct);
         setWishlist(prev => {
           if (prev.find(item => item.productId === product.id)) {
             return prev;

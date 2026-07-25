@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getStorefrontProductTitle } from '../src/utils/productPresentation.js';
+import {
+  getStorefrontProductTitle,
+  withStorefrontProductTitle,
+} from '../src/utils/productPresentation.js';
 
 test('storefront product title prefers title and appends the offered size', () => {
   assert.equal(getStorefrontProductTitle({
@@ -33,4 +36,22 @@ test('storefront product title ignores blank identity fields and normalizes whit
     name: 'Legacy',
     size: '  Small  ',
   }), 'Yellow Flower – Small');
+});
+
+test('storefront product snapshots replace a legacy name without mutating the source product', () => {
+  const product = {
+    id: '1',
+    title: 'Sempervivum tectorum',
+    commonName: 'Red tip',
+    name: 'Red tip',
+    size: 'Small',
+  };
+
+  const snapshot = withStorefrontProductTitle(product);
+
+  assert.deepEqual(snapshot, {
+    ...product,
+    name: 'Sempervivum tectorum – Small',
+  });
+  assert.equal(product.name, 'Red tip');
 });

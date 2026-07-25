@@ -13,3 +13,10 @@ export function getStorefrontProductTitle(product = {}) {
     ? `${title} – ${size}`
     : title;
 }
+
+export function withStorefrontProductTitle(product = {}) {
+  return {
+    ...product,
+    name: getStorefrontProductTitle(product),
+  };
+}

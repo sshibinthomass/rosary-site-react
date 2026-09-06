@@ -16,9 +16,8 @@ export default function LoginPopup() {
     // Don't show if auth state is still loading, or if user is already logged in
     if (loading || user) return undefined;
 
-    // Check sessionStorage to see if it was already dismissed in THIS tab
-    if (sessionStorage.getItem('loginPopupDismissed') === 'true') return undefined;
-
+    // Every visit gets the offer once: dismissing hides it for the rest of this
+    // page load, and opening the site again asks afresh.
     // Let shoppers browse before interrupting the public page with account sync.
     const timer = setTimeout(() => setShow(true), 15000);
     return () => clearTimeout(timer);
@@ -42,7 +41,6 @@ export default function LoginPopup() {
   };
 
   const handleClose = () => {
-    sessionStorage.setItem('loginPopupDismissed', 'true');
     setShow(false);
   };
 

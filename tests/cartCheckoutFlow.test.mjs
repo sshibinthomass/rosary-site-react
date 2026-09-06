@@ -188,3 +188,22 @@ test('built-in WhatsApp retry reports success or failure through the opaque same
   assert.doesNotMatch(cartPageSource, /checkoutConfirmation[\s\S]{0,80}(?:writerIdToken|primaryUserIdToken)/);
   assert.doesNotMatch(cartPageSource, /initiateWhatsAppCheckout[\s\S]{0,240}handleOpenWhatsAppAgain/);
 });
+
+test('the guest sign-in prompt is an offer, not something that looks typeable', () => {
+  // It used to be a sand pill with the same radius and fill as the fields
+  // beside it, so it read as an empty input - and it asked for a sign-in
+  // without offering one.
+  assert.doesNotMatch(
+    cartPageSource,
+    /<p className="rounded-\[24px\] bg-\[var\(--bg-tertiary\)\][^"]*">\s*Sign in to save/
+  );
+  assert.match(cartPageSource, /bg-\[var\(--color-sage-200\)\][\s\S]{0,400}Sign in and these details fill themselves in next time\./);
+  assert.match(cartPageSource, /onClick=\{handleCheckoutSignIn\}/);
+  assert.match(cartPageSource, /const handleCheckoutSignIn = async \(\) => \{[\s\S]*?await signInWithGoogle\(\);/);
+});
+
+test('a field that cannot be typed in does not look like one that can', () => {
+  assert.match(cartPageSource, /disabled:bg-\[var\(--bg-sunken\)\]/);
+  assert.match(cartPageSource, /disabled:text-\[var\(--text-muted\)\]/);
+  assert.match(cartPageSource, /disabled=\{sameAsPhone\}/);
+});

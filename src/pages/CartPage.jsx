@@ -26,7 +26,7 @@ import { getStorefrontProductTitle } from '../utils/productPresentation';
 import { Link } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import SEO from '../components/SEO';
-import Icon from '../components/Icon';
+import Icon, { GoogleMark } from '../components/Icon';
 import {
   DeepPanel,
   EmptyState,
@@ -61,7 +61,7 @@ function readWhatsAppMessageText(whatsappUrl) {
 }
 
 export default function CartPage() {
-  const { user } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
   const { cart, removeFromCart, updateQuantity, clearCart, addToCart, isInCart } = useCart();
   const { success, error } = useToast();
   const { settings } = useSettings();
@@ -218,6 +218,7 @@ export default function CartPage() {
   });
 
   const [sameAsPhone, setSameAsPhone] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const [saveDetailsForNextOrder, setSaveDetailsForNextOrder] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [checkoutConfirmation, setCheckoutConfirmation] = useState(null);
@@ -749,6 +750,18 @@ export default function CartPage() {
     }
   };
 
+  const handleCheckoutSignIn = async () => {
+    setSigningIn(true);
+    try {
+      await signInWithGoogle();
+      success('Signed in. Your details will be saved for next time.');
+    } catch {
+      error('Could not sign in. You can still order as a guest.');
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
   const handleItemClick = async (item) => {
     try {
       const isLimited = typeof item.productId === 'string' && /^L/i.test(item.productId);
@@ -769,7 +782,7 @@ export default function CartPage() {
   const showSavedAddressCard = Boolean(user && savedProfile && !editingAddress);
 
   const fieldLabel = 'mb-1.5 block text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]';
-  const pillField = 'w-full rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-[18px] text-sm text-[var(--text-primary)] outline-none transition-colors min-h-11 placeholder:text-[var(--text-muted)] focus:border-[var(--color-terracotta)]';
+  const pillField = 'w-full rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-[18px] text-sm text-[var(--text-primary)] outline-none transition-colors min-h-11 placeholder:text-[var(--text-muted)] focus:border-[var(--color-terracotta)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[var(--bg-sunken)] disabled:text-[var(--text-muted)]';
   const readOnlyField = 'w-full rounded-full bg-[var(--bg-sunken)] px-3.5 text-[13px] text-[var(--text-primary)] outline-none min-h-11';
 
   /* ------------------------------------------------------------------ */
@@ -881,9 +894,23 @@ export default function CartPage() {
       ) : (
         <div className="flex flex-col gap-3.5">
           {!user && (
-            <p className="rounded-[24px] bg-[var(--bg-tertiary)] px-4 py-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              Sign in to save your details for next time.
-            </p>
+            <div className="flex items-center gap-3 rounded-[24px] bg-[var(--color-sage-200)] px-4 py-3.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--color-sage-700)]">
+                <Icon name="user" className="h-[18px] w-[18px]" />
+              </span>
+              <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-[var(--color-sage-900)]">
+                Sign in and these details fill themselves in next time.
+              </p>
+              <button
+                type="button"
+                onClick={handleCheckoutSignIn}
+                disabled={signingIn}
+                className="flex min-h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-3.5 text-[13px] font-bold text-[var(--text-primary)] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                <GoogleMark className="h-4 w-4" />
+                {signingIn ? 'Signing in…' : 'Sign in'}
+              </button>
+            </div>
           )}
 
           <div>

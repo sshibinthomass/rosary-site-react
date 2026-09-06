@@ -29,6 +29,16 @@ test('the sheet still stays out of the way once it is closed or signed in', () =
   assert.match(loginPopupSource, /const handleClose = \(\) => \{\s*setDismissed\(true\);\s*\};/);
   assert.match(
     loginPopupSource,
-    /if \(!waited \|\| dismissed \|\| loading \|\| user \|\| pathname\.startsWith\('\/order\/'\)\) return null;/
+    /const visible = waited && !dismissed && !loading && !user && !pathname\.startsWith\('\/order\/'\);/
   );
+  assert.match(loginPopupSource, /if \(!visible\) return null;/);
+});
+
+test('the desktop sheet is a centred two-column card, not a cropped phone sheet', () => {
+  assert.match(loginPopupSource, /md:items-center/);
+  assert.match(loginPopupSource, /md:grid md:max-w-3xl md:grid-cols-\[1\.05fr_1fr\] md:rounded-\[28px\]/);
+  // The drag handle means nothing with a mouse; a close button and Escape do.
+  assert.match(loginPopupSource, /flex justify-center md:hidden/);
+  assert.match(loginPopupSource, /aria-label="Close"/);
+  assert.match(loginPopupSource, /event\.key === 'Escape'/);
 });

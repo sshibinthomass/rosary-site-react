@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { CATEGORIES } from '../config/constants';
 import SEO from '../components/SEO';
+import Icon from '../components/Icon';
+import { ChipRail, EmptyState, PhotoBanner, StickyBar, WhatsAppButton } from '../components/storefront';
+import { CATEGORIES, CURRENCY, FREE_PLANT_THRESHOLD } from '../config/constants';
+import { useCart } from '../context/CartContext';
 import { CATALOG_REFRESH_EVENT } from '../utils/catalogRefresh';
+import { buildPlantAdviceMessage, buildWhatsAppLink } from '../utils/nurseryMessages';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
 import { matchesShopSearch } from '../utils/shopSearch';
 import { mergeProductWithLocalEnrichment } from '../utils/productSeo';
 
@@ -42,6 +47,38 @@ const SHOP_CATEGORY_BACKGROUNDS = Object.freeze({
   'Combo': '/shop/category-backgrounds/combo.jpg',
   'Others': '/shop/category-backgrounds/others.jpg',
 });
+
+/** Sort orders offered by the dropdown next to the result count. The first is the default. */
+const SORT_OPTIONS = Object.freeze([
+  { id: 'oldest', label: 'Oldest first' },
+  { id: 'newest', label: 'Newest first' },
+  { id: 'price-asc', label: 'Price: low to high' },
+  { id: 'price-desc', label: 'Price: high to low' },
+  { id: 'name-asc', label: 'Name A–Z' },
+]);
+
+/**
+ * Quick filter chips. Each one delegates to the shop search parser so the chip
+ * and the equivalent typed query can never drift apart.
+ */
+const QUICK_FILTERS = Object.freeze([
+  { id: 'under-60', label: `Under ${CURRENCY}60`, query: 'under 60' },
+  { id: 'under-100', label: `Under ${CURRENCY}100`, query: 'under 100' },
+  { id: 'low-water', label: 'Low water', query: 'low water' },
+  { id: 'low-light', label: 'Low light', query: 'low light' },
+  { id: 'direct-sun', label: 'Direct sun', query: 'direct sun' },
+  { id: 'beginner', label: 'Beginner', query: 'beginner' },
+]);
+
+/** Searches offered when a query returns nothing. */
+const NO_RESULT_SUGGESTIONS = Object.freeze([
+  'Low water',
+  'Echeveria',
+  `Under ${CURRENCY}60`,
+  'Indoor',
+  'Flowering',
+]);
+
 let productServicePromise = null;
 let limitedServicePromise = null;
 
@@ -61,19 +98,58 @@ function loadLimitedService() {
   return limitedServicePromise;
 }
 
+/** Out of stock plants stay hidden everywhere on the storefront. */
+function isProductInStock(product) {
+  return product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock);
+}
+
+/** Limited plants carry ids like "L12", so sort on the numeric part only. */
+function getSortableProductId(product) {
+  const digits = String(product?.id ?? '').replace(/\D/g, '');
+  return digits ? Number(digits) : 0;
+}
+
+function getSortablePrice(product) {
+  const price = Number(product?.salesPrice || product?.price);
+  return Number.isFinite(price) ? price : 0;
+}
+
+function sortProducts(products, sortId) {
+  const sorted = [...products];
+
+  if (sortId === 'price-asc') {
+    return sorted.sort((a, b) => getSortablePrice(a) - getSortablePrice(b));
+  }
+  if (sortId === 'price-desc') {
+    return sorted.sort((a, b) => getSortablePrice(b) - getSortablePrice(a));
+  }
+  if (sortId === 'name-asc') {
+    return sorted.sort((a, b) => getStorefrontProductTitle(a).localeCompare(getStorefrontProductTitle(b)));
+  }
+  // Ids climb as plants reach the bench, so the highest id is the newest plant.
+  if (sortId === 'newest') {
+    return sorted.sort((a, b) => getSortableProductId(b) - getSortableProductId(a));
+  }
+
+  // 'oldest', the default: plant #1 upwards.
+  return sorted.sort((a, b) => getSortableProductId(a) - getSortableProductId(b));
+}
+
 export default function ShopPage() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { cart, cartCount, cartTotal } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const categoryScrollerRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const urlSearchQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQueryValue] = useState(urlSearchQuery);
+  const [quickFilterId, setQuickFilterId] = useState('all');
+  const [sortId, setSortId] = useState(SORT_OPTIONS[0].id);
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef(null);
-  const backgroundLoadCancelRef = useRef(null);
   const searchEnrichmentPromiseRef = useRef(null);
   const [searchEnrichmentById, setSearchEnrichmentById] = useState(null);
   const [typewriterHint, setTypewriterHint] = useState({ index: 0, charCount: 0, deleting: false });
@@ -86,13 +162,13 @@ export default function ShopPage() {
     ? `https://rosaryplanthouse.com/category/${encodeURIComponent(selectedCategory)}`
     : 'https://rosaryplanthouse.com/shop';
   const shopSeoTitle = isCategoryPage ? `${selectedCategory} Plants` : 'Shop Plants';
-  const shopEyebrow = isCategoryPage ? `${selectedCategory} plant collection` : 'Rosary Plant House catalogue';
   const shopDescription = isCategoryPage
     ? `Browse current ${selectedCategory} plants available from Rosary Plant House.`
     : 'Search current succulents, cacti, indoor plants and limited drops from Rosary Plant House.';
   const shopHeroBackground = SHOP_CATEGORY_BACKGROUNDS[selectedCategory] || SHOP_CATEGORY_BACKGROUNDS['Others'];
+  // Painted behind the band so the photograph is there before the lazy image decodes.
   const shopHeroStyle = {
-    backgroundImage: `linear-gradient(90deg, rgba(10, 16, 28, 0.96) 0%, rgba(10, 16, 28, 0.86) 44%, rgba(10, 16, 28, 0.58) 100%), url(${shopHeroBackground})`,
+    backgroundImage: `url(${shopHeroBackground})`,
     backgroundPosition: 'center',
     backgroundSize: 'cover',
   };
@@ -103,91 +179,70 @@ export default function ShopPage() {
       ? `Try ${SMART_SEARCH_EXAMPLES[0]}`
       : `Try ${activeTypewriterExample.slice(0, typewriterHint.charCount)}|`;
 
-  const scheduleBackgroundLoad = useCallback((callback) => {
-    if (backgroundLoadCancelRef.current) {
-      backgroundLoadCancelRef.current();
-      backgroundLoadCancelRef.current = null;
-    }
+  // The typed search lives in ?q= so the home page spot rows can link straight to a result list.
+  const setSearchQuery = useCallback((value) => {
+    const nextQuery = typeof value === 'string' ? value : '';
+    setSearchQueryValue(nextQuery);
+    setSearchParams((previousParams) => {
+      const nextParams = new URLSearchParams(previousParams);
+      if (nextQuery.trim()) {
+        nextParams.set('q', nextQuery);
+      } else {
+        nextParams.delete('q');
+      }
+      return nextParams;
+    }, { replace: true, state: { preventScroll: true } });
+  }, [setSearchParams]);
 
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(callback, { timeout: 4000 });
-      backgroundLoadCancelRef.current = () => window.cancelIdleCallback(idleId);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(callback, 1200);
-    backgroundLoadCancelRef.current = () => window.clearTimeout(timeoutId);
-  }, []);
+  useEffect(() => {
+    setSearchQueryValue((currentQuery) => (currentQuery === urlSearchQuery ? currentQuery : urlSearchQuery));
+  }, [urlSearchQuery]);
 
   const loadProducts = useCallback(async () => {
-    if (backgroundLoadCancelRef.current) {
-      backgroundLoadCancelRef.current();
-      backgroundLoadCancelRef.current = null;
-    }
-
     setLoading(true);
     try {
-      if (selectedCategory !== 'All') {
-        if (selectedCategory === 'Limited') {
-          const { getLimitedPlants } = await loadLimitedService();
-          const limited = await getLimitedPlants();
-          const limitedWithCategory = (limited || []).map((item) => ({
-            ...item,
-            category: item.category || 'Limited'
-          }));
-          setProducts(limitedWithCategory);
-        } else {
-          const { getProducts, getProductsPage } = await loadProductService();
-          const firstPage = await getProductsPage(selectedCategory, BATCH_SIZE);
-          setProducts(firstPage.products || []);
-
-          if (firstPage.hasMore) {
-            scheduleBackgroundLoad(async () => {
-              try {
-                const data = await getProducts(selectedCategory);
-                setProducts(data || []);
-              } catch (error) {
-                console.error('Error loading full product catalog:', error);
-              }
-            });
-          }
-        }
+      if (selectedCategory === 'Limited') {
+        const { getLimitedPlants } = await loadLimitedService();
+        const limited = await getLimitedPlants();
+        setProducts((limited || []).map((item) => ({
+          ...item,
+          category: item.category || 'Limited'
+        })));
         return;
       }
 
-      // For 'All': show a small first page, then hydrate the full catalog after first paint.
-      const [{ getLimitedPlants }, { getProducts, getProductsPage }] = await Promise.all([
+      // The whole catalogue, in one cached read. A paged first fetch would come
+      // back in Firestore's lexicographic id order ("99" before "313"), so it
+      // can neither be sorted nor counted honestly, and the full list is needed
+      // for search, filters and the result count anyway.
+      if (selectedCategory !== 'All') {
+        const { getProducts } = await loadProductService();
+        const categoryProducts = await getProducts(selectedCategory);
+        setProducts(categoryProducts || []);
+        return;
+      }
+
+      const [{ getLimitedPlants }, { getProducts }] = await Promise.all([
         loadLimitedService(),
         loadProductService()
       ]);
-      const [limited, normalPage] = await Promise.all([
+      const [limited, normal] = await Promise.all([
         getLimitedPlants(),
-        getProductsPage(null, BATCH_SIZE)
+        getProducts(null)
       ]);
-      
+
       const limitedWithCategory = (limited || []).map((item) => ({
         ...item,
         category: item.category || 'Limited'
       }));
 
-      setProducts([...limitedWithCategory, ...(normalPage.products || [])]);
-
-      if (normalPage.hasMore) {
-        scheduleBackgroundLoad(async () => {
-          try {
-            const normal = await getProducts(null);
-            setProducts([...limitedWithCategory, ...(normal || [])]);
-          } catch (error) {
-            console.error('Error loading full product catalog:', error);
-          }
-        });
-      }
+      setProducts([...limitedWithCategory, ...(normal || [])]);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, scheduleBackgroundLoad]);
+  }, [selectedCategory]);
 
   const loadSearchEnrichment = useCallback(() => {
     if (searchEnrichmentById) return Promise.resolve(searchEnrichmentById);
@@ -283,76 +338,65 @@ export default function ShopPage() {
   useEffect(() => {
     let frameId = null;
     let timeoutId = null;
+    let fallbackId = null;
+    let started = false;
     let cancelled = false;
 
     const startLoadingProducts = () => {
-      if (!cancelled) loadProducts();
+      if (cancelled || started) return;
+      started = true;
+      loadProducts();
     };
 
     if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+      // Yield one frame so the shell paints first...
       frameId = window.requestAnimationFrame(() => {
         timeoutId = window.setTimeout(startLoadingProducts, 0);
       });
+      // ...but a hidden or backgrounded tab never gets that frame, and the
+      // catalogue would sit on skeletons until the tab came forward.
+      fallbackId = window.setTimeout(startLoadingProducts, 200);
     } else {
       timeoutId = setTimeout(startLoadingProducts, 0);
     }
 
-    setSearchQuery('');
+    setQuickFilterId('all');
     setVisibleCount(BATCH_SIZE);
     return () => {
       cancelled = true;
       if (frameId !== null) window.cancelAnimationFrame(frameId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
-      if (backgroundLoadCancelRef.current) {
-        backgroundLoadCancelRef.current();
-        backgroundLoadCancelRef.current = null;
-      }
+      if (fallbackId !== null) window.clearTimeout(fallbackId);
     };
   }, [loadProducts]);
 
+  const activeQuickFilter = QUICK_FILTERS.find((filter) => filter.id === quickFilterId) || null;
+
   useEffect(() => {
-    if (searchQuery.trim().length < 2 || searchEnrichmentById) return;
+    if (searchEnrichmentById) return;
+    if (searchQuery.trim().length < 2 && !activeQuickFilter) return;
     loadSearchEnrichment();
-  }, [loadSearchEnrichment, searchEnrichmentById, searchQuery]);
+  }, [activeQuickFilter, loadSearchEnrichment, searchEnrichmentById, searchQuery]);
 
-  const handleCategoryClick = useCallback((category) => {
-    if (category === 'All') {
-      navigate('/shop', { state: { preventScroll: true } });
-    } else {
-      navigate(`/category/${encodeURIComponent(category)}`, { state: { preventScroll: true } });
-    }
-  }, [navigate]);
+  const enrichProduct = useCallback((product) => {
+    const localProduct = searchEnrichmentById?.get(String(product.id));
+    return localProduct ? mergeProductWithLocalEnrichment(product, localProduct) : product;
+  }, [searchEnrichmentById]);
 
-  const categories = ['All', 'Limited', ...CATEGORIES];
+  // Stock is the one filter that always applies.
+  const stockedProducts = useMemo(() => products.filter(isProductInStock), [products]);
 
-  // Track category scroller scroll position
-  useEffect(() => {
-    const el = categoryScrollerRef.current;
-    if (!el) return;
-    const updateScrollState = () => {
-      setCanScrollLeft(el.scrollLeft > 2);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
-    };
-    updateScrollState();
-    el.addEventListener('scroll', updateScrollState, { passive: true });
-    window.addEventListener('resize', updateScrollState);
-    return () => {
-      el.removeEventListener('scroll', updateScrollState);
-      window.removeEventListener('resize', updateScrollState);
-    };
-  }, [categories.length]);
+  const quickFilterQuery = activeQuickFilter?.query || '';
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim();
+    if (!query && !quickFilterQuery) return stockedProducts;
 
-  // Filter products by stock and search query.
-  const filteredProducts = products.filter((p) => {
-    // Stock condition - completely hide out of stock items everywhere
-    const inStock = p.available !== false && (p.qtyAvailable !== 'NA' || p.inStock);
-    if (!inStock) return false;
+    return stockedProducts.filter((product) => {
+      const searchableProduct = enrichProduct(product);
 
-    // Search condition
-    let passesSearch = true;
-    if (searchQuery.trim()) {
-      const localProduct = searchEnrichmentById?.get(String(p.id));
-      const searchableProduct = localProduct ? mergeProductWithLocalEnrichment(p, localProduct) : p;
+      if (quickFilterQuery && !matchesShopSearch(searchableProduct, quickFilterQuery)) return false;
+      if (!query) return true;
+
       const name = (
         searchableProduct.title ||
         searchableProduct.name ||
@@ -365,19 +409,48 @@ export default function ShopPage() {
         searchableProduct.careGuide?.siteCategory ||
         ''
       ).toLowerCase();
-      const q = searchQuery.trim().toLowerCase();
-      passesSearch = name.includes(q) || category.includes(q) || matchesShopSearch(searchableProduct, searchQuery);
+      const q = query.toLowerCase();
+
+      return name.includes(q) || category.includes(q) || matchesShopSearch(searchableProduct, query);
+    });
+  }, [enrichProduct, quickFilterQuery, searchQuery, stockedProducts]);
+
+  const sortedProducts = useMemo(() => sortProducts(filteredProducts, sortId), [filteredProducts, sortId]);
+
+  const quickFilterOptions = useMemo(() => [
+    { id: 'all', label: isCategoryPage ? `All ${selectedCategory}` : 'All plants' },
+    ...QUICK_FILTERS.map((filter) => ({ id: filter.id, label: filter.label })),
+  ], [isCategoryPage, selectedCategory]);
+
+  // Categories stay reachable from the page itself, not only from the drawer.
+  const categoryOptions = useMemo(
+    () => ['All', 'Limited', ...CATEGORIES].map((category) => ({ id: category, label: category })),
+    []
+  );
+
+  const handleCategoryClick = useCallback((category) => {
+    if (category === 'All') {
+      navigate('/shop', { state: { preventScroll: true } });
+    } else {
+      navigate(`/category/${encodeURIComponent(category)}`, { state: { preventScroll: true } });
     }
+  }, [navigate]);
 
-    return passesSearch;
-  });
+  // The band copy counts what is actually on the bench right now.
+  const benchCount = stockedProducts.length;
+  const benchLowestPrice = useMemo(() => stockedProducts.reduce((lowest, product) => {
+    const price = getSortablePrice(product);
+    if (price <= 0) return lowest;
+    return lowest === null || price < lowest ? price : lowest;
+  }, null), [stockedProducts]);
+  const bandDescription = benchCount > 0 && benchLowestPrice !== null
+    ? `${benchCount} plants on the bench today. All from ${CURRENCY}${benchLowestPrice.toLocaleString('en-IN')}.`
+    : shopDescription;
 
-  const sortedProducts = filteredProducts;
-
-  // Reset visible count when search changes.
+  // Reset visible count when the visible set changes.
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-  }, [searchQuery]);
+  }, [searchQuery, quickFilterId]);
 
   // Products to actually render (batched)
   const visibleProducts = useMemo(() => sortedProducts.slice(0, visibleCount), [sortedProducts, visibleCount]);
@@ -418,268 +491,221 @@ export default function ShopPage() {
     "priceRange": "₹"
   };
 
+  const hasCart = cart.length > 0;
+
   return (
-    <div className="min-h-screen pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SEO 
+    <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 ${hasCart ? 'pb-44' : 'pb-24'}`}>
+      <SEO
         title={shopSeoTitle}
         description="Shop succulents, cacti, indoor plants and balcony plants from Rosary Plant House, Coonoor. Search and choose plants with safe packing and support."
         canonicalUrl={shopCanonicalUrl}
         schemaData={homeSchema}
       />
-      {/* Shop Header */}
-      <section className="mb-4">
-        <div
-          className="relative overflow-hidden rounded-lg border border-white/10 bg-slate-950 p-4 text-white shadow-sm md:p-5"
-          style={shopHeroStyle}
-        >
-          {/* Decorative elements */}
-          <div className="hidden" />
-          <div className="hidden" />
-          
-          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            {/* Text content */}
-            <div className="max-w-3xl text-left">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-forest)]">{shopEyebrow}</p>
-              <h1
-                className="text-2xl font-bold leading-tight text-white md:text-3xl"
-                aria-label={isCategoryPage ? `Shop ${selectedCategory} plants` : 'Shop live plants'}
-              >
-                {isCategoryPage ? (
-                  <>
-                    Shop <strong className="font-extrabold text-[var(--color-forest)]">{selectedCategory}</strong> plants
-                  </>
-                ) : (
-                  'Shop live plants'
-                )}
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/72">
-                {shopDescription}
-              </p>
-              
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--color-forest)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-forest-light)]">
-                  <svg fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 21.841c-1.613 0-3.193-.433-4.577-1.252l-.328-.194-3.398.891.905-3.314-.213-.339A9.813 9.813 0 012.186 12 9.845 9.845 0 0112 2.159 9.845 9.845 0 0121.814 12 9.845 9.845 0 0112 21.841z"></path></svg>
-                  Ask before ordering
-                </a>
-                <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm font-semibold text-white transition hover:border-[var(--color-forest)] hover:bg-black/45">
-                  <svg fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"></path></svg>
-                  Follow on Instagram
-                </a>
-                <Link to="/reviews" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm font-semibold text-white transition hover:border-[var(--color-forest)] hover:bg-black/45">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-                    <path d="m9 10 2 2 4-4" />
-                  </svg>
-                  Reviews
-                </Link>
-              </div>
-            </div>
 
-          </div>
+      {/* Category band */}
+      <section className="pt-3">
+        <div className="overflow-hidden rounded-[28px] bg-[var(--bg-tertiary)]" style={shopHeroStyle}>
+          <PhotoBanner
+            src={shopHeroBackground}
+            alt={isCategoryPage ? `${selectedCategory} plants on the Rosary Plant House bench` : 'Plants on the Rosary Plant House bench'}
+            height="h-[190px]"
+          >
+            <h1
+              className="font-display text-[27px] leading-tight text-[#f9f4ed] sm:text-[30px]"
+              aria-label={isCategoryPage ? `Shop ${selectedCategory} plants` : 'Shop live plants'}
+            >
+              {isCategoryPage ? selectedCategory : 'Shop live plants'}
+            </h1>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-sage-200)]">
+              {bandDescription}
+            </p>
+          </PhotoBanner>
+        </div>
 
-          {/* Offer banner */}
-          <div className="relative z-10 mt-4 space-y-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold leading-5 text-emerald-200">
-            <p>
-              Purchase above INR 1000 and get a complimentary plant.
-            </p>
-            <p>
-              Post an Instagram story from your previous order, tag us and get a complimentary plant.
-            </p>
-            <p>
-              No Pot included until mentioned
-            </p>
-          </div>
+        {isCategoryPage && (
+          <p className="mt-3 text-[13px] text-[var(--text-secondary)]">
+            Browsing{' '}
+            <strong className="font-extrabold text-[var(--color-forest)]">{selectedCategory}</strong>{' '}
+            plants &mdash; every one lifted from our own bench.
+          </p>
+        )}
+
+        <ChipRail
+          className="mt-3"
+          ariaLabel="Browse categories"
+          options={categoryOptions}
+          value={selectedCategory}
+          onChange={handleCategoryClick}
+        />
+      </section>
+
+      {/* Search */}
+      <section className="pt-5">
+        <div className="relative flex items-center">
+          <Icon name="search" className="pointer-events-none absolute left-4 h-[18px] w-[18px] text-[var(--text-secondary)]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={animatedSearchPlaceholder}
+            aria-label="Search plants by name or category, care need, or budget"
+            className="input h-12 pl-11 pr-12 text-sm"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+              aria-label="Clear search"
+            >
+              <Icon name="x" className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]" aria-label="Smart search examples">
+          <span className="font-bold text-[var(--text-primary)]">Try:</span>
+          {SMART_SEARCH_EXAMPLES.map((example) => (
+            <button
+              key={example}
+              type="button"
+              onClick={() => setSearchQuery(example)}
+              className="chip"
+            >
+              {example}
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* Catalog Controls */}
-      <section className="mb-5">
-        <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 shadow-sm md:p-4">
-          <div className="relative flex items-center">
-            <svg className="pointer-events-none absolute left-4 h-5 w-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={animatedSearchPlaceholder}
-              aria-label="Search plants by name or category, care need, or budget"
-              className="input h-12 pr-11 text-sm md:h-14 md:text-base"
-              style={{ paddingLeft: '2.75rem' }}
+      {/* Result line, sort and quick filters */}
+      <section className="pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] text-[var(--text-secondary)]">
+            {loading ? 'Counting the bench…' : `${sortedProducts.length} plants in stock`}
+          </span>
+          <div className="relative shrink-0">
+            <Icon
+              name="sliders"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[var(--text-primary)]"
             />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]/20"
-                aria-label="Clear search"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            )}
+            <select
+              value={sortId}
+              onChange={(event) => setSortId(event.target.value)}
+              aria-label="Sort plants"
+              className="min-h-11 w-full appearance-none rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] py-2 pl-[38px] pr-9 text-[13px] font-semibold text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--color-terracotta)] focus:border-[var(--color-terracotta)]"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="chevron-down"
+              className="pointer-events-none absolute right-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[var(--text-secondary)]"
+            />
           </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]" aria-label="Smart search examples">
-            <span className="font-semibold text-[var(--text-primary)]">Try:</span>
-            {SMART_SEARCH_EXAMPLES.map((example) => (
-              <button
-                key={example}
-                type="button"
-                onClick={() => setSearchQuery(example)}
-                className="rounded-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-1.5 font-medium text-[var(--text-secondary)] transition hover:border-[var(--color-forest)] hover:text-[var(--color-forest)] focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]/20"
-              >
-                {example}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2 py-2">
-            <div className="relative group">
-              {canScrollLeft && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = categoryScrollerRef.current;
-                    if (el) el.scrollBy({ left: -240, behavior: 'smooth' });
-                  }}
-                  className="absolute bottom-0 left-0 top-0 z-10 flex w-10 items-center justify-center bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-primary)]/85 to-transparent transition-opacity"
-                  aria-label="Scroll categories left"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-md">
-                    <svg className="h-4 w-4 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </span>
-                </button>
-              )}
-
-              <div ref={categoryScrollerRef} className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 scroll-smooth">
-                {categories.map((category) => {
-                  const isLimited = category === 'Limited';
-                  const isSelected = selectedCategory === category;
-                  const baseClass = 'h-10 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]/20';
-                  let colorClass = '';
-
-                  if (isSelected) {
-                    colorClass = isLimited
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'bg-[var(--color-forest)] text-white shadow-sm';
-                  } else {
-                    colorClass = isLimited
-                      ? 'border border-red-200 bg-red-50 text-red-600 hover:border-red-500 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
-                      : 'border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:border-[var(--color-forest)]';
-                  }
-
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => handleCategoryClick(category)}
-                      className={`${baseClass} ${colorClass}`}
-                      aria-pressed={isSelected}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {canScrollRight && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = categoryScrollerRef.current;
-                    if (el) el.scrollBy({ left: 240, behavior: 'smooth' });
-                  }}
-                  className="absolute bottom-0 right-0 top-0 z-10 flex w-10 items-center justify-center bg-gradient-to-l from-[var(--bg-primary)] via-[var(--bg-primary)]/85 to-transparent transition-opacity"
-                  aria-label="Scroll categories right"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-md">
-                    <svg className="h-4 w-4 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
-
         </div>
+
+        <ChipRail
+          className="mt-2.5"
+          ariaLabel="Quick plant filters"
+          options={quickFilterOptions}
+          value={quickFilterId}
+          onChange={setQuickFilterId}
+        />
       </section>
 
-      {/* Products Grid */}
-      <section>
+      {/* Listing */}
+      <section className="pt-5">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="card overflow-hidden flex flex-col">
-                {/* Image skeleton */}
-                <div className="relative w-full aspect-[4/3] skeleton-shimmer">
-                  {/* Category badge placeholder */}
-                  <div className="absolute bottom-2 left-2 w-16 h-5 bg-white/20 rounded-lg" />
-                  {/* Heart button placeholder */}
-                  <div className="absolute bottom-2 right-2 w-8 h-8 bg-white/20 rounded-full" />
-                </div>
-                {/* Content skeleton */}
-                <div className="p-3 md:p-4 flex flex-col gap-2 bg-[var(--bg-primary)]">
-                  {/* ID + Name + Price row */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 skeleton-shimmer rounded w-10" />
-                      <div className="h-4 skeleton-shimmer rounded w-3/4" />
+              <div key={i} className="card-soft flex flex-col">
+                <div className="skeleton-shimmer aspect-[4/3] w-full" />
+                <div className="flex flex-col gap-3.5 px-5 pb-5 pt-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton-shimmer h-4 w-3/4 rounded-full" />
+                      <div className="skeleton-shimmer h-3 w-1/3 rounded-full" />
                     </div>
-                    <div className="h-5 skeleton-shimmer rounded w-16 shrink-0" />
+                    <div className="skeleton-shimmer h-8 w-16 shrink-0 rounded-full" />
                   </div>
-                  {/* Attribute tiles */}
-                  <div className="flex gap-1.5">
-                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
-                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
-                    <div className="h-7 skeleton-shimmer rounded-lg w-16" />
+                  <div className="flex gap-2">
+                    <div className="skeleton-shimmer h-10 flex-1 rounded-2xl" />
+                    <div className="skeleton-shimmer h-10 flex-1 rounded-2xl" />
+                    <div className="skeleton-shimmer h-10 flex-1 rounded-2xl" />
                   </div>
-                  {/* Add to cart row */}
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="h-9 skeleton-shimmer rounded-lg w-24" />
-                    <div className="h-9 skeleton-shimmer rounded-lg flex-1" />
-                  </div>
+                  <div className="skeleton-shimmer h-[46px] w-full rounded-full" />
                 </div>
               </div>
             ))}
           </div>
         ) : sortedProducts.length === 0 ? (
-          <div className="text-center py-16 px-4 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] max-w-2xl mx-auto shadow-sm">
-            <div className="w-24 h-24 bg-[var(--bg-tertiary)] rounded-full flex items-center justify-center mx-auto mb-5 relative">
-               <span className="text-4xl absolute animate-bounce" style={{animationDuration: '2s'}}>{searchQuery ? '🔍' : '🪴'}</span>
+          searchQuery.trim() ? (
+            /* No results dead end */
+            <div className="flex flex-col items-center px-2 pt-6 text-center">
+              <span className="mb-5 flex h-[92px] w-[92px] items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                <Icon name="search" className="h-10 w-10" strokeWidth={2} />
+              </span>
+              <h2 className="mb-2.5 font-display text-2xl text-[var(--text-primary)]">
+                No plant called &ldquo;{searchQuery.trim()}&rdquo;
+              </h2>
+              <p className="mb-7 max-w-[320px] text-[15px] leading-relaxed text-[var(--text-secondary)]">
+                We grow succulents and cacti, so tropical foliage is outside our bench. Try a name, a care need or a budget.
+              </p>
+
+              <div className="w-full max-w-md text-left">
+                <p className="eyebrow mb-3">Try instead</p>
+                <div className="flex flex-wrap gap-2">
+                  {NO_RESULT_SUGGESTIONS.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setSearchQuery(suggestion)}
+                      className="chip"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="panel-deep mt-7 w-full max-w-md px-5 py-5 text-left">
+                <p className="mb-2 font-display text-[18px] text-[var(--panel-deep-text)]">
+                  Looking for something specific?
+                </p>
+                <p className="mb-4 text-[13px] leading-relaxed text-[var(--panel-deep-muted)]">
+                  Ask us. If we do not grow it we will say so, and sometimes we have it on the bench before it reaches the site.
+                </p>
+                <WhatsAppButton href={buildWhatsAppLink(buildPlantAdviceMessage({ query: searchQuery.trim() }))}>
+                  Ask the nursery
+                </WhatsAppButton>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">
-               {searchQuery ? "No matching plants found" : "This category is empty"}
-            </h3>
-            <p className="text-[var(--text-secondary)] text-sm mb-6 max-w-sm mx-auto leading-relaxed">
-              {searchQuery
-                ? `We couldn't find any plants matching "${searchQuery}". Try checking for typos, using broader terms, or exploring other categories.`
-                : 'We are currently out of stock of these plants. Please check back later or browse our other beautiful collections.'}
-            </p>
-            {searchQuery ? (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="px-6 py-2.5 bg-[var(--color-forest)] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-              >
-                Clear Search
+          ) : activeQuickFilter ? (
+            <EmptyState
+              icon="sliders"
+              title={`Nothing is ${activeQuickFilter.label.toLowerCase()} today`}
+              description="That filter has nothing on the bench right now. Clear it to see the whole list."
+            >
+              <button type="button" onClick={() => setQuickFilterId('all')} className="btn btn-accent">
+                Show everything
               </button>
-            ) : (
-              <button
-                onClick={() => handleCategoryClick('All')}
-                className="px-6 py-2.5 bg-[var(--color-forest)] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-              >
-                Browse All Plants
-              </button>
-            )}
-          </div>
+            </EmptyState>
+          ) : (
+            <EmptyState
+              icon="sprout"
+              title="This bench is empty"
+              description="Everything here is off the bench right now. Browse the whole nursery, or check back in a few days."
+            >
+              <Link to="/shop" className="btn btn-accent">Browse all plants</Link>
+            </EmptyState>
+          )
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 stagger-children">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
               {visibleProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
@@ -692,20 +718,72 @@ export default function ShopPage() {
             {/* Infinite scroll sentinel */}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-8">
-                <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-4 py-2 text-[13px] text-[var(--text-secondary)]">
+                  <Icon name="refresh" className="h-4 w-4 animate-spin" />
                   Loading more plants...
-                </div>
+                </span>
               </div>
             )}
           </>
         )}
       </section>
 
+      {/* Closing cards */}
+      {sortedProducts.length > 0 && (
+        <section className="mt-6 space-y-4">
+          <div className="panel-deep px-5 py-6">
+            <h2 className="mb-2 font-display text-[20px] text-[var(--panel-deep-text)]">
+              Free plant over {CURRENCY}{FREE_PLANT_THRESHOLD}
+            </h2>
+            <p className="text-sm leading-relaxed text-[var(--panel-deep-muted)]">
+              Order above {CURRENCY}{FREE_PLANT_THRESHOLD} and we add a complimentary plant. Post a story from a previous order and tag us for another.
+            </p>
+            <p className="mt-3 text-[13px] text-[var(--panel-deep-muted)]">
+              No Pot included until mentioned
+            </p>
+          </div>
 
+          <div className="rounded-[28px] bg-[var(--color-sage-100)] px-5 py-6">
+            <h2 className="mb-1.5 font-display text-[19px] text-[var(--color-sage-900)]">Not sure which one?</h2>
+            <p className="mb-4 text-[13px] leading-relaxed text-[var(--color-sage-800)]">
+              Tell us your balcony direction and how often you water. We will pick three that will actually live.
+            </p>
+            <WhatsAppButton href={buildWhatsAppLink(buildPlantAdviceMessage())} tone="sage">
+              Ask on WhatsApp
+            </WhatsAppButton>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" className="chip">
+              <Icon name="whatsapp" filled className="h-4 w-4" />
+              Ask before ordering
+            </a>
+            <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="chip">
+              <Icon name="instagram" className="h-4 w-4" />
+              Follow on Instagram
+            </a>
+            <Link to="/reviews" className="chip">
+              <Icon name="star" className="h-4 w-4" />
+              Reviews
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Sticky cart bar */}
+      {hasCart && (
+        <StickyBar>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-[var(--text-secondary)]">
+              {cartCount} {cartCount === 1 ? 'plant' : 'plants'} in cart
+            </p>
+            <p className="font-display text-xl text-[var(--text-primary)]">
+              {CURRENCY}{cartTotal.toLocaleString('en-IN')}
+            </p>
+          </div>
+          <Link to="/cart" className="btn btn-accent shrink-0 px-6">Review cart</Link>
+        </StickyBar>
+      )}
     </div>
   );
 }

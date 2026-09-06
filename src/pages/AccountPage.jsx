@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { getUserProfile, saveUserProfile, lookupPincode } from '../services/userService';
 import { getOrdersByUserId } from '../services/orderService';
-import { NavLink } from 'react-router-dom';
 import SEO from '../components/SEO';
+import OrderCard from '../components/OrderCard';
+import { ACTIVE_STATUSES } from '../utils/orderStatus';
+import Icon, { GoogleMark } from '../components/Icon';
+import { ListRow, PageBar } from '../components/storefront';
+import { NURSERY_HOURS } from '../config/constants';
+import { buildOrderSupportMessage, buildWhatsAppLink } from '../utils/nurseryMessages';
 
 const ACCOUNT_ICON_PATHS = Object.freeze({
   leaf: (
@@ -95,14 +100,35 @@ function AccountIcon({ name, className = 'h-6 w-6', strokeWidth = 1.9 }) {
   );
 }
 
+
+/** A menu row that can carry an arbitrary icon node and a trailing control. */
+function MenuRow({ icon, title, subtitle, trailing, to, onClick }) {
+  const body = (
+    <div className="flex w-full items-center gap-[13px] px-4 py-3.5 text-left transition-colors hover:bg-[var(--bg-tertiary)]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-tertiary)]">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-[var(--text-primary)]">{title}</p>
+        {subtitle && <p className="mt-0.5 truncate text-xs text-[var(--text-secondary)]">{subtitle}</p>}
+      </div>
+      {trailing ?? <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />}
+    </div>
+  );
+
+  if (to) return <Link to={to} className="block">{body}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className="block w-full">{body}</button>;
+  return body;
+}
+
 export default function AccountPage() {
   const { user, loading, isAdmin, signInWithGoogle, logout } = useAuth();
-  const { cart, wishlist } = useCart();
+  const { wishlist, addToCart } = useCart();
   const { success, error } = useToast();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
@@ -117,6 +143,8 @@ export default function AccountPage() {
   const [lookingUp, setLookingUp] = useState(false);
   const [sameAsPhone, setSameAsPhone] = useState(false);
   const [userOrders, setUserOrders] = useState([]);
+  const [reorderBusy, setReorderBusy] = useState(false);
+  const [lookupCode, setLookupCode] = useState('');
 
   // Sync whatsapp when "same as phone" is checked
   useEffect(() => {
@@ -125,34 +153,17 @@ export default function AccountPage() {
     }
   }, [profile.phone, sameAsPhone]);
 
-  // Load profile on mount
-  useEffect(() => {
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
-
-  // After login, redirect back to requested page (e.g., order detail)
-  useEffect(() => {
-    if (!user) return;
-    const params = new URLSearchParams(location.search);
-    const redirectPath = params.get('redirect');
-    if (redirectPath) {
-      navigate(redirectPath, { replace: true });
-    }
-  }, [user, location.search, navigate]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       // Load profile data
       const data = await getUserProfile(user.uid);
-      
+
       // Load orders independently so it doesn't break profile if it fails (e.g. missing index)
       try {
         const orders = await getOrdersByUserId(user.uid);
         setUserOrders(orders || []);
       } catch (err) {
-        console.error("Failed to load user orders:", err);
+        console.error('Failed to load user orders:', err);
         setUserOrders([]);
       }
 
@@ -172,11 +183,28 @@ export default function AccountPage() {
     } catch (err) {
       console.error('Error loading profile:', err);
     }
-  };
+  }, [user]);
+
+  // Load profile on mount
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user, loadProfile]);
+
+  // After login, redirect back to requested page (e.g., order detail)
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(location.search);
+    const redirectPath = params.get('redirect');
+    if (redirectPath) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, location.search, navigate]);
 
   const handlePincodeChange = async (value) => {
     setProfile(prev => ({ ...prev, pincode: value }));
-    
+
     // Auto-lookup when 6 digits entered
     if (value.length === 6 && /^\d{6}$/.test(value)) {
       setLookingUp(true);
@@ -192,7 +220,7 @@ export default function AccountPage() {
         } else {
           error('Invalid pincode');
         }
-      } catch (err) {
+      } catch {
         error('Could not lookup pincode');
       } finally {
         setLookingUp(false);
@@ -206,18 +234,44 @@ export default function AccountPage() {
       await saveUserProfile(user.uid, profile);
       success('Profile saved!');
       setEditMode(false);
-    } catch (err) {
+    } catch {
       error('Failed to save profile');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleOrderAgain = async (order) => {
+    const items = order.items || [];
+    if (items.length === 0) {
+      error('This order has no plants left to re-add.');
+      return;
+    }
+    setReorderBusy(true);
+    let added = 0;
+    for (const item of items) {
+      try {
+        await addToCart({
+          id: item.productId,
+          name: item.name,
+          price: item.price,
+          imageUrl: item.imageUrl
+        }, item.quantity || 1);
+        added += 1;
+      } catch {
+        // Keep going — the summary reports what actually landed in the cart.
+      }
+    }
+    setReorderBusy(false);
+    if (added === 0) error('Could not add those plants to your cart.');
+    else success(`${added} ${added === 1 ? 'plant' : 'plants'} back in your cart.`);
+  };
+
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
       success('Welcome back!');
-    } catch (err) {
+    } catch {
       error('Failed to sign in. Please try again.');
     }
   };
@@ -226,10 +280,31 @@ export default function AccountPage() {
     try {
       await logout();
       success('See you soon!');
-    } catch (err) {
+    } catch {
       error('Failed to sign out.');
     }
   };
+
+  const placedOrders = useMemo(
+    () => userOrders.filter(order => order.status !== 'pending' && order.status !== 'cancelled'),
+    [userOrders]
+  );
+  const activeOrders = useMemo(
+    () => placedOrders.filter(order => ACTIVE_STATUSES.includes(order.status)),
+    [placedOrders]
+  );
+  const plantsBought = useMemo(
+    () => placedOrders.reduce((sum, order) => sum + (order.totalItems || 0), 0),
+    [placedOrders]
+  );
+  const recentOrders = placedOrders.slice(0, 3);
+
+  const localityLine = [profile.district, profile.state, profile.pincode].filter(Boolean).join(', ');
+  // The field already shows the RPH- prefix, so a pasted full code must not double it up.
+  const trimmedLookup = lookupCode.trim().toUpperCase().replace(/^RPH-?/, '');
+  const lookupHref = buildWhatsAppLink(
+    buildOrderSupportMessage({ orderId: trimmedLookup ? `RPH-${trimmedLookup}` : '' })
+  );
 
   if (loading) {
     return (
@@ -241,321 +316,381 @@ export default function AccountPage() {
     );
   }
 
+  const googleButton = (
+    <button
+      type="button"
+      onClick={handleSignIn}
+      className="flex min-h-12 w-full items-center justify-center gap-[11px] rounded-full border border-[var(--border-color)] bg-white text-[15px] font-semibold text-[#201e1d] transition-opacity hover:opacity-90"
+    >
+      <GoogleMark className="h-[19px] w-[19px]" />
+      Continue with Google
+    </button>
+  );
+
   return (
     <div className="animate-fade-in">
       <SEO title="My Account" description="Manage your profile, view orders, and update delivery details." noindex />
+
+      <PageBar title={user ? 'Your account' : 'You'} fallbackTo="/" />
+
       {user ? (
-        /* Profile Card for Logged In User */
-        <div className="card p-5">
-          {/* Avatar */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative w-16 h-16 flex-shrink-0">
+        <div className="flex flex-col gap-4">
+          {/* Who you are, and what you have bought */}
+          <section className="panel-deep px-5 py-[22px]">
+            <div className="flex items-center gap-3.5">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName}
-                  className="w-full h-full rounded-full object-cover border-4 border-[var(--color-forest)]"
+                  alt={profile.name || user.displayName || 'Your profile photo'}
+                  className="h-[54px] w-[54px] shrink-0 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full rounded-full bg-[var(--color-forest)] flex items-center justify-center text-white text-xl font-semibold">
-                  {user.displayName?.[0] || user.email?.[0] || '?'}
-                </div>
+                <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full bg-[#7a8a5e] font-display text-[22px] text-[#f9f4ed]">
+                  {(profile.name || user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                </span>
               )}
-              
-              {isAdmin && (
-                <div className="absolute -bottom-1 -right-1 bg-[var(--color-terracotta)] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  ADMIN
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-[21px] leading-tight text-[var(--panel-deep-text)]">
+                  {profile.name || user.displayName || 'Plant lover'}
+                </p>
+                <p className="mt-1 truncate text-xs text-[var(--panel-deep-muted)]">{user.email}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2.5">
+              {[
+                { label: 'Orders', value: placedOrders.length },
+                { label: 'Plants bought', value: plantsBought },
+                { label: 'Wishlisted', value: wishlist.length }
+              ].map((stat) => (
+                <div key={stat.label} className="flex-1 rounded-[18px] bg-[rgba(249,244,237,0.1)] px-3.5 py-3">
+                  <p className="font-display text-xl leading-none text-[var(--panel-deep-text)]">{stat.value}</p>
+                  <p className="mt-1 text-[11px] text-[var(--panel-deep-muted)]">{stat.label}</p>
                 </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Everything you can change from here */}
+          <div className="overflow-hidden rounded-[24px] bg-[var(--bg-secondary)]">
+            <MenuRow
+              to="/orders"
+              icon={<AccountIcon name="cart" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+              title="My orders"
+              subtitle={`${activeOrders.length} on the way`}
+              trailing={(
+                <span className="flex shrink-0 items-center gap-[7px]">
+                  {activeOrders.length > 0 && (
+                    <span className="rounded-full bg-[var(--color-sage-200)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-sage-800)]">
+                      {activeOrders.length} active
+                    </span>
+                  )}
+                  <Icon name="chevron-right" className="h-4 w-4 text-[var(--text-secondary)]" />
+                </span>
               )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] truncate">
-                {profile.name || user.displayName || 'Plant Lover'}
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)] truncate">{user.email}</p>
-            </div>
-            
-            <button
-              onClick={() => setEditMode(!editMode)}
-              className="p-2 text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
+            />
+            <MenuRow
+              to="/wishlist"
+              icon={<AccountIcon name="heart" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+              title="Wishlist"
+              subtitle={`${wishlist.length} ${wishlist.length === 1 ? 'plant' : 'plants'} saved`}
+            />
+            <MenuRow
+              onClick={() => setEditMode(true)}
+              icon={<Icon name="map-pin" className="h-[18px] w-[18px] text-[var(--text-primary)]" />}
+              title="Delivery address"
+              subtitle={localityLine || 'Add where your plants should land'}
+            />
+            <MenuRow
+              onClick={() => setEditMode(true)}
+              icon={<Icon name="phone" className="h-[18px] w-[18px] text-[var(--text-primary)]" />}
+              title="WhatsApp number"
+              subtitle={profile.whatsapp || profile.phone || 'Add the number we should message'}
+            />
+            <MenuRow
+              onClick={handleLogout}
+              icon={<Icon name="log-out" className="h-[18px] w-[18px] text-[var(--text-primary)]" />}
+              title="Sign out"
+              trailing={<span />}
+            />
           </div>
 
-          {/* Profile Form */}
+          {/* Profile editor */}
           {editMode && (
-            <div className="space-y-3 pt-4 border-t border-[var(--border-color)] animate-fade-in">
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Name</label>
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-                  className="input"
-                  placeholder="Your name"
-                />
-              </div>
+            <section className="rounded-[28px] bg-[var(--bg-secondary)] p-5 animate-fade-in">
+              <h2 className="mb-4 font-display text-xl text-[var(--text-primary)]">Delivery details</h2>
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="accountName" className="eyebrow mb-1.5 block">Name</label>
+                  <input
+                    id="accountName"
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
+                    className="input"
+                    placeholder="Your name"
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={profile.phone}
-                    onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                    className="input"
-                    placeholder="Mobile"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-xs font-medium text-[var(--text-secondary)]">WhatsApp</label>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        id="accountSameAsPhone"
-                        checked={sameAsPhone}
-                        onChange={(e) => setSameAsPhone(e.target.checked)}
-                        className="w-3 h-3 rounded text-[var(--color-forest)] focus:ring-[var(--color-forest)]"
-                      />
-                      <label htmlFor="accountSameAsPhone" className="text-[10px] text-[var(--text-secondary)] cursor-pointer select-none">
-                        Same as Phone
-                      </label>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="accountPhone" className="eyebrow mb-1.5 block">Phone</label>
+                    <input
+                      id="accountPhone"
+                      type="tel"
+                      value={profile.phone}
+                      onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                      className="input"
+                      placeholder="Mobile"
+                    />
                   </div>
-                  <input
-                    type="tel"
-                    value={profile.whatsapp}
-                    onChange={(e) => setProfile(prev => ({ ...prev, whatsapp: e.target.value }))}
-                    className="input"
-                    placeholder="WhatsApp"
-                    disabled={sameAsPhone}
-                  />
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <label htmlFor="accountWhatsapp" className="eyebrow">WhatsApp</label>
+                      <span className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          id="accountSameAsPhone"
+                          checked={sameAsPhone}
+                          onChange={(e) => setSameAsPhone(e.target.checked)}
+                          className="h-3 w-3 rounded accent-[var(--color-terracotta)]"
+                        />
+                        <label htmlFor="accountSameAsPhone" className="cursor-pointer select-none text-[10px] text-[var(--text-secondary)]">
+                          Same as phone
+                        </label>
+                      </span>
+                    </div>
+                    <input
+                      id="accountWhatsapp"
+                      type="tel"
+                      value={profile.whatsapp}
+                      onChange={(e) => setProfile(prev => ({ ...prev, whatsapp: e.target.value }))}
+                      className="input"
+                      placeholder="WhatsApp"
+                      disabled={sameAsPhone}
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Address</label>
-                <textarea
-                  value={profile.address}
-                  onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
-                  className="input min-h-[70px] resize-none"
-                  placeholder="House/Flat, Street, Area"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
+
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
-                    Pincode {lookingUp && <AccountIcon name="search" className="ml-1 h-3 w-3 align-[-1px]" strokeWidth={2.2} />}
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.pincode}
-                    onChange={(e) => handlePincodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="input"
-                    placeholder="6 digits"
-                    maxLength={6}
+                  <label htmlFor="accountAddress" className="eyebrow mb-1.5 block">Address</label>
+                  <textarea
+                    id="accountAddress"
+                    value={profile.address}
+                    onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                    className="input resize-none"
+                    placeholder="House/Flat, Street, Area"
                   />
                 </div>
-                
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="accountPincode" className="eyebrow mb-1.5 flex items-center gap-1.5">
+                      Pincode
+                      {lookingUp && <AccountIcon name="search" className="h-3 w-3" strokeWidth={2.2} />}
+                    </label>
+                    <input
+                      id="accountPincode"
+                      type="text"
+                      value={profile.pincode}
+                      onChange={(e) => handlePincodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="input"
+                      placeholder="6 digits"
+                      maxLength={6}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="accountDistrict" className="eyebrow mb-1.5 block">District</label>
+                    <input
+                      id="accountDistrict"
+                      type="text"
+                      value={profile.district}
+                      onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
+                      className="input"
+                      placeholder="District"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">District</label>
+                  <label htmlFor="accountState" className="eyebrow mb-1.5 block">State</label>
                   <input
+                    id="accountState"
                     type="text"
-                    value={profile.district}
-                    onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
+                    value={profile.state}
+                    onChange={(e) => setProfile(prev => ({ ...prev, state: e.target.value }))}
                     className="input"
-                    placeholder="District"
+                    placeholder="State"
                   />
                 </div>
+
+                <div className="flex gap-2.5 pt-1">
+                  <button type="button" onClick={() => setEditMode(false)} className="btn btn-secondary flex-1">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary flex-1">
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
               </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">State</label>
-                <input
-                  type="text"
-                  value={profile.state}
-                  onChange={(e) => setProfile(prev => ({ ...prev, state: e.target.value }))}
-                  className="input"
-                  placeholder="State"
-                />
-              </div>
-              
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => setEditMode(false)}
-                  className="btn btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="btn btn-primary flex-1"
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </div>
+            </section>
           )}
 
-          {/* Display saved details when not editing */}
-          {!editMode && profile.address && (
-            <div className="pt-4 border-t border-[var(--border-color)] space-y-3">
-               <div className="grid grid-cols-2 gap-4">
-                {profile.phone && (
-                  <div>
-                    <p className="text-xs font-medium text-[var(--text-secondary)]">Phone</p>
-                    <p className="text-sm text-[var(--text-primary)]">{profile.phone}</p>
-                  </div>
-                )}
-                {profile.whatsapp && (
-                  <div>
-                    <p className="text-xs font-medium text-[var(--text-secondary)]">WhatsApp</p>
-                    <p className="text-sm text-[var(--text-primary)]">{profile.whatsapp}</p>
-                  </div>
-                )}
+          {/* Recent orders */}
+          <section>
+            <h2 className="mb-3 font-display text-xl text-[var(--text-primary)]">My orders</h2>
+            {recentOrders.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {recentOrders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onOrderAgain={handleOrderAgain}
+                    reorderBusy={reorderBusy}
+                  />
+                ))}
               </div>
-
-              <div>
-                <p className="text-xs font-medium text-[var(--text-secondary)] mb-1">Delivery Address</p>
-                <p className="text-sm text-[var(--text-primary)]">
-                  {profile.address}
-                  <br />
-                  {profile.district && `${profile.district}, `}
-                  {profile.state && `${profile.state}`}
-                  {profile.pincode && ` - ${profile.pincode}`}
+            ) : (
+              <div className="flex items-center gap-3 rounded-[24px] bg-[var(--bg-secondary)] px-4 py-4">
+                <AccountIcon name="package" className="h-6 w-6" />
+                <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+                  No orders yet. Whatever you buy will be listed here with its status.
                 </p>
               </div>
-            </div>
-          )}
+            )}
+          </section>
         </div>
       ) : (
-        /* Guest Login Card */
-        <div className="card p-6 text-center">
-          <AccountIcon name="user" className="mx-auto h-12 w-12" />
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Welcome!</h2>
-          <p className="text-[var(--text-secondary)] mt-2 max-w-xs mx-auto text-sm">
-            Sign in to sync your cart & wishlist across devices
-          </p>
-          
-          <div className="mt-6 flex flex-col gap-3 max-w-xs mx-auto">
-            <button
-              onClick={handleSignIn}
-              className="flex items-center gap-3 w-full justify-center px-6 py-3 bg-white rounded-xl border border-[var(--border-color)] hover:border-[var(--color-forest)] transition-all hover:shadow-md"
-            >
-              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              <span className="font-medium text-[var(--color-forest)] whitespace-nowrap">Continue with Google</span>
-            </button>
-            
+        <div className="flex flex-col gap-4">
+          {/* Guest introduction */}
+          <section className="rounded-[28px] bg-[var(--bg-secondary)] px-[22px] py-6">
+            <span className="flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[var(--bg-tertiary)]">
+              <AccountIcon name="user" className="h-[26px] w-[26px]" />
+            </span>
+            <h2 className="mt-4 font-display text-[23px] leading-tight text-[var(--text-primary)]">
+              Browsing as a guest
+            </h2>
+            <p className="mb-[18px] mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+              You can buy without an account. Signing in just saves your cart, wishlist and address so the
+              next order takes a minute.
+            </p>
+            {googleButton}
+          </section>
+
+          {/* Guest order lookup */}
+          <section className="rounded-[28px] bg-[var(--color-sage-200)] p-5">
+            <h2 className="font-display text-lg text-[var(--color-sage-900)]">Ordered without an account?</h2>
+            <p className="mb-3.5 mt-1.5 text-[13px] leading-relaxed text-[var(--color-sage-800)]">
+              Enter the code from your WhatsApp confirmation and we will pull up the order.
+            </p>
+            <div className="flex gap-2.5">
+              <label htmlFor="guestOrderCode" className="sr-only">Order code</label>
+              <span className="flex flex-1 items-center gap-1 rounded-full bg-[var(--color-neutral-100)] px-[18px]">
+                <span className="text-sm tracking-[0.06em] text-[var(--color-neutral-600)]">RPH-</span>
+                <input
+                  id="guestOrderCode"
+                  type="text"
+                  value={lookupCode}
+                  onChange={(event) => setLookupCode(event.target.value.toUpperCase().slice(0, 24))}
+                  placeholder="20260118-AB12CD"
+                  className="min-h-11 w-full min-w-0 bg-transparent text-sm tracking-[0.06em] text-[#201e1d] outline-none placeholder:text-[var(--color-neutral-500)]"
+                />
+              </span>
+              <a
+                href={lookupHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => {
+                  if (!trimmedLookup) {
+                    event.preventDefault();
+                    error('Enter the code from your WhatsApp confirmation first.');
+                  }
+                }}
+                className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[#7a8a5e] px-[18px] text-sm font-bold text-[#f9f4ed]"
+              >
+                Ask us to pull it up
+              </a>
+            </div>
+            <p className="mt-2.5 text-[11px] leading-relaxed text-[var(--color-sage-800)]">
+              Guest orders are only readable from their own link, so this opens WhatsApp with your code and
+              we send the link back.
+            </p>
+          </section>
+
+          {/* Guest quick rows */}
+          <div className="overflow-hidden rounded-[24px] bg-[var(--bg-secondary)]">
+            <MenuRow
+              to="/wishlist"
+              icon={<AccountIcon name="heart" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+              title="Wishlist"
+              subtitle={`${wishlist.length} saved on this phone`}
+            />
+            <ListRow
+              icon="book"
+              title="Care guides"
+              subtitle="Watering, monsoon, pests"
+              to="/guides"
+              tone="plain"
+            />
+            <ListRow
+              icon="whatsapp"
+              title="Message the nursery"
+              subtitle={NURSERY_HOURS}
+              href={buildWhatsAppLink(buildOrderSupportMessage({}))}
+              tone="plain"
+            />
           </div>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        <NavLink
-          to="/cart"
-          className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
-        >
-          <AccountIcon name="cart" className="mx-auto h-8 w-8" />
-          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{cart.length}</p>
-          <p className="text-xs text-[var(--text-secondary)]">Cart Items</p>
-        </NavLink>
-        <NavLink
-          to="/wishlist"
-          className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer"
-        >
-          <AccountIcon name="heart" className="mx-auto h-8 w-8" />
-          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{wishlist.length}</p>
-          <p className="text-xs text-[var(--text-secondary)]">Saved</p>
-        </NavLink>
-        <NavLink to={user ? `/orders` : '#'} className="card p-3 text-center hover:bg-[var(--bg-tertiary)] transition-colors block cursor-pointer">
-          <AccountIcon name="package" className="mx-auto h-8 w-8" />
-          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
-            {userOrders.filter(o => o.status !== 'pending' && o.status !== 'cancelled').length}
-          </p>
-          <p className="text-xs text-[var(--text-secondary)]">My Orders</p>
-        </NavLink>
-      </div>
- 
-      {/* Help & Support (Already added below in previous steps) */}
-
-      {/* Help & Support */}
-      <div className="card p-4 mt-3 space-y-3">
-        <NavLink to="/reviews" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
-          <div className="flex items-center gap-3">
-            <AccountIcon name="star" className="h-5 w-5" />
-            <span className="font-medium">Reviews</span>
-          </div>
-          <span className="text-[var(--text-secondary)]">›</span>
-        </NavLink>
-        <NavLink to="/faq" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
-          <div className="flex items-center gap-3">
-            <AccountIcon name="help" className="h-5 w-5" />
-            <span className="font-medium">FAQ & Policies</span>
-          </div>
-          <span className="text-[var(--text-secondary)]">›</span>
-        </NavLink>
-        <NavLink to="/contact" className="flex items-center justify-between text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] p-2 rounded-lg transition-colors">
-          <div className="flex items-center gap-3">
-            <AccountIcon name="mail" className="h-5 w-5" />
-            <span className="font-medium">Contact Us</span>
-          </div>
-          <span className="text-[var(--text-secondary)]">›</span>
-        </NavLink>
+      {/* Help and support */}
+      <div className="mt-4 overflow-hidden rounded-[24px] bg-[var(--bg-secondary)]">
+        <MenuRow
+          to="/reviews"
+          icon={<AccountIcon name="star" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+          title="Reviews"
+          subtitle="What other plant people say"
+        />
+        <MenuRow
+          to="/faq"
+          icon={<AccountIcon name="help" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+          title="FAQ and policies"
+          subtitle="Shipping, replacements, returns"
+        />
+        <MenuRow
+          to="/contact"
+          icon={<AccountIcon name="mail" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+          title="Contact us"
+          subtitle="We answer every message ourselves"
+        />
       </div>
 
-      {/* Settings */}
-      <div className="card p-4 mt-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <AccountIcon name="appearance" className="h-6 w-6" />
-          <span className="font-medium text-[var(--text-primary)]">Appearance</span>
-        </div>
+      {/* Appearance */}
+      <div className="mt-4 flex items-center gap-[13px] rounded-[24px] bg-[var(--bg-secondary)] px-4 py-3.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-tertiary)]">
+          <AccountIcon name="appearance" className="h-[18px] w-[18px]" strokeWidth={2.2} />
+        </span>
+        <span className="flex-1 text-sm font-bold text-[var(--text-primary)]">Appearance</span>
         <select
           value={theme}
           onChange={(e) => setTheme(e.target.value)}
-          className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-none rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer"
+          aria-label="Appearance"
+          className="cursor-pointer rounded-full bg-[var(--bg-tertiary)] px-3.5 py-2 text-[13px] font-semibold text-[var(--text-primary)] outline-none"
         >
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
       </div>
 
-      {/* Admin Link */}
+      {/* Admin */}
       {isAdmin && (
-        <NavLink
-          to="/admin"
-          className="card p-4 mt-4 flex items-center justify-between group hover:border-[var(--color-terracotta)]"
-        >
-          <div className="flex items-center gap-3">
-            <AccountIcon name="settings" className="h-6 w-6" />
-            <span className="font-medium text-[var(--text-primary)]">Admin Dashboard</span>
-          </div>
-          <svg className="w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--color-terracotta)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
+        <NavLink to="/admin" className="mt-4 block overflow-hidden rounded-[24px] bg-[var(--bg-secondary)]">
+          <MenuRow
+            icon={<AccountIcon name="settings" className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+            title="Admin dashboard"
+            subtitle="Catalogue, orders and analysis"
+          />
         </NavLink>
-      )}
-
-      {/* Logout */}
-      {user && (
-        <button
-          onClick={handleLogout}
-          className="btn btn-secondary w-full mt-6"
-        >
-          Sign Out
-        </button>
       )}
     </div>
   );

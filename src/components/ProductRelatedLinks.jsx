@@ -5,14 +5,14 @@ function LinkGroup({ title, links }) {
   if (!Array.isArray(links) || links.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+    <div>
+      <h3 className="mb-2.5 font-display text-[21px] text-[var(--text-primary)]">{title}</h3>
       <div className="flex flex-wrap gap-2">
         {links.map((link) => (
           <Link
             key={link.path}
             to={link.path}
-            className="inline-flex rounded-full border border-[var(--border-color)] px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--color-forest)] hover:text-[var(--color-forest)]"
+            className="inline-flex rounded-full border border-[var(--border-color)] px-3.5 py-2 text-[13px] font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--color-terracotta)] hover:text-[var(--color-accent-700)] dark:hover:text-[var(--color-accent-300)]"
           >
             {link.label}
           </Link>
@@ -29,14 +29,11 @@ export default function ProductRelatedLinks({ product }) {
   if (!hasLinks) return null;
 
   return (
-    <section className="mt-8 border-t border-[var(--border-color)] pt-6" aria-label="Related plant pages and guides">
-      <h2 className="text-xl font-bold text-[var(--text-primary)]">Related plant pages and guides</h2>
-      <div className="mt-4 grid gap-5">
-        <LinkGroup title="Related products" links={links.products} />
-        <LinkGroup title="Related plants" links={links.plants} />
-        <LinkGroup title="Related care guides" links={links.careGuides} />
-        <LinkGroup title="Related problem guides" links={links.problemGuides} />
-      </div>
+    <section className="mt-7 grid gap-6" aria-label="Related plant pages and guides">
+      <LinkGroup title="Related plants" links={links.plants} />
+      <LinkGroup title="Related care guides" links={links.careGuides} />
+      <LinkGroup title="Related problem guides" links={links.problemGuides} />
+      <LinkGroup title="Related products" links={links.products} />
     </section>
   );
 }

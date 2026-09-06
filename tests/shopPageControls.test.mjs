@@ -102,3 +102,49 @@ test('shop hero has a generated background for every selectable category', () =>
     assert.ok(fs.existsSync(localImagePath), `${imagePath} should exist in public assets`);
   }
 });
+
+const homePageSource = fs.readFileSync(path.join(projectRoot, 'src', 'pages', 'HomePage.jsx'), 'utf8');
+const productCardSource = fs.readFileSync(path.join(projectRoot, 'src', 'components', 'ProductCard.jsx'), 'utf8');
+const storefrontSource = fs.readFileSync(path.join(projectRoot, 'src', 'components', 'storefront.jsx'), 'utf8');
+
+test('shop sort is a dropdown listing every sort order', () => {
+  assert.match(shopPageSource, /aria-label="Sort plants"/);
+  assert.match(shopPageSource, /SORT_OPTIONS\.map\(\(option\) => \(\s*<option/);
+  assert.doesNotMatch(shopPageSource, /cycleSortOrder/);
+  for (const sortId of ['oldest', 'newest', 'price-asc', 'price-desc', 'name-asc']) {
+    assert.match(shopPageSource, new RegExp(`id: '${sortId}'`));
+  }
+});
+
+test('shop loads the whole catalogue so the id sorts can be trusted', () => {
+  // A paged fetch returns Firestore's lexicographic id order, which cannot be
+  // sorted or counted honestly.
+  assert.doesNotMatch(shopPageSource, /getProductsPage/);
+  assert.match(shopPageSource, /getSortableProductId\(b\) - getSortableProductId\(a\)/);
+  assert.match(shopPageSource, /getSortableProductId\(a\) - getSortableProductId\(b\)/);
+});
+
+test('the shop opens on plant #1 and counts upwards', () => {
+  assert.match(shopPageSource, /const SORT_OPTIONS = Object\.freeze\(\[\s*\{ id: 'oldest'/);
+  assert.match(shopPageSource, /useState\(SORT_OPTIONS\[0\]\.id\)/);
+});
+
+test('home search hands the typed query to the shop instead of leaving on tap', () => {
+  assert.match(homePageSource, /role="search"/);
+  assert.match(homePageSource, /navigate\(query \? `\/shop\?q=\$\{encodeURIComponent\(query\)\}` : '\/shop'\)/);
+  assert.doesNotMatch(homePageSource, /<Link\s+to="\/shop"\s+className="flex min-h-11 w-full items-center gap-3 rounded-full/);
+});
+
+test('home shows the six newest plants on the bench', () => {
+  assert.match(homePageSource, /getLatestProducts\(6\)/);
+  assert.doesNotMatch(homePageSource, /getProductsPage/);
+});
+
+test('a plant already in the cart keeps quantity and remove controls', () => {
+  assert.match(storefrontSource, /export function InCartControls/);
+  assert.match(storefrontSource, /aria-label=\{removeLabel\}/);
+  assert.match(productCardSource, /<InCartControls/);
+  assert.match(productCardSource, /onRemove=\{handleRemoveFromCart\}/);
+  // Stepping below one empties the line rather than sticking at one.
+  assert.match(storefrontSource, /min=\{0\}/);
+});

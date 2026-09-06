@@ -260,3 +260,25 @@ export async function deleteProduct(productId, imageUrls) {
     throw error;
   }
 }
+
+/** Plant ids are strings like "12" or "L3", so compare on the number only. */
+function getNumericProductId(product) {
+  const digits = String(product?.id ?? '').replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : 0;
+}
+
+/**
+ * The plants that arrived on the bench most recently, newest first.
+ *
+ * Firestore orders document ids lexicographically, so a server-side limit would
+ * return "99" before "313". Numeric order needs the whole catalogue, which is
+ * the same cached read the shop page performs.
+ */
+export async function getLatestProducts(count = 6) {
+  const products = await getProducts();
+
+  return [...products]
+    .filter(product => product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock))
+    .sort((a, b) => getNumericProductId(b) - getNumericProductId(a))
+    .slice(0, count);
+}

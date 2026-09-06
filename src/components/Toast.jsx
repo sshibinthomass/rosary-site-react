@@ -1,4 +1,20 @@
 import { useToast } from '../context/ToastContext';
+import Icon from './Icon';
+
+const TOAST_TONES = {
+  success: {
+    className: 'bg-[var(--panel-deep)] text-[var(--panel-deep-text)]',
+    icon: 'check',
+  },
+  error: {
+    className: 'bg-[var(--color-accent-700)] text-[var(--color-accent-100)]',
+    icon: 'alert',
+  },
+  info: {
+    className: 'bg-[var(--color-terracotta)] text-[#f5ead8]',
+    icon: 'info',
+  },
+};
 
 export default function Toast() {
   const { toasts, removeToast } = useToast();
@@ -6,37 +22,30 @@ export default function Toast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-[90vw] sm:max-w-sm">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`
-            animate-slide-up flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg
-            ${toast.type === 'success' ? 'bg-[var(--color-forest)] text-white' : ''}
-            ${toast.type === 'error' ? 'bg-red-500 text-white' : ''}
-            ${toast.type === 'info' ? 'bg-[var(--color-terracotta)] text-white' : ''}
-          `}
-          onClick={() => removeToast(toast.id)}
-        >
-          {/* Icon */}
-          <span className="text-lg">
-            {toast.type === 'success' && '✓'}
-            {toast.type === 'error' && '✕'}
-            {toast.type === 'info' && 'ℹ'}
-          </span>
-          
-          {/* Message */}
-          <p className="text-sm font-medium flex-1">{toast.message}</p>
-          
-          {/* Close */}
-          <button 
-            className="opacity-70 hover:opacity-100 transition-opacity"
+    <div className="fixed left-1/2 top-4 z-[100] flex w-[min(92vw,26rem)] -translate-x-1/2 flex-col gap-2 sm:left-auto sm:right-4 sm:translate-x-0">
+      {toasts.map((toast) => {
+        const tone = TOAST_TONES[toast.type] || TOAST_TONES.info;
+
+        return (
+          <div
+            key={toast.id}
+            role="status"
+            className={`animate-slide-up flex items-center gap-3 rounded-full px-4 py-3 shadow-[var(--shadow-lifted)] ${tone.className}`}
             onClick={() => removeToast(toast.id)}
           >
-            ✕
-          </button>
-        </div>
-      ))}
+            <Icon name={tone.icon} className="h-[18px] w-[18px] shrink-0" />
+            <p className="flex-1 text-sm font-semibold">{toast.message}</p>
+            <button
+              type="button"
+              className="shrink-0 opacity-70 transition-opacity hover:opacity-100"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss"
+            >
+              <Icon name="x" className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

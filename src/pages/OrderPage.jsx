@@ -9,15 +9,39 @@ import { getLimitedById } from '../services/limitedService';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { openExternalUrl } from '../utils/externalNavigation';
 import { buildWhatsAppUrlForOrder } from '../utils/orderWhatsApp';
+import { buildWhatsAppLink, buildOrderSupportMessage } from '../utils/nurseryMessages';
+import { SITE_POLICY } from '../utils/sitePolicy';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { CURRENCY } from '../config/constants';
+import {
+  CURRENCY,
+  FACEBOOK_URL,
+  INSTAGRAM_HANDLE,
+  INSTAGRAM_URL,
+  NURSERY_HOURS,
+  NURSERY_PHONE_DISPLAY,
+  NURSERY_PHONE_TEL,
+  YOUTUBE_URL,
+} from '../config/constants';
 import OrderItemEditor from '../components/OrderItemEditor';
+import SEO from '../components/SEO';
+import Icon from '../components/Icon';
+import { EmptyState, PageBar } from '../components/storefront';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 import ReactMarkdown from 'react-markdown';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+
+/** Steps filled on the three-segment progress rail, by status. */
+const PROGRESS_STEPS = { confirmed: 1, shipped: 2, delivered: 3 };
+
+const SOCIAL_LINKS = [
+  { name: 'Instagram', href: INSTAGRAM_URL, icon: 'instagram' },
+  { name: 'Facebook', href: FACEBOOK_URL, icon: 'facebook' },
+  { name: 'WhatsApp', href: buildWhatsAppLink(''), icon: 'whatsapp' },
+  { name: 'YouTube', href: YOUTUBE_URL, icon: 'youtube' },
+];
 
 export default function OrderPage() {
   const { orderId } = useParams();
@@ -46,13 +70,11 @@ export default function OrderPage() {
   // Name toggle state (admin only)
   const [showTitle, setShowTitle] = useState(false);
   const [productNames, setProductNames] = useState({}); // { productId: { title, commonName } }
-  const [loadingNames, setLoadingNames] = useState(false);
 
   // Item editing state
   const [editingItems, setEditingItems] = useState(false);
   const [savingItems, setSavingItems] = useState(false);
 
-  // PDF Exporting state
   // PDF Exporting state
   const [exportingOrder, setExportingOrder] = useState(false);
 
@@ -146,9 +168,9 @@ export default function OrderPage() {
           const title = product.title || item.name || product.name || product.commonName;
           const commonName = product.commonName || product.name || item.name || title;
           const plantId = product.id || item.productId;
-          names[item.productId] = { 
-            title, 
-            commonName, 
+          names[item.productId] = {
+            title,
+            commonName,
             plantId,
             description: product.description,
             watering: product.watering,
@@ -194,7 +216,7 @@ export default function OrderPage() {
       await updateOrderStatus(order.id, newStatus);
       setOrder(prev => ({ ...prev, status: newStatus }));
       success(`Status updated to ${newStatus}`);
-    } catch (err) {
+    } catch {
       showError('Failed to update status');
     } finally {
       setUpdatingStatus(false);
@@ -208,7 +230,7 @@ export default function OrderPage() {
       setOrder(prev => ({ ...prev, customer: editCustomer }));
       setIsEditingCustomer(false);
       success('Customer details updated!');
-    } catch (err) {
+    } catch {
       showError('Failed to update details');
     } finally {
       setSavingCustomer(false);
@@ -228,7 +250,7 @@ export default function OrderPage() {
       setOrder(prev => ({ ...prev, deliveryCharge: charge }));
       setEditingDelivery(false);
       success('Delivery charge updated!');
-    } catch (err) {
+    } catch {
       showError('Failed to update delivery charge');
     } finally {
       setSavingDelivery(false);
@@ -243,7 +265,7 @@ export default function OrderPage() {
       setOrder(prev => ({ ...prev, manualDiscount: discount }));
       setEditingDiscount(false);
       success('Discount updated!');
-    } catch (err) {
+    } catch {
       showError('Failed to update discount');
     } finally {
       setSavingDiscount(false);
@@ -278,10 +300,38 @@ export default function OrderPage() {
       } else {
         success('Order items updated!');
       }
-    } catch (err) {
+    } catch {
       showError('Failed to update items');
     } finally {
       setSavingItems(false);
+    }
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+  };
+
+  /** "Monday, 2 Sept" — used for the plain-language line under the progress rail. */
+  const formatDay = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-[var(--color-accent-200)] text-[var(--color-accent-700)]';
+      case 'confirmed': return 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)]';
+      case 'shipped': return 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)]';
+      case 'delivered': return 'bg-[var(--color-neutral-200)] text-[var(--color-neutral-700)]';
+      case 'cancelled': return 'bg-[#f0d5cd] text-[#8a3a24]';
+      default: return 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]';
     }
   };
 
@@ -300,11 +350,11 @@ export default function OrderPage() {
       };
 
       const doc = await generateInvoicePDF(orderData, order.items || [], getItemName);
-      
+
       const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/:/g, '-').replace(/ /g, '_');
       const safeDate = formatDate(order.createdAt).replace(/[:,\s]+/g, '_');
       const fileName = `Rosary_Bill_${order.orderId || order.id}_${safeDate}_${timeStr}.pdf`;
-      
+
       doc.save(fileName);
       success('PDF downloaded successfully');
     } catch (err) {
@@ -317,214 +367,256 @@ export default function OrderPage() {
 
   if (loading) {
     return (
-      <div className="animate-fade-in text-center py-12">
-        <div className="w-8 h-8 border-2 border-[var(--color-forest)] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-[var(--text-secondary)] mt-4">Loading order...</p>
+      <div className="animate-fade-in py-16 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-terracotta)] border-t-transparent" />
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">Loading order...</p>
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="animate-fade-in text-center py-12">
-        <span className="text-5xl">📋</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Order Not Found</h2>
-        <p className="text-[var(--text-secondary)] mt-2">{error || 'This order does not exist.'}</p>
-        <NavLink to="/" className="btn btn-primary mt-4">
-          Back to Home
-        </NavLink>
+      <div className="animate-fade-in mx-auto max-w-2xl">
+        <SEO
+          title="Your order"
+          description="Track a Rosary Plant House order, its delivery details and its plants."
+          noindex
+        />
+        <PageBar title="Order details" />
+        <EmptyState
+          icon="package"
+          title="Order Not Found"
+          description={error || 'This order does not exist.'}
+        >
+          <NavLink to="/" className="btn btn-primary">
+            Back to Home
+          </NavLink>
+        </EmptyState>
       </div>
     );
   }
 
   if (order.status === 'cancelled' && !isAdmin) {
     return (
-      <div className="animate-fade-in text-center py-12">
-        <span className="text-5xl">📋</span>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Order Not Found</h2>
-        <p className="text-[var(--text-secondary)] mt-2">This order is no longer available.</p>
-        <NavLink to="/" className="btn btn-primary mt-4">
-          Back to Home
-        </NavLink>
+      <div className="animate-fade-in mx-auto max-w-2xl">
+        <SEO
+          title={order.orderId ? `Order ${order.orderId}` : 'Your order'}
+          description="Track a Rosary Plant House order, its delivery details and its plants."
+          noindex
+        />
+        <PageBar title="Order details" />
+        <EmptyState
+          icon="package"
+          title="Order Not Found"
+          description="This order is no longer available."
+        >
+          <NavLink to="/" className="btn btn-primary">
+            Back to Home
+          </NavLink>
+        </EmptyState>
       </div>
     );
   }
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleString('en-IN', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'confirmed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'shipped': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'delivered': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-      case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
-    }
-  };
-
+  const normalisedStatus = order.status?.toLowerCase();
   const isPendingOrder = order.status?.toLowerCase() === 'pending';
+  const progressStep = PROGRESS_STEPS[normalisedStatus] || 0;
+  const showProgressRail = progressStep > 0;
+
+  // Plain-language line under the rail. Only real order data and the published
+  // dispatch policy — never an invented courier or date.
+  const progressDay = formatDay(order.updatedAt);
+  const etaMatch = SITE_POLICY.shipping.deliveryEtaFromDispatch.find((entry) =>
+    [order.customer?.district, order.customer?.state]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(entry.area.toLowerCase())
+  );
+  let progressNote = '';
+  if (normalisedStatus === 'confirmed') {
+    progressNote = `Confirmed. We dispatch on the nearest ${SITE_POLICY.shipping.dispatchDays}.`;
+  } else if (normalisedStatus === 'shipped') {
+    progressNote = progressDay ? `Dispatched ${progressDay}.` : 'On its way to you.';
+    progressNote += etaMatch ? ` Expected ${etaMatch.eta} in ${etaMatch.area}.` : ` ${SITE_POLICY.shipping.courier}`;
+  } else if (normalisedStatus === 'delivered') {
+    progressNote = progressDay ? `Delivered ${progressDay}.` : 'Delivered.';
+    progressNote += ' Damaged in transit? Tell us on the delivery day or the next and we replace it.';
+  }
+
+  // The RPH order code is the one we look an order up by, so it is the code the
+  // customer quotes. The checkout tracker's code only stands in if it is missing.
+  const supportCode = order.orderId || order.supportCode || '';
+  const supportHref = buildWhatsAppLink(
+    buildOrderSupportMessage({ supportCode, orderId: order.orderId || order.id })
+  );
+
+  const statusPill = (
+    <span className={`badge shrink-0 capitalize ${getStatusColor(order.status)}`}>
+      {order.status}
+    </span>
+  );
+
+  const locationLine = [order.customer.district, order.customer.state, order.customer.pincode]
+    .filter(Boolean)
+    .join(', ');
+  const detailRows = [
+    { label: 'Name', value: order.customer.name || 'N/A' },
+    { label: 'Phone', value: order.customer.phone || 'N/A' },
+    ...(order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone
+      ? [{ label: 'WhatsApp', value: order.customer.whatsapp }]
+      : []),
+    { label: 'Address', value: order.customer.address || 'N/A' },
+    ...(locationLine ? [{ label: 'Location', value: locationLine }] : []),
+  ];
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto relative">
+    <div className="animate-fade-in relative mx-auto max-w-2xl">
+      <SEO
+        title={order.orderId ? `Order ${order.orderId}` : 'Your order'}
+        description="Track a Rosary Plant House order, its delivery details and its plants."
+        noindex
+      />
+
       {/* Thank You & Promo Popup */}
       {showThanksPopup && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div 
-            className="bg-white dark:bg-[var(--bg-primary)] w-full max-w-sm rounded-[24px] shadow-2xl overflow-hidden relative animate-slide-up border-[3px] border-[var(--color-forest)] p-1"
+        <div className="animate-fade-in fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+          <div
+            className="animate-slide-up safe-bottom relative w-full max-w-md rounded-t-[28px] bg-[var(--bg-secondary)] px-5 pb-7 pt-7 text-center"
             role="dialog"
           >
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/40 dark:to-emerald-800/40 rounded-[20px] p-6 text-center relative overflow-hidden">
-                {/* Decorative background elements */}
-                <div className="absolute -top-12 -right-12 w-24 h-24 bg-green-300/40 dark:bg-green-600/30 rounded-full blur-xl pointer-events-none"></div>
-                <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-emerald-300/40 dark:bg-emerald-600/30 rounded-full blur-xl pointer-events-none"></div>
-                <button
-                  onClick={handleCloseThanksPopup}
-                  className="absolute top-3 right-3 p-1.5 text-green-700 bg-green-200/50 hover:bg-green-300/50 rounded-full transition-colors z-10"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-                <img src={logo} alt="Rosary Plant House" className="w-16 h-16 mx-auto mb-3 animate-bounce-slow object-contain" />
-                <h2 className="text-2xl font-black text-green-800 dark:text-green-300 mb-2 font-serif">
-                  Thank You{order?.customer?.name ? `, ${order.customer.name}` : "" }! 🌿
-                </h2>
+            <button
+              type="button"
+              onClick={handleCloseThanksPopup}
+              aria-label="Close"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-sunken)]"
+            >
+              <Icon name="x" className="h-[18px] w-[18px]" />
+            </button>
 
-                <p className="text-green-700 dark:text-green-300/90 text-sm mb-5 font-medium">
-                  We're so glad you chose Rosary Plant House!
-                </p>
-                <div className="bg-white/60 dark:bg-black/20 rounded-xl p-4 border border-green-200 dark:border-green-800/50 mb-2 shadow-inner">
-                  <div className="text-3xl mb-2">🎁</div>
-                  <p className="text-xs text-green-800 dark:text-green-200 font-bold mb-1 tracking-wider uppercase">Claim Free Plant</p>
-                  <p className="text-[12px] text-green-700 dark:text-green-300/90 leading-relaxed font-medium">
-                      Post an Insta story with your beautiful plants bought from rosary plant house and tag <strong>@rosary_plant_house</strong> to get a <strong className="text-green-800 dark:text-green-200">Complimentary Plant</strong> on your next order! 📸
-                  </p>
-                </div>
-                {/* Social Links inside Popup */}
-                <div className="flex flex-wrap justify-center gap-3 mt-5 mb-2">
-                  <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" 
-                     className="flex items-center justify-center p-2.5 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white rounded-full hover:scale-110 shadow-md transition-transform">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                  </a>
-                  <a href="https://facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer" 
-                     className="flex items-center justify-center p-2.5 bg-[#1877F2] text-white rounded-full hover:scale-110 shadow-md transition-transform">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  </a>
-                  <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" 
-                     className="flex items-center justify-center p-2.5 bg-[#25D366] text-white rounded-full hover:scale-110 shadow-md transition-transform">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 0A12 12 0 000 12c0 2.115.553 4.103 1.528 5.819L.085 23.44l5.776-1.503A11.928 11.928 0 0011.996 24C18.625 24 24 18.625 24 12 24 5.375 18.625 0 11.996 0zm0 22a9.94 9.94 0 01-5.1-1.405l-.364-.216-3.8.989 1.01-3.666-.237-.37A9.957 9.957 0 012 12c0-5.514 4.486-10 10-10 5.513 0 9.996 4.486 9.996 10 0 5.514-4.483 10-9.996 10zm5.492-7.48c-.301-.15-1.782-.876-2.062-.976-.28-.1-.482-.15-.685.15-.203.3-.781.976-.957 1.176-.176.2-.353.226-.653.076-1.353-.679-2.4-1.99-2.883-2.827-.176-.3-.018-.466.132-.616.135-.135.301-.351.452-.527.15-.176.2-.301.3-.502.1-.201.05-.376-.025-.526-.075-.15-.685-1.652-.938-2.261-.247-.594-.497-.514-.685-.524-.176-.008-.378-.01-.58-.01a1.115 1.115 0 00-.803.376c-.276.3-1.053 1.026-1.053 2.503 0 1.477 1.078 2.903 1.228 3.103.15.2 2.112 3.221 5.115 4.516.716.309 1.275.494 1.71.632.72.23 1.373.197 1.888.119.578-.088 1.782-.728 2.033-1.43.25-.702.25-1.303.175-1.43-.075-.126-.276-.201-.577-.35z"/></svg>
-                  </a>
-                  <a href="https://rosaryplanthouse.com" target="_blank" rel="noopener noreferrer" 
-                     className="flex items-center justify-center p-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 rounded-full hover:scale-110 shadow-md transition-transform">
-                    <span className="text-sm leading-none">🌐</span>
-                  </a>
-                </div>
-                <button 
-                  onClick={handleCloseThanksPopup}
-                  className="mt-4 w-full bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-700 dark:to-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-900/20 hover:scale-[1.02] transition-transform"
+            <img src={logo} alt="Rosary Plant House" className="mx-auto mb-4 h-16 w-16 object-contain" />
+            <h2 className="font-display text-[27px] leading-tight text-[var(--text-primary)]">
+              Thank you{order?.customer?.name ? `, ${order.customer.name}` : ''}
+            </h2>
+            <p className="mx-auto mt-2 max-w-[320px] text-[14px] leading-relaxed text-[var(--text-secondary)]">
+              We are so glad you chose Rosary Plant House.
+            </p>
+
+            <div className="mt-5 rounded-[24px] bg-[var(--color-accent-200)] px-5 py-4 text-left">
+              <p className="text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--color-accent-700)]">
+                Claim a free plant
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-accent-900)]">
+                Post an Instagram story with the plants you bought from us and tag{' '}
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold underline underline-offset-2 hover:opacity-80"
                 >
-                  Awesome, got it! 💚
-                </button>
+                  {INSTAGRAM_HANDLE}
+                </a>{' '}
+                to get a complimentary plant with your next order.
+              </p>
             </div>
+
+            <div className="mt-5 flex justify-center gap-3">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.name}
+                  title={social.name}
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--bg-sunken)]"
+                >
+                  <Icon name={social.icon} filled className="h-[18px] w-[18px]" />
+                </a>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCloseThanksPopup}
+              className="btn btn-primary mt-6 w-full"
+            >
+              Got it
+            </button>
           </div>
         </div>,
         document.body
       )}
 
-      {/* Promotional Ad Section */}
-      {!isAdmin && (
-      <div className="card p-6 mb-4 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 border-2 border-green-200 dark:border-green-800 shadow-sm relative overflow-hidden">
-        {/* Decorative background leaf/circle */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-200/50 dark:bg-green-700/30 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-200/50 dark:bg-emerald-700/30 rounded-full blur-2xl pointer-events-none"></div>
-        
-        <div className="text-center relative z-10">
-          <h2 className="text-2xl font-black text-green-800 dark:text-green-300 mb-2 font-serif">
-            Join Our Plant Family! 🌿
-          </h2>
-          <p className="text-sm md:text-base text-green-700 dark:text-green-300/90 mb-6 max-w-lg mx-auto leading-relaxed">
-            Follow us for daily plant care tips, exciting new arrivals, and exclusive offers. 
-            <br className="hidden md:block"/>
-            <span className="font-semibold text-green-800 dark:text-green-200 mt-2 block bg-white/50 dark:bg-black/20 py-2 px-3 rounded-lg">
-              📸 Tag us in your Instagram story with your beautiful new plants to get a Complimentary Plant on your next order!
-            </span>
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-            <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" 
-               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white rounded-full font-bold text-sm hover:scale-105 hover:shadow-lg transition-all duration-300 group">
-              <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-              Instagram
-            </a>
-            <a href="https://facebook.com/rosaryplanthouse" target="_blank" rel="noopener noreferrer" 
-               className="flex items-center gap-2 px-5 py-2.5 bg-[#1877F2] text-white rounded-full font-bold text-sm hover:scale-105 hover:bg-[#166fe5] hover:shadow-lg transition-all duration-300 group">
-              <svg className="w-5 h-5 group-hover:-rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              Facebook
-            </a>
-            <a href="https://wa.me/917904050237" target="_blank" rel="noopener noreferrer" 
-               className="flex items-center gap-2 px-5 py-2.5 bg-[#25D366] text-white rounded-full font-bold text-sm hover:scale-105 hover:bg-[#20bd5a] hover:shadow-lg transition-all duration-300 group">
-              <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 0A12 12 0 000 12c0 2.115.553 4.103 1.528 5.819L.085 23.44l5.776-1.503A11.928 11.928 0 0011.996 24C18.625 24 24 18.625 24 12 24 5.375 18.625 0 11.996 0zm0 22a9.94 9.94 0 01-5.1-1.405l-.364-.216-3.8.989 1.01-3.666-.237-.37A9.957 9.957 0 012 12c0-5.514 4.486-10 10-10 5.513 0 9.996 4.486 9.996 10 0 5.514-4.483 10-9.996 10zm5.492-7.48c-.301-.15-1.782-.876-2.062-.976-.28-.1-.482-.15-.685.15-.203.3-.781.976-.957 1.176-.176.2-.353.226-.653.076-1.353-.679-2.4-1.99-2.883-2.827-.176-.3-.018-.466.132-.616.135-.135.301-.351.452-.527.15-.176.2-.301.3-.502.1-.201.05-.376-.025-.526-.075-.15-.685-1.652-.938-2.261-.247-.594-.497-.514-.685-.524-.176-.008-.378-.01-.58-.01a1.115 1.115 0 00-.803.376c-.276.3-1.053 1.026-1.053 2.503 0 1.477 1.078 2.903 1.228 3.103.15.2 2.112 3.221 5.115 4.516.716.309 1.275.494 1.71.632.72.23 1.373.197 1.888.119.578-.088 1.782-.728 2.033-1.43.25-.702.25-1.303.175-1.43-.075-.126-.276-.201-.577-.35z"/></svg>
-              WhatsApp
-            </a>
-            <a href="https://rosaryplanthouse.com" target="_blank" rel="noopener noreferrer" 
-               className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 rounded-full font-bold text-sm hover:scale-105 hover:bg-slate-700 dark:hover:bg-slate-300 hover:shadow-lg transition-all duration-300 group">
-              <span className="text-xl leading-none group-hover:scale-110 transition-transform">🌐</span> Website
-            </a>
-          </div>
-        </div>
-      </div>
-      )}
+      <PageBar title="Order details" trailing={statusPill} />
 
       {/* Header */}
-      <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Order Details</h1>
-          <span className={`badge ${getStatusColor(order.status)} capitalize`}>
-            {order.status}
-          </span>
+      <div className="card mb-3 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[15px] font-bold uppercase tracking-[0.09em] text-[var(--text-primary)]">
+              {order.orderId}
+            </p>
+            <p className="mt-1.5 text-[13px] text-[var(--text-secondary)]">
+              Placed on {formatDate(order.createdAt)}
+            </p>
+          </div>
+          {statusPill}
         </div>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Order ID: <span className="font-mono font-medium text-[var(--text-primary)]">{order.orderId}</span>
-        </p>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Placed on: {formatDate(order.createdAt)}
-        </p>
+
+        {showProgressRail && (
+          <div className="mt-5">
+            <div className="flex items-center gap-1.5" role="presentation">
+              {[1, 2, 3].map((step) => (
+                <span
+                  key={step}
+                  className={`h-1 flex-1 rounded-full ${step <= progressStep ? 'bg-[#7a8a5e]' : 'bg-[var(--bg-tertiary)]'}`}
+                />
+              ))}
+            </div>
+            <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              {progressNote}
+            </p>
+          </div>
+        )}
       </div>
 
       {isPendingOrder && (
-        <div className="card p-4 mb-4 border border-yellow-200 bg-yellow-50/80 dark:border-yellow-900/50 dark:bg-yellow-900/20">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h2 className="font-semibold text-[var(--text-primary)]">Send this order request</h2>
-              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-                This order is not placed yet. Please tap Send there to confirm in WhatsApp. No payment has been collected on this site.
-              </p>
-            </div>
+        <div className="card mb-3 p-1">
+          <div className="rounded-[24px] bg-[var(--color-accent-700)] px-5 py-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.11em] text-[var(--color-accent-200)]">
+              Not sent yet
+            </p>
+            <h2 className="mt-1.5 font-display text-[19px] leading-tight text-[#fff2eb]">
+              Send this order request
+            </h2>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--color-accent-200)]">
+              This order is not placed yet. Please tap Send there to confirm in WhatsApp. No payment has been collected on this site.
+            </p>
             <button
               type="button"
               onClick={handleSendPendingOrderOnWhatsApp}
               disabled={sendingOrderRequest}
-              className="btn btn-primary shrink-0 justify-center gap-2 disabled:opacity-50"
+              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full bg-[#fff2eb] px-5 font-display text-[15px] text-[var(--color-accent-700)] transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {sendingOrderRequest && (
-                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              {sendingOrderRequest ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-accent-700)]/30 border-t-[var(--color-accent-700)]" />
+              ) : (
+                <Icon name="whatsapp" filled className="h-[17px] w-[17px]" />
               )}
               <span>Send order on WhatsApp</span>
             </button>
+            <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--color-accent-200)]">
+              Reopens the chat with the same list. It will not create a second order.
+            </p>
           </div>
         </div>
       )}
 
       {/* Admin: Update Status */}
       {isAdmin && (
-        <div className="card p-4 mb-4">
-          <h2 className="font-semibold text-[var(--text-primary)] mb-3">Update Status</h2>
+        <div className="card mb-3 p-5">
+          <h2 className="mb-3 font-display text-[17px] text-[var(--text-primary)]">Update Status</h2>
           <div className="flex flex-wrap gap-2">
             {ORDER_STATUSES.map((status) => (
               <button
@@ -532,12 +624,12 @@ export default function OrderPage() {
                 onClick={() => handleStatusUpdate(status)}
                 disabled={updatingStatus || order.status === status}
                 className={`
-                  px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all
+                  rounded-full px-4 py-2 text-[13px] font-semibold capitalize transition-all
                   ${order.status === status
-                    ? getStatusColor(status) + ' ring-2 ring-offset-2 ring-[var(--color-forest)] dark:ring-offset-[var(--bg-primary)]'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                    ? getStatusColor(status) + ' ring-2 ring-[var(--color-terracotta)] ring-offset-2 ring-offset-[var(--bg-secondary)]'
+                    : 'border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--color-terracotta)] hover:text-[var(--text-primary)]'
                   }
-                  ${updatingStatus ? 'opacity-50 cursor-wait' : ''}
+                  ${updatingStatus ? 'cursor-wait opacity-50' : ''}
                 `}
               >
                 {status}
@@ -548,15 +640,15 @@ export default function OrderPage() {
       )}
 
       {/* Customer Details */}
-      <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-[var(--text-primary)]">Delivery Details</h2>
+      <div className="card mb-3 p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-display text-[17px] text-[var(--text-primary)]">Delivery details</h2>
           {canEditCustomer && !isEditingCustomer && (
             <button
               onClick={() => setIsEditingCustomer(true)}
-              className="text-sm text-[var(--color-forest)] hover:underline font-medium"
+              className="shrink-0 text-[13px] font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
             >
-              ✏️ Edit
+              Edit
             </button>
           )}
         </div>
@@ -564,7 +656,7 @@ export default function OrderPage() {
         {isEditingCustomer ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Name</label>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">Name</label>
               <input
                 type="text"
                 value={editCustomer.name || ''}
@@ -573,9 +665,9 @@ export default function OrderPage() {
                 placeholder="Customer name"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Phone</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">Phone</label>
                 <input
                   type="tel"
                   value={editCustomer.phone || ''}
@@ -585,7 +677,7 @@ export default function OrderPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">WhatsApp</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">WhatsApp</label>
                 <input
                   type="tel"
                   value={editCustomer.whatsapp || ''}
@@ -596,7 +688,7 @@ export default function OrderPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-[var(--text-secondary)] mb-1 block">Address</label>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">Address</label>
               <textarea
                 value={editCustomer.address || ''}
                 onChange={(e) => setEditCustomer(prev => ({ ...prev, address: e.target.value }))}
@@ -606,7 +698,7 @@ export default function OrderPage() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">Pincode</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">Pincode</label>
                 <input
                   type="text"
                   value={editCustomer.pincode || ''}
@@ -617,7 +709,7 @@ export default function OrderPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">District</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">District</label>
                 <input
                   type="text"
                   value={editCustomer.district || ''}
@@ -627,7 +719,7 @@ export default function OrderPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-[var(--text-secondary)] mb-1 block">State</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">State</label>
                 <input
                   type="text"
                   value={editCustomer.state || ''}
@@ -647,10 +739,10 @@ export default function OrderPage() {
               <button
                 onClick={handleSaveCustomer}
                 disabled={savingCustomer}
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+                className="btn btn-primary flex-1"
               >
                 {savingCustomer ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 ) : (
                   'Save Changes'
                 )}
@@ -658,55 +750,45 @@ export default function OrderPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-2 text-sm">
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Name:</span> {order.customer.name || 'N/A'}
-            </p>
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Phone:</span> {order.customer.phone || 'N/A'}
-            </p>
-            {order.customer.whatsapp && order.customer.whatsapp !== order.customer.phone && (
-              <p className="text-[var(--text-primary)]">
-                <span className="text-[var(--text-secondary)]">WhatsApp:</span> {order.customer.whatsapp}
-              </p>
-            )}
-            <p className="text-[var(--text-primary)]">
-              <span className="text-[var(--text-secondary)]">Address:</span> {order.customer.address || 'N/A'}
-            </p>
-            {(order.customer.district || order.customer.state || order.customer.pincode) && (
-              <p className="text-[var(--text-primary)]">
-                <span className="text-[var(--text-secondary)]">Location:</span>{' '}
-                {[order.customer.district, order.customer.state, order.customer.pincode].filter(Boolean).join(', ')}
-              </p>
-            )}
+          <div className="rounded-[24px] bg-[var(--bg-primary)] px-4 py-3.5">
+            {detailRows.map((row, index) => (
+              <div
+                key={row.label}
+                className={`flex items-start justify-between gap-4 py-2 ${index === 0 ? '' : 'border-t border-[var(--border-color)]'}`}
+              >
+                <span className="shrink-0 text-[13px] text-[var(--text-secondary)]">{row.label}</span>
+                <span className="min-w-0 text-right text-[13px] font-semibold text-[var(--text-primary)]">{row.value}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
       {/* Items */}
-      <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-[var(--text-primary)]">Items ({order.totalItems})</h2>
-          <div className="flex items-center gap-2">
+      <div className="card mb-3 p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-display text-[17px] text-[var(--text-primary)]">Items ({order.totalItems})</h2>
+          <div className="flex shrink-0 items-center gap-2">
             {isAdmin && (
               <button
                 onClick={() => setEditingItems(!editingItems)}
-                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${editingItems ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all ${editingItems ? 'bg-[#f0d5cd] text-[#8a3a24]' : 'border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
-                {editingItems ? '✕ Cancel' : '✏️ Edit Items'}
+                {editingItems ? 'Cancel' : 'Edit Items'}
               </button>
             )}
             {isAdmin && !editingItems && (
               <button
                 onClick={handleToggleNames}
                 className={`
-                  text-xs px-3 py-1.5 rounded-lg font-medium transition-all
+                  rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all
                   ${showTitle
-                    ? 'bg-[var(--color-forest)] text-white'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'bg-[var(--color-terracotta)] text-[#f5ead8] dark:text-[#201e1d]'
+                    : 'border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }
                 `}
               >
-                {showTitle ? '📖 Title' : '🏷️ Common Name'}
+                {showTitle ? 'Title' : 'Common Name'}
               </button>
             )}
           </div>
@@ -716,51 +798,50 @@ export default function OrderPage() {
         ) : (
         <div className="space-y-3">
           {order.items.map((item, index) => (
-            <div key={index} className="flex gap-3 pb-3 border-b border-[var(--border-color)] last:border-0 last:pb-0">
+            <div key={index} className="flex gap-3 border-b border-[var(--border-color)] pb-3 last:border-0 last:pb-0">
               {item.imageUrl && (
-                <div className="w-14 h-14 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]">
                   <img
                     src={resolveImageUrl(item.imageUrl)}
                     alt={item.name}
-                    className="w-full h-full object-cover"
+                    className="washed h-full w-full object-cover"
                   />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-[var(--text-primary)] truncate">
-                  {index + 1}.{' '}
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-display text-[15px] text-[var(--text-primary)]">
+                  {index + 1}. {getItemName(item)}
                   {getItemPlantId(item) && (
-                    <span className="text-[var(--text-secondary)] text-xs mr-1">
+                    <span className="ml-1 text-[11px] font-normal text-[var(--text-secondary)]">
                       (ID: {getItemPlantId(item)})
                     </span>
                   )}
-                  {getItemName(item)}
                 </h3>
-                <p className="text-sm text-[var(--text-secondary)]">
+                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
                   {CURRENCY}{item.price} × {item.quantity} = {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
                 </p>
                 {!isAdmin && ['confirmed', 'shipped', 'delivered', 'completed'].includes(order.status?.toLowerCase()) && productNames[item.productId] && (
-                  <div className="mt-3 bg-[var(--bg-tertiary)] rounded-lg p-3">
-                    <h4 className="text-xs font-semibold text-[var(--text-primary)] mb-2 uppercase tracking-wide">Care Instructions</h4>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="flex flex-col items-center p-2 bg-[var(--bg-secondary)] rounded-md border border-[var(--border-color)] gap-1">
-                        <span className="text-lg">💧</span>
-                        <p className="text-[9px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">Water</p>
-                        <p className="text-[10px] font-bold text-[var(--text-primary)] text-center">{productNames[item.productId].watering || 'Moderate'}</p>
+                  <div className="mt-3 rounded-[24px] bg-[var(--bg-primary)] p-4">
+                    <h4 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">Care Instructions</h4>
+                    <div className="mb-3 grid grid-cols-2 gap-2">
+                      <div className="flex flex-col items-center gap-1 rounded-2xl bg-[var(--bg-secondary)] p-3">
+                        <Icon name="droplet" className="h-[18px] w-[18px] text-[var(--color-sage-800)]" />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--text-secondary)]">Water</p>
+                        <p className="text-center text-[12px] font-bold text-[var(--text-primary)]">{productNames[item.productId].watering || 'Moderate'}</p>
                       </div>
-                      <div className="flex flex-col items-center p-2 bg-[var(--bg-secondary)] rounded-md border border-[var(--border-color)] gap-1">
-                        <span className="text-lg">☀️</span>
-                        <p className="text-[9px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">Sunlight</p>
-                        <p className="text-[10px] font-bold text-[var(--text-primary)] text-center">{productNames[item.productId].sunlight || 'Moderate'}</p>
+                      <div className="flex flex-col items-center gap-1 rounded-2xl bg-[var(--bg-secondary)] p-3">
+                        <Icon name="sun" className="h-[18px] w-[18px] text-[var(--color-accent-700)]" />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--text-secondary)]">Sunlight</p>
+                        <p className="text-center text-[12px] font-bold text-[var(--text-primary)]">{productNames[item.productId].sunlight || 'Moderate'}</p>
                       </div>
                     </div>
                     {productNames[item.productId].description && (
-                      <details open className="text-xs text-[var(--text-secondary)] pt-2 border-t border-[var(--border-color)] group">
-                        <summary className="text-[10px] font-semibold text-[var(--text-primary)] uppercase tracking-wide cursor-pointer list-none flex items-center justify-between select-none p-1 -m-1 rounded hover:bg-[var(--bg-secondary)]">
-                          Plant Description
-                          <span className="text-[8px] transition-transform duration-200 group-open:rotate-180">▼</span>
+                      <details open className="group border-t border-[var(--border-color)] pt-2 text-[13px] text-[var(--text-secondary)]">
+                        <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-3 rounded-2xl px-1 py-2 font-display text-[15px] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]">
+                          Plant description
+                          <Icon name="chevron-down" className="h-4 w-4 shrink-0 text-[var(--text-secondary)] transition-transform duration-200 group-open:rotate-180" />
                         </summary>
-                        <div className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+                        <div className="mt-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">
                           {(() => {
                             const raw = productNames[item.productId].description.replace(/Â/g, '');
                             const sections = raw.split(/^## /m);
@@ -784,15 +865,12 @@ export default function OrderPage() {
                               const body = newlineIdx !== -1 ? section.slice(newlineIdx + 1).trim() : '';
                               return (
                                 <details key={i} className="group/section border-b border-[var(--border-color)] last:border-0">
-                                  <summary
-                                    className="cursor-pointer list-none flex items-center justify-between select-none py-2 rounded hover:bg-[var(--bg-secondary)]"
-                                    style={{fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)'}}
-                                  >
+                                  <summary className="flex cursor-pointer select-none items-center justify-between gap-3 rounded-2xl px-1 py-2.5 text-[13px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]">
                                     {heading}
-                                    <span className="text-[8px] transition-transform duration-200 group-open/section:rotate-180 ml-2 flex-shrink-0">▼</span>
+                                    <Icon name="chevron-down" className="h-4 w-4 shrink-0 text-[var(--text-secondary)] transition-transform duration-200 group-open/section:rotate-180" />
                                   </summary>
                                   {body && (
-                                    <div className="pb-2">
+                                    <div className="px-1 pb-2">
                                       <ReactMarkdown components={mdComponents}>{body}</ReactMarkdown>
                                     </div>
                                   )}
@@ -810,27 +888,30 @@ export default function OrderPage() {
           ))}
         </div>
         )}
-        
-        <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-2">
+      </div>
+
+      {/* Totals */}
+      <div className="card mb-3 p-5">
+        <div className="space-y-2.5">
           {/* Subtotal — show original pre-discount amount when a promo was used */}
-          <div className="flex justify-between text-sm text-[var(--text-secondary)]">
+          <div className="flex justify-between text-[13px] text-[var(--text-secondary)]">
             <span>Subtotal</span>
             <span>{CURRENCY}{(order.originalAmount ?? order.totalAmount).toLocaleString('en-IN')}</span>
           </div>
 
           {/* Promo discount row */}
           {order.promoCode && order.discountAmount > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                <span>🏷️</span>
-                <span className="font-mono font-semibold">{order.promoCode}</span>
-                <span className="text-xs text-[var(--text-secondary)]">
+            <div className="flex items-center justify-between gap-3 text-[13px]">
+              <span className="flex min-w-0 items-center gap-1.5 text-[var(--color-sage-800)] dark:text-[var(--color-sage-300)]">
+                <Icon name="gift" className="h-4 w-4 shrink-0" />
+                <span className="truncate font-mono font-semibold">{order.promoCode}</span>
+                <span className="shrink-0 text-[12px] text-[var(--text-secondary)]">
                   ({order.discountType === 'percentage'
                     ? `${order.discountValue}% off`
                     : `${CURRENCY}${order.discountValue} off`})
                 </span>
               </span>
-              <span className="font-medium text-green-600 dark:text-green-400">
+              <span className="shrink-0 font-semibold text-[var(--color-sage-800)] dark:text-[var(--color-sage-300)]">
                 −{CURRENCY}{order.discountAmount.toLocaleString('en-IN')}
               </span>
             </div>
@@ -838,7 +919,7 @@ export default function OrderPage() {
 
           {/* Manual Discount */}
           {(isAdmin || order.manualDiscount > 0) && (
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
             <span className="text-[var(--text-secondary)]">Discount</span>
             {isAdmin && editingDiscount ? (
               <div className="flex items-center gap-2">
@@ -848,7 +929,7 @@ export default function OrderPage() {
                     type="number"
                     value={discountInput}
                     onChange={(e) => setDiscountInput(e.target.value)}
-                    className="input w-24 py-1 px-2 text-right text-sm"
+                    className="input w-24 min-h-0 px-3 py-1.5 text-right text-[13px]"
                     placeholder="0"
                     min="0"
                   />
@@ -856,26 +937,26 @@ export default function OrderPage() {
                 <button
                   onClick={handleSaveDiscount}
                   disabled={savingDiscount}
-                  className="text-[var(--color-forest)] text-xs font-medium hover:underline"
+                  className="text-[12px] font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
                 >
                   {savingDiscount ? '...' : 'Save'}
                 </button>
                 <button
                   onClick={() => { setEditingDiscount(false); setDiscountInput(order.manualDiscount?.toString() || ''); }}
-                  className="text-[var(--text-secondary)] text-xs hover:underline"
+                  className="text-[12px] text-[var(--text-secondary)] hover:underline"
                 >
                   Cancel
                 </button>
               </div>
             ) : (
               <span className="flex items-center gap-2">
-                <span className={order.manualDiscount ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-secondary)] italic'}>
+                <span className={order.manualDiscount ? 'font-semibold text-[var(--color-sage-800)] dark:text-[var(--color-sage-300)]' : 'italic text-[var(--text-muted)]'}>
                   {order.manualDiscount ? `−${CURRENCY}${order.manualDiscount.toLocaleString('en-IN')}` : 'Not set'}
                 </span>
                 {isAdmin && (
                   <button
                     onClick={() => setEditingDiscount(true)}
-                    className="text-xs text-[var(--color-forest)] hover:underline"
+                    className="text-[12px] font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
                   >
                     {order.manualDiscount ? 'Edit' : 'Add'}
                   </button>
@@ -886,7 +967,7 @@ export default function OrderPage() {
           )}
 
           {/* Delivery Charge */}
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
             <span className="text-[var(--text-secondary)]">Delivery</span>
             {isAdmin && editingDelivery ? (
               <div className="flex items-center gap-2">
@@ -896,7 +977,7 @@ export default function OrderPage() {
                     type="number"
                     value={deliveryInput}
                     onChange={(e) => setDeliveryInput(e.target.value)}
-                    className="input w-24 py-1 px-2 text-right text-sm"
+                    className="input w-24 min-h-0 px-3 py-1.5 text-right text-[13px]"
                     placeholder="0"
                     min="0"
                   />
@@ -904,26 +985,26 @@ export default function OrderPage() {
                 <button
                   onClick={handleSaveDelivery}
                   disabled={savingDelivery}
-                  className="text-[var(--color-forest)] text-xs font-medium hover:underline"
+                  className="text-[12px] font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
                 >
                   {savingDelivery ? '...' : 'Save'}
                 </button>
                 <button
                   onClick={() => { setEditingDelivery(false); setDeliveryInput(order.deliveryCharge?.toString() || ''); }}
-                  className="text-[var(--text-secondary)] text-xs hover:underline"
+                  className="text-[12px] text-[var(--text-secondary)] hover:underline"
                 >
                   Cancel
                 </button>
               </div>
             ) : (
               <span className="flex items-center gap-2">
-                <span className={order.deliveryCharge ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] italic'}>
+                <span className={order.deliveryCharge ? 'font-semibold text-[var(--text-primary)]' : 'italic text-[var(--text-muted)]'}>
                   {order.deliveryCharge ? `${CURRENCY}${order.deliveryCharge.toLocaleString('en-IN')}` : 'Not set'}
                 </span>
                 {isAdmin && (
                   <button
                     onClick={() => setEditingDelivery(true)}
-                    className="text-xs text-[var(--color-forest)] hover:underline"
+                    className="text-[12px] font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
                   >
                     {order.deliveryCharge ? 'Edit' : 'Add'}
                   </button>
@@ -933,30 +1014,102 @@ export default function OrderPage() {
           </div>
 
           {/* Grand Total */}
-          <div className="flex justify-between text-lg font-semibold text-[var(--text-primary)] pt-2 border-t border-[var(--border-color)]">
+          <div className="flex items-center justify-between border-t border-[var(--border-color)] pt-3 font-display text-[20px] text-[var(--text-primary)]">
             <span>Total</span>
             <span>{CURRENCY}{((order.totalAmount || 0) + (order.deliveryCharge || 0) - (order.manualDiscount || 0)).toLocaleString('en-IN')}</span>
           </div>
         </div>
+
+        {/* Support row */}
+        <div className="mt-4 border-t border-[var(--border-color)] pt-4">
+          {supportCode && (
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-[13px] text-[var(--text-secondary)]">Support code</span>
+              <span className="font-mono text-[14px] font-bold tracking-[0.06em] text-[var(--text-primary)]">{supportCode}</span>
+            </div>
+          )}
+          <p className="mb-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            Something wrong with this order, or unsure about anything in it? Screenshot{' '}
+            <span className="font-mono font-bold text-[var(--text-primary)]">{supportCode}</span>{' '}
+            and send it to us on WhatsApp and we will sort it out. {NURSERY_HOURS}.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={supportHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--color-sage-200)] px-5 font-display text-[14px] text-[var(--color-sage-900)] transition-opacity hover:opacity-90"
+            >
+              <Icon name="whatsapp" filled className="h-[16px] w-[16px]" />
+              Ask about it
+            </a>
+            <a
+              href={`tel:${NURSERY_PHONE_TEL}`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--border-color)] px-5 text-[13px] font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+            >
+              <Icon name="phone" className="h-4 w-4" />
+              Call the nursery
+              <span className="sr-only">on {NURSERY_PHONE_DISPLAY}</span>
+            </a>
+          </div>
+        </div>
       </div>
 
-
-
+      {/* Promotional Ad Section */}
+      {!isAdmin && (
+        <div className="card mb-3 p-5 text-center">
+          <h2 className="font-display text-[21px] text-[var(--text-primary)]">Join our plant family</h2>
+          <p className="mx-auto mt-2 max-w-[420px] text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            Follow us for daily plant care tips, new arrivals and offers.
+          </p>
+          <div className="mt-4 rounded-[24px] bg-[var(--color-accent-200)] px-5 py-4">
+            <p className="text-[13px] leading-relaxed text-[var(--color-accent-900)]">
+              Tag{' '}
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold underline underline-offset-2 hover:opacity-80"
+              >
+                {INSTAGRAM_HANDLE}
+              </a>{' '}
+              in an Instagram story with your new plants to get a complimentary plant with your next
+              order.
+            </p>
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+            {SOCIAL_LINKS.map((social) => (
+              <a
+                key={social.name}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] px-4 text-[13px] font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+              >
+                <Icon name={social.icon} filled className="h-4 w-4" />
+                {social.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <NavLink to="/" className="btn btn-secondary flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <NavLink to="/" className="btn btn-primary flex-1">
           Continue Shopping
         </NavLink>
         {isAdmin && (
           <button
             onClick={handleExportPDF}
             disabled={exportingOrder}
-            className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+            className="btn btn-secondary flex-1"
           >
             {exportingOrder ? (
-              <span className="w-4 h-4 border-2 border-[var(--text-secondary)] border-t-[var(--text-primary)] rounded-full animate-spin" />
-            ) : '📄'}
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--text-secondary)] border-t-[var(--text-primary)]" />
+            ) : (
+              <Icon name="document" className="h-4 w-4" />
+            )}
             {exportingOrder ? 'Generating PDF...' : 'Download PDF Bill'}
           </button>
         )}

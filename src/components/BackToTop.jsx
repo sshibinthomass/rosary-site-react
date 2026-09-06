@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Icon from './Icon';
 
 export default function BackToTop() {
   const [visible, setVisible] = useState(false);
@@ -20,12 +21,10 @@ export default function BackToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-24 left-5 z-40 md:bottom-8 md:left-auto md:right-8 w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] shadow-md flex items-center justify-center hover:shadow-lg hover:scale-110 transition-all animate-fade-in"
+      className="animate-fade-in fixed bottom-20 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-[var(--shadow-medium)] transition-all hover:scale-110 md:bottom-8 md:left-auto md:right-8"
       aria-label="Back to top"
     >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
+      <Icon name="chevron-up" className="h-5 w-5" />
     </button>
   );
 }

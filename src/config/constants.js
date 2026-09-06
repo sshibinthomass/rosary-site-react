@@ -55,3 +55,21 @@ export const TRANSIT_LEVELS = CARE_LEVELS;
 
 // Place Available options
 export const PLACE_OPTIONS = ['Top', 'Down', 'Both'];
+
+// Complimentary plant threshold shown in the announcement bar and cart progress
+export const FREE_PLANT_THRESHOLD = 1000;
+
+// Nursery contact details surfaced in the storefront chrome
+export const NURSERY_PHONE_DISPLAY = '+91 79040 50237';
+export const NURSERY_PHONE_TEL = '+917904050237';
+export const NURSERY_EMAIL = 'rosaryplanthouse@gmail.com';
+export const NURSERY_HOURS = 'Every day, 9 AM to 9 PM';
+export const NURSERY_ADDRESS_LINES = [
+  'Samayapuram, Alwarpet, Coonoor',
+  'The Nilgiris, Tamil Nadu 643102',
+];
+export const NURSERY_MAP_URL = 'https://maps.app.goo.gl/h5ziUGAuvC4FZZqn8';
+export const INSTAGRAM_URL = 'https://instagram.com/rosary_plant_house';
+export const INSTAGRAM_HANDLE = '@rosary_plant_house';
+export const FACEBOOK_URL = 'https://facebook.com/rosaryplanthouse';
+export const YOUTUBE_URL = 'https://youtube.com/channel/UCUYHYgkyhoVXy5_h8a5ly6w';

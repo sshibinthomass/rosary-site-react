@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { CATEGORIES } from '../config/constants';
+import { CATEGORIES, CURRENCY, FREE_PLANT_THRESHOLD } from '../config/constants';
 import Footer from './Footer';
 import BackToTop from './BackToTop';
+import Icon from './Icon';
 import logo from '../assets/logo.png';
 
 let userServicePromise = null;
@@ -17,34 +18,23 @@ function loadUserService() {
   return userServicePromise;
 }
 const HomeIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-  </svg>
+  <Icon name="home" className="w-6 h-6" strokeWidth={active ? 2.6 : 2} />
 );
 
 const ShopIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16l-1.5 13h-13L4 7z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7a4 4 0 018 0" />
-  </svg>
+  <Icon name="map-pin" className="w-6 h-6" strokeWidth={active ? 2.6 : 2} />
 );
 
 const HeartIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-  </svg>
+  <Icon name="heart" filled={active} className="w-6 h-6" strokeWidth={active ? 2.6 : 2} />
 );
 
 const CartIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-  </svg>
+  <Icon name="bag" className="w-6 h-6" strokeWidth={active ? 2.6 : 2} />
 );
 
 const UserIcon = ({ active }) => (
-  <svg className={`w-6 h-6 ${active ? 'fill-current' : 'stroke-current fill-none'}`} viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
+  <Icon name="user" className="w-6 h-6" strokeWidth={active ? 2.6 : 2} />
 );
 
 function MenuGlyph({ type, className = 'w-5 h-5' }) {
@@ -374,46 +364,67 @@ export default function Layout({ children }) {
     }
   };
 
+  const isAdminArea = location.pathname.startsWith('/admin');
+  const bottomTabs = [
+    mainNavItems.find((item) => item.path === '/'),
+    mainNavItems.find((item) => item.path === '/shop'),
+    mainNavItems.find((item) => item.path === '/wishlist'),
+    mainNavItems.find((item) => item.path === '/account'),
+  ];
+
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Standing offer — the first thing a visitor reads */}
+      {!isAdminArea && (
+        <div className="flex items-center justify-center gap-2 bg-[var(--panel-deep)] px-4 py-2.5 text-[var(--panel-deep-text)]">
+          <Icon name="gift" className="h-3.5 w-3.5 text-[var(--color-accent-400)]" strokeWidth={2.6} />
+          <span className="text-xs font-semibold">
+            Free plant on orders over {CURRENCY}{FREE_PLANT_THRESHOLD.toLocaleString('en-IN')}
+          </span>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-[var(--border-color)]">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 glass">
+        <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between gap-2 px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 -ml-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              className="-ml-2 flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
               aria-label="Open categories menu"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Icon name="menu" className="h-5 w-5" strokeWidth={2.6} />
             </button>
-            <NavLink to="/" className="flex min-w-0 items-center gap-2">
-              <img src={logo} alt="Logo" className="w-8 h-8 shrink-0 object-contain" />
-              <h1 className="truncate font-semibold text-lg text-[var(--text-primary)]">Rosary Plant House</h1>
+            <NavLink to="/" className="flex min-w-0 items-center gap-2.5">
+              <img src={logo} alt="Logo" className="h-[34px] w-[34px] shrink-0 object-contain" />
+              <span className="min-w-0">
+                <h1 className="truncate font-display text-[17px] leading-tight text-[var(--text-primary)]">Rosary Plant House</h1>
+                <span className="hidden truncate text-[11px] text-[var(--text-secondary)] sm:block">
+                  Coonoor nursery &middot; ships all India
+                </span>
+              </span>
             </NavLink>
           </div>
-          
+
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {mainNavItems.map(({ path, label, Icon }) => {
+          <div className="hidden md:flex items-center gap-7">
+            {mainNavItems.map(({ path, label, Icon: NavIcon }) => {
               const isActive = path === '/shop'
                 ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
                 : location.pathname === path;
               const isCart = path === '/cart';
-              const icon = Icon({ active: isActive });
+              const icon = NavIcon({ active: isActive });
               return (
-                <NavLink 
+                <NavLink
                   key={path}
                   to={path}
-                  className={`flex items-center gap-2 transition-colors ${isActive ? 'text-[var(--color-forest)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                  className={`flex items-center gap-2 text-sm transition-colors ${isActive ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   <div className="relative">
                     {icon}
                     {isCart && cartCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-terracotta)] text-[10px] font-bold text-[#f5ead8]">
                         {cartCount > 9 ? '9+' : cartCount}
                       </span>
                     )}
@@ -422,11 +433,11 @@ export default function Layout({ children }) {
                 </NavLink>
               );
             })}
-            
+
             {isAdmin && (
-              <NavLink 
-                to="/admin" 
-                className="text-xs font-medium px-4 py-2 rounded-full bg-[var(--color-terracotta)] text-white hover:bg-[var(--color-terracotta)]/90 transition-colors"
+              <NavLink
+                to="/admin"
+                className="rounded-full bg-[var(--color-terracotta)] px-4 py-2 text-xs font-semibold text-[#f5ead8] transition-opacity hover:opacity-90"
               >
                 Admin Panel
               </NavLink>
@@ -438,24 +449,42 @@ export default function Layout({ children }) {
               to="/account"
               aria-label={accountNavLabel}
               className={({ isActive }) => `
-                inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 transition-colors
+                inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors
                 ${isActive
-                  ? 'border-[var(--color-forest)] bg-[var(--color-forest)] text-white'
+                  ? 'border-[var(--color-sage-200)] bg-[var(--color-sage-200)] text-[var(--color-sage-800)]'
                   : 'border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 }
               `}
             >
               {({ isActive }) => (
                 <>
-                  <UserIcon active={isActive} />
+                  {user?.displayName
+                    ? (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7a8a5e] text-[10px] font-bold text-[#f9f4ed]">
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </span>
+                    )
+                    : <UserIcon active={isActive} />}
                   <span className="text-xs font-semibold">{accountNavLabel}</span>
                 </>
+              )}
+            </NavLink>
+            <NavLink
+              to="/cart"
+              aria-label="Cart"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
+            >
+              <Icon name="bag" className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[var(--bg-primary)] bg-[var(--color-terracotta)] px-1 text-[10px] font-bold text-[#f5ead8]">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
               )}
             </NavLink>
             {isAdmin && (
               <NavLink
                 to="/admin"
-                className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--color-terracotta)] text-white"
+                className="rounded-full bg-[var(--color-terracotta)] px-3 py-1.5 text-xs font-semibold text-[#f5ead8]"
               >
                 Admin
               </NavLink>
@@ -472,45 +501,44 @@ export default function Layout({ children }) {
       )}
       <aside
         className={`
-          fixed top-0 left-0 z-[70] h-full w-72 bg-[var(--bg-primary)] border-r border-[var(--border-color)]
-          transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col
+          fixed top-0 left-0 z-[70] h-full w-[19rem] bg-[var(--bg-primary)]
+          transform transition-transform duration-300 ease-in-out shadow-[var(--shadow-lifted)] flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{ height: '100dvh' }}
       >
         {/* Sidebar Header */}
-        <div className="flex-none flex items-center justify-between px-4 h-16 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
-          <div className="flex items-center gap-2">
-            <MenuGlyph type="succulent" className="w-6 h-6 text-[var(--color-forest)]" />
-            <h2 className="font-semibold text-[var(--text-primary)]">Menu</h2>
+        <div className="flex h-16 flex-none items-center justify-between border-b border-[var(--border-color)] bg-[var(--bg-primary)] px-4">
+          <div className="flex items-center gap-2.5">
+            <img src={logo} alt="" className="h-8 w-8 object-contain" />
+            <h2 className="font-display text-[17px] text-[var(--text-primary)]">Rosary Plant House</h2>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+            aria-label="Close menu"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="x" className="h-5 w-5" />
           </button>
         </div>
 
         {/* Menu Items - Dedicated scrollable container */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto"
-          style={{ 
+          style={{
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y'
           }}
         >
-          <nav className="py-2 px-2 flex flex-col gap-1">
+          <nav className="flex flex-col gap-1 px-3 py-3">
           {/* Main Pages */}
           <NavLink
             to="/"
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) => `
-              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              w-full flex items-center gap-3 px-3.5 py-3 rounded-full text-left text-sm transition-all
               ${isActive
-                ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
+                ? 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)] font-semibold'
                 : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
               }
             `}
@@ -529,9 +557,9 @@ export default function Layout({ children }) {
             to="/shop"
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) => `
-              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              w-full flex items-center gap-3 px-3.5 py-3 rounded-full text-left text-sm transition-all
               ${isActive || location.pathname.startsWith('/category/')
-                ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
+                ? 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)] font-semibold'
                 : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
               }
             `}
@@ -550,10 +578,10 @@ export default function Layout({ children }) {
           <button
             onClick={() => handleCategoryClick('Limited')}
             className={`
-              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+              w-full flex items-center gap-3 px-3.5 py-3 rounded-full text-left text-sm transition-all
               ${location.pathname === `/category/${encodeURIComponent('Limited')}`
-                ? 'bg-[var(--color-terracotta)] text-white font-semibold'
-                : 'bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/20'
+                ? 'bg-[var(--color-terracotta)] text-[#f5ead8] font-semibold'
+                : 'bg-[var(--color-accent-200)] text-[var(--color-accent-700)] hover:bg-[var(--color-accent-300)]'
               }
             `}
           >
@@ -564,33 +592,28 @@ export default function Layout({ children }) {
           </button>
 
           {/* Categories Accordion */}
-          <div className="rounded-lg overflow-hidden bg-transparent">
+          <div className="overflow-hidden rounded-[24px] bg-transparent">
             <button
               onClick={() => setCategoriesOpen(!categoriesOpen)}
-              className="w-full flex items-center justify-between px-3 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all rounded-lg"
+              className="w-full flex items-center justify-between px-3.5 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all rounded-full"
             >
               <div className="flex items-center gap-3">
-                <span className="w-6 h-6 flex items-center justify-center text-[var(--color-forest)] shrink-0">
+                <span className="w-6 h-6 flex items-center justify-center text-[var(--text-primary)] shrink-0">
                   <MenuGlyph type="folder" className="w-5 h-5" />
                 </span>
                 <span className="font-medium text-[var(--text-primary)]">Categories</span>
               </div>
-              <svg 
-                className={`w-4 h-4 text-[var(--text-secondary)] transition-transform duration-300 ${categoriesOpen ? 'rotate-180' : ''}`} 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              <Icon
+                name="chevron-down"
+                className={`h-4 w-4 text-[var(--text-secondary)] transition-transform duration-300 ${categoriesOpen ? 'rotate-180' : ''}`}
+              />
             </button>
-            <div 
+            <div
               className={`transition-all duration-300 ${categoriesOpen ? 'max-h-[2000px] mt-1 overflow-y-visible' : 'max-h-0 overflow-hidden'}`}
             >
-              <div className="pl-6 flex flex-col gap-1 border-l-2 border-[var(--bg-tertiary)] ml-6 my-1">
+              <div className="my-1 ml-7 flex flex-col gap-1 border-l-2 border-[var(--bg-tertiary)] pl-4">
                 {allCategories.map((cat) => {
-                  const isActive = 
+                  const isActive =
                     (cat === 'All' && (location.pathname === '/' || location.pathname === '' || location.pathname === '/shop')) ||
                     location.pathname === `/category/${encodeURIComponent(cat)}`;
                   const iconType = categoryIconTypes[cat] || 'leaf';
@@ -600,9 +623,9 @@ export default function Layout({ children }) {
                       key={cat}
                       onClick={() => handleCategoryClick(cat)}
                       className={`
-                        w-full flex items-center gap-3 px-3 py-2 text-left text-xs transition-all rounded-r-lg
+                        w-full flex items-center gap-3 px-3 py-2 text-left text-xs transition-all rounded-full
                         ${isActive
-                          ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold border-l-2 -ml-[2px] border-[var(--color-forest)]'
+                          ? 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)] font-semibold'
                           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                         }
                       `}
@@ -621,19 +644,19 @@ export default function Layout({ children }) {
           <div className="my-2 border-t border-[var(--border-color)]"></div>
 
           {/* User Account / Navigation */}
-          {userNavItems.map(({ path, label, Icon, currentCount }) => {
+          {userNavItems.map(({ path, label, Icon: NavIcon, currentCount }) => {
             const isActive = location.pathname === path;
             const isCart = path === '/cart';
-            const icon = Icon({ active: isActive });
+            const icon = NavIcon({ active: isActive });
             return (
               <NavLink
                 key={path}
                 to={path}
                 onClick={() => setSidebarOpen(false)}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all
+                  w-full flex items-center gap-3 px-3.5 py-3 rounded-full text-left text-sm transition-all
                   ${isActive
-                    ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-semibold'
+                    ? 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)] font-semibold'
                     : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }
                 `}
@@ -641,7 +664,7 @@ export default function Layout({ children }) {
                 <div className="relative">
                   {icon}
                   {isCart && currentCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-terracotta)] text-[10px] font-bold text-[#f5ead8]">
                       {currentCount > 9 ? '9+' : currentCount}
                     </span>
                   )}
@@ -664,9 +687,9 @@ export default function Layout({ children }) {
                   state={{ from: location.pathname }}
                   onClick={() => setSidebarOpen(false)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-all
+                    w-full flex items-center gap-3 px-3.5 py-2.5 rounded-full text-left text-sm transition-all
                     ${isActive
-                      ? 'bg-[var(--color-forest)]/10 text-[var(--color-forest)] font-medium'
+                      ? 'bg-[var(--color-sage-200)] text-[var(--color-sage-800)] font-medium'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                     }
                   `}
@@ -688,17 +711,14 @@ export default function Layout({ children }) {
                 to="/admin"
                 onClick={() => setSidebarOpen(false)}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all mt-auto mb-4
+                  w-full flex items-center gap-3 px-3.5 py-3 rounded-full text-left text-sm transition-all mt-auto mb-4
                   ${location.pathname.startsWith('/admin')
-                    ? 'bg-[var(--color-terracotta)] text-white font-semibold'
-                    : 'text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 hover:bg-[var(--color-terracotta)]/20'
+                    ? 'bg-[var(--color-terracotta)] text-[#f5ead8] font-semibold'
+                    : 'text-[var(--color-accent-700)] bg-[var(--color-accent-200)] hover:bg-[var(--color-accent-300)]'
                   }
                 `}
               >
-                <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                <Icon name="settings" className="h-5 w-5" strokeWidth={1.9} />
                 <span className="font-medium">Admin Panel</span>
               </NavLink>
             </>
@@ -710,7 +730,7 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="w-full max-w-7xl mx-auto px-4 py-6 md:py-8 flex-1 min-h-[calc(100dvh-4rem)]">
+      <main className="w-full max-w-7xl mx-auto px-4 py-5 md:py-8 flex-1 min-h-[calc(100dvh-4rem)]">
         {children}
       </main>
 
@@ -719,63 +739,57 @@ export default function Layout({ children }) {
 
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-[var(--border-color)] safe-bottom">
-        <div className="max-w-lg mx-auto px-4">
-          <div className="flex items-center justify-around h-16">
-            {mainNavItems.map(({ path, label, Icon }) => {
+        <div className="mx-auto max-w-lg px-4">
+          <div className="flex h-16 items-center justify-between">
+            {bottomTabs.slice(0, 2).map(({ path, label, Icon: NavIcon }) => {
               const isActive = path === '/shop'
                 ? location.pathname === '/shop' || location.pathname.startsWith('/category/')
                 : location.pathname === path;
-              const isCart = path === '/cart';
-              const icon = Icon({ active: isActive });
-              
               return (
                 <NavLink
                   key={path}
                   to={path}
-                  className={`
-                    flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative
-                    ${isActive 
-                      ? 'text-[var(--text-primary)]' 
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }
-                  `}
+                  className={`flex w-[60px] flex-col items-center gap-0.5 ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
                 >
-                  <div className="relative">
-                    {icon}
-                    {isCart && cartCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-terracotta)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                        {cartCount > 9 ? '9+' : cartCount}
-                      </span>
-                    )}
-                  </div>
-                  <span className={`text-xs ${isActive ? 'font-medium' : ''}`}>{label}</span>
+                  {NavIcon({ active: isActive })}
+                  <span className={`text-[10px] ${isActive ? 'font-bold' : ''}`}>{label}</span>
+                </NavLink>
+              );
+            })}
+
+            {/* Cart sits in the middle as the primary action */}
+            <NavLink to="/cart" aria-label="Cart" className="relative -mt-6">
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[var(--bg-primary)] bg-[#7a8a5e] text-[#f9f4ed] shadow-[var(--shadow-medium)]">
+                <Icon name="bag" className="h-6 w-6" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-[var(--bg-primary)] bg-[var(--color-terracotta)] px-1 text-[11px] font-bold text-[#f5ead8]">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </span>
+            </NavLink>
+
+            {bottomTabs.slice(2).map(({ path, label, Icon: NavIcon }) => {
+              const isActive = location.pathname === path;
+              const tabLabel = path === '/wishlist' ? 'Saved' : path === '/account' ? 'You' : label;
+              return (
+                <NavLink
+                  key={path}
+                  to={path}
+                  className={`flex w-[60px] flex-col items-center gap-0.5 ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
+                >
+                  {NavIcon({ active: isActive })}
+                  <span className={`text-[10px] ${isActive ? 'font-bold' : ''}`}>{tabLabel}</span>
                 </NavLink>
               );
             })}
           </div>
         </div>
       </nav>
-      {/* Floating Cart Button (hidden on cart & admin pages) */}
-      {location.pathname !== '/cart' && !location.pathname.startsWith('/admin') && (
-        <NavLink
-          to="/cart"
-          className="fixed bottom-24 right-5 z-40 md:hidden animate-scale-in"
-        >
-          <div className="w-14 h-14 bg-[var(--color-terracotta)] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 relative">
-            <svg className="w-7 h-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-6 h-6 bg-[var(--color-forest)] text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)]">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
-            )}
-          </div>
-        </NavLink>
-      )}
 
       {/* Back to Top Button (hidden on admin pages) */}
-      {!location.pathname.startsWith('/admin') && <BackToTop />}
+      {!isAdminArea && <BackToTop />}
     </div>
   );
 }
+

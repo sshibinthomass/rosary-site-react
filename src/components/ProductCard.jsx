@@ -6,12 +6,30 @@ import { useToast } from '../context/ToastContext';
 import { resolveImageUrl } from '../utils/imageCompressor';
 import { getStorefrontProductTitle } from '../utils/productPresentation';
 import { getProductDisplayName, getProductPath } from '../utils/productSeo';
+import { buildRestockAlertMessage, buildWhatsAppLink } from '../utils/nurseryMessages';
+import Icon from './Icon';
+import { InCartControls, QuantityStepper } from './storefront';
+
+const CARE_TILES = [
+  { key: 'watering', label: 'Water', icon: 'droplet', tone: 'text-[var(--color-sage-700)] dark:text-[var(--color-sage-300)]', fallback: 'Med' },
+  { key: 'sunlight', label: 'Sun', icon: 'sun', tone: 'text-[var(--color-accent-700)] dark:text-[var(--color-accent-300)]', fallback: 'Med' },
+  { key: 'transit', label: 'Ship', icon: 'package', tone: 'text-[var(--text-secondary)]', fallback: 'Safe' },
+];
 
 export default function ProductCard({ product, index }) {
   const location = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [heartAnim, setHeartAnim] = useState(false);
-  const { addToCart, addToWishlist, removeFromWishlist, isInCart, isInWishlist } = useCart();
+  const {
+    addToCart,
+    addToWishlist,
+    removeFromCart,
+    removeFromWishlist,
+    isInCart,
+    isInWishlist,
+    updateQuantity,
+    cart,
+  } = useCart();
   const { error } = useToast();
 
   // Normalize product fields (handle both old and new schema)
@@ -23,7 +41,6 @@ export default function ProductCard({ product, index }) {
   const originalPrice = product.originalPrice;
   const inStock = product.available !== false && (product.qtyAvailable !== 'NA' || product.inStock);
   const hasDiscount = originalPrice && originalPrice > price;
-  const discountPercent = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
@@ -51,21 +68,43 @@ export default function ProductCard({ product, index }) {
 
   const inCart = isInCart(product.id);
   const inWishlist = isInWishlist(product.id);
+  const cartLine = cart.find((item) => item.productId === product.id);
+  const cartQuantity = cartLine?.quantity || 1;
+  const cartLineTotal = cartLine ? (cartLine.price || price) * cartQuantity : 0;
+
+  const handleCartQuantity = async (nextQuantity) => {
+    try {
+      await updateQuantity(product.id, nextQuantity);
+    } catch {
+      error('Failed to update the cart');
+    }
+  };
+
+  const handleRemoveFromCart = async () => {
+    try {
+      await removeFromCart(product.id);
+    } catch {
+      error('Failed to remove from cart');
+    }
+  };
+
   const plantId = product.id;
+  const category = product.category || 'Plant';
   const primaryImage = resolveImageUrl(
     Array.isArray(product.imageUrls) && product.imageUrls.length
       ? product.imageUrls[0]
       : product.imageUrl
   );
+  const restockHref = buildWhatsAppLink(buildRestockAlertMessage({ id: plantId, title: name }));
 
   return (
-    <div className="card group dark:border dark:border-[var(--border-color)] overflow-hidden flex flex-col relative">
+    <div className="card-soft group relative flex flex-col">
       {/* Image */}
-      <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--bg-tertiary)]">
+      <div className="relative w-full overflow-hidden bg-[var(--bg-sunken)]">
         <img
           src={primaryImage || '/placeholder-plant.jpg'}
-          alt={`${name} - ${product.category || 'Plant'} from Rosary Plant House`}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          alt={`${name} - ${category} from Rosary Plant House`}
+          className={`washed aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105 ${inStock ? '' : 'opacity-60'}`}
           loading={index < 3 ? 'eager' : 'lazy'}
           fetchPriority={index === 0 ? 'high' : undefined}
         />
@@ -73,162 +112,126 @@ export default function ProductCard({ product, index }) {
         <Link
           to={productPath}
           state={productLinkState}
-          className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+          className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--color-terracotta)]"
           aria-label={`View ${name}`}
-        >
-          <span className="btn bg-white/95 text-[var(--color-forest)] hover:bg-white scale-95 group-hover:scale-100 transition-all font-semibold shadow-xl border-none text-sm px-5 py-2 rounded-full flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Quick View
+        />
+
+        {/* Sale and stock markers */}
+        {hasDiscount && inStock && (
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-[var(--color-accent-200)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-accent-700)]">
+            Save {CURRENCY}{(originalPrice - price).toLocaleString('en-IN')}
           </span>
-        </Link>
-        
-        {/* Discount Badge — top right */}
-        {hasDiscount && (
-          <div className="absolute top-2 right-2 px-2 py-1 bg-[var(--color-terracotta)] text-white text-[10px] md:text-xs font-bold rounded-lg">
-            -{discountPercent}%
-          </div>
         )}
-        
-        {/* Stock Badge — top left */}
         {!inStock && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
-            Out of Stock
-          </div>
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-[var(--bg-secondary)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+            Off the bench
+          </span>
         )}
-        
-        {/* Restocked Badge — top left */}
         {product.isRestocked && inStock && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-[10px] md:text-xs font-medium rounded-lg">
-            Back in Stock!
-          </div>
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-[var(--color-sage-200)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-sage-800)]">
+            Back on the bench
+          </span>
         )}
-        
-        {/* Category Badge */}
-        <div className="absolute bottom-2 left-2 px-2 py-1 bg-[var(--color-forest)] text-white text-[10px] md:text-xs font-semibold rounded-lg shadow-md">
-          {product.category}
-        </div>
 
         {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
           className={`
-            absolute z-20 bottom-2 right-2 w-9 h-9 md:w-8 md:h-8 rounded-full flex items-center justify-center
-            transition-all duration-200 shadow-md
+            absolute bottom-3.5 right-3.5 z-20 flex h-[42px] w-[42px] items-center justify-center rounded-full
+            shadow-[var(--shadow-soft)] transition-all duration-200
             ${heartAnim ? 'animate-heart-pop' : ''}
-            ${inWishlist 
-              ? 'bg-red-500 text-white' 
-              : 'bg-white/90 text-gray-600 hover:bg-red-50 hover:text-red-500 dark:bg-gray-800/90 dark:text-gray-300 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+            ${inWishlist
+              ? 'bg-[var(--color-accent-200)] text-[var(--color-accent-700)]'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:text-[var(--color-accent-700)]'
             }
           `}
-          aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
         >
-          <svg className={`w-5 h-5 md:w-4 md:h-4 ${inWishlist ? 'animate-heart-pop' : ''}`} viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
+          <Icon name="heart" filled={inWishlist} className="h-[19px] w-[19px]" />
         </button>
-
       </div>
 
       {/* Content */}
-      <div className="p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 bg-[var(--bg-primary)]">
-        {/* Line 1: Product identity on left, price on right */}
-        <div className="text-sm md:text-base font-semibold text-[var(--text-primary)] flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <p className="text-xs md:text-sm font-medium text-[var(--text-secondary)]">
-              #{plantId}
-            </p>
+      <div className="flex flex-1 flex-col gap-3.5 px-5 pb-5 pt-4">
+        {/* Identity and price */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <Link
               to={productPath}
               state={productLinkState}
-              className="leading-snug break-words hover:text-[var(--color-forest)] transition-colors"
+              className="font-display text-[20px] leading-tight text-[var(--text-primary)] transition-colors hover:text-[var(--color-accent-700)] dark:hover:text-[var(--color-accent-300)]"
             >
               {name}
             </Link>
+            <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+              {category} &middot; #{plantId}
+            </p>
           </div>
-          <div className="flex items-baseline gap-1 md:gap-2 flex-shrink-0">
-            <span className="text-base md:text-lg font-bold">
-              {CURRENCY}{price?.toLocaleString('en-IN')}
-            </span>
+          <span className="flex shrink-0 items-center gap-2">
             {hasDiscount && (
-              <span className="text-xs md:text-sm text-[var(--text-secondary)] line-through">
+              <span className="text-[13px] text-[var(--text-secondary)] line-through">
                 {CURRENCY}{originalPrice?.toLocaleString('en-IN')}
               </span>
             )}
-          </div>
+            <span className="rounded-full bg-[var(--color-terracotta)] px-3.5 py-1.5 font-display text-[17px] text-[#f5ead8] dark:text-[#201e1d]">
+              {CURRENCY}{price?.toLocaleString('en-IN')}
+            </span>
+          </span>
         </div>
 
-        {/* Line 2: Water, Sun, Transit tiles */}
-        <div className="flex flex-wrap gap-1.5">
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-            <span className="text-sm leading-none">💧</span>
-            <span data-label="Water" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
-              {product.watering || 'Med'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-            <span className="text-sm leading-none">☀️</span>
-            <span data-label="Sun" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
-              {product.sunlight || 'Med'}
-            </span>
-          </div>
-          {product.transit && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--bg-secondary)] rounded-lg border border-[var(--bg-tertiary)]">
-              <span className="text-sm leading-none">📦</span>
-              <span data-label="Ship" className="tile-val text-[10px] font-bold text-[var(--text-primary)] leading-tight">
-                {product.transit}
+        {/* Care signals */}
+        <div className="flex gap-2">
+          {CARE_TILES.map((tile) => (
+            <div
+              key={tile.key}
+              className="flex flex-1 items-center gap-2.5 rounded-2xl bg-[var(--bg-secondary)] px-2.5 py-2.5"
+            >
+              <Icon name={tile.icon} className={`h-[15px] w-[15px] shrink-0 ${tile.tone}`} />
+              <span className="min-w-0">
+                <span data-label={tile.label} className="tile-val block text-[13px] font-bold leading-tight text-[var(--text-primary)]">
+                  {product[tile.key] || tile.fallback}
+                </span>
               </span>
             </div>
-          )}
+          ))}
         </div>
-        
-        {/* Line 3: Qty on left, Add to cart on right */}
-        <div className="mt-1 md:mt-2 flex items-center gap-2 md:gap-4">
-          {inStock ? (
-            <>
-              {/* Left: quantity selector */}
-              {!inCart && (
-                <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg h-9 min-w-[90px] md:min-w-[110px] justify-between">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
-                    className="px-2.5 md:px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-l-lg transition-colors"
-                  >
-                    -
-                  </button>
-                  <span className="text-sm md:text-base font-medium w-8 md:w-10 text-center text-[var(--text-primary)]">
-                    {quantity}
-                  </span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
-                    className="px-2.5 md:px-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-r-lg transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
 
-              {/* Right: Big Add to Cart button */}
+        {/* Purchase controls */}
+        <div className="mt-auto flex items-center gap-2.5">
+          {!inStock ? (
+            <a
+              href={restockHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-sage w-full gap-2"
+            >
+              <Icon name="bell" className="h-4 w-4" />
+              Tell me when it is back
+            </a>
+          ) : inCart ? (
+            <InCartControls
+              className="h-[46px]"
+              quantity={cartQuantity}
+              total={cartLineTotal}
+              onDecrease={() => handleCartQuantity(cartQuantity - 1)}
+              onIncrease={() => handleCartQuantity(cartQuantity + 1)}
+              onRemove={handleRemoveFromCart}
+              removeLabel={`Remove ${name} from cart`}
+            />
+          ) : (
+            <>
+              <QuantityStepper
+                value={quantity}
+                onDecrease={() => setQuantity(Math.max(1, quantity - 1))}
+                onIncrease={() => setQuantity(quantity + 1)}
+              />
               <button
                 onClick={handleAddToCart}
-                disabled={inCart}
-                className={`
-                  h-9 md:h-10 px-4 md:px-6 rounded-lg text-sm md:text-base font-semibold flex-1
-                  flex items-center justify-center
-                  ${inCart 
-                    ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] cursor-default'
-                    : 'bg-[var(--color-forest)] text-white hover:shadow-md active:scale-95'
-                  }
-                `}
+                className="btn btn-ink h-[46px] flex-1"
               >
-                {inCart ? '✓ In Cart' : 'Add to Cart'}
+                Add to cart
               </button>
             </>
-          ) : (
-            <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded">
-              Out of Stock
-            </span>
           )}
         </div>
       </div>

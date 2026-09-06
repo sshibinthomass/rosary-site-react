@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Icon from './Icon';
 
 export default function ProtectedRoute({ children, requireAdmin = false }) {
   const { user, loading, isAdmin } = useAuth();
@@ -8,7 +9,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse-soft">
-          <span className="text-4xl">🌿</span>
+          <Icon name="sprout" className="h-10 w-10 text-[var(--text-primary)]" />
         </div>
       </div>
     );

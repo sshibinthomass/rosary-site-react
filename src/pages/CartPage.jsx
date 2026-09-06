@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -12,12 +12,53 @@ import { getProductById } from '../services/productService';
 import { getLimitedById } from '../services/limitedService';
 import { validatePromoCode } from '../services/promoService';
 import { useSettings } from '../context/SettingsContext';
-import { CURRENCY } from '../config/constants';
+import {
+  CURRENCY,
+  FREE_PLANT_THRESHOLD,
+  INSTAGRAM_URL,
+  NURSERY_HOURS,
+  NURSERY_PHONE_DISPLAY,
+  NURSERY_PHONE_TEL,
+} from '../config/constants';
 import { CATALOG_REFRESH_EVENT } from '../utils/catalogRefresh';
 import { normalizeCheckoutPincode } from '../utils/checkoutLocation';
-import { NavLink } from 'react-router-dom';
+import { getStorefrontProductTitle } from '../utils/productPresentation';
+import { Link } from 'react-router-dom';
 import ProductModal from '../components/ProductModal';
 import SEO from '../components/SEO';
+import Icon from '../components/Icon';
+import {
+  DeepPanel,
+  EmptyState,
+  ListRow,
+  NumberedStep,
+  PageBar,
+  QuantityStepper,
+  StickyBar,
+} from '../components/storefront';
+
+const DISPATCH_DAYS = { 1: 'Monday', 3: 'Wednesday' };
+
+/** Orders reach the nearest upcoming Monday or Wednesday dispatch. */
+function getNextDispatchDay(from = new Date()) {
+  const today = from.getDay();
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const candidate = (today + offset) % 7;
+    if (DISPATCH_DAYS[candidate]) return DISPATCH_DAYS[candidate];
+  }
+  return 'Monday';
+}
+
+/** Pulls the pre-written WhatsApp body back out of a wa.me link. */
+function readWhatsAppMessageText(whatsappUrl) {
+  if (!whatsappUrl) return '';
+  try {
+    const query = String(whatsappUrl).split('?')[1] || '';
+    return new URLSearchParams(query).get('text') || '';
+  } catch {
+    return '';
+  }
+}
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -88,6 +129,7 @@ export default function CartPage() {
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
   );
+  const plantCount = inStockItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -96,6 +138,10 @@ export default function CartPage() {
   const [promoLoading, setPromoLoading] = useState(false);
 
   const discountedTotal = promoInfo ? Math.max(0, inStockTotal - promoInfo.discount) : inStockTotal;
+  // The one number the summary, the free-plant card and the continue button share.
+  const plantsTotal = discountedTotal;
+  const freePlantRemaining = Math.max(0, FREE_PLANT_THRESHOLD - plantsTotal);
+  const hasFreePlant = freePlantRemaining === 0;
 
   // Re-validate promo whenever cart total changes
   useEffect(() => {
@@ -155,10 +201,12 @@ export default function CartPage() {
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [savedProfile, setSavedProfile] = useState(null);
+  const [editingAddress, setEditingAddress] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const checkoutRef = useRef(null);
   const pincodeLookupRequestRef = useRef(0);
-  
+
   const [checkoutInfo, setCheckoutInfo] = useState({
     name: '',
     phone: '',
@@ -178,6 +226,11 @@ export default function CartPage() {
   const [pendingOrdersLoading, setPendingOrdersLoading] = useState(false);
   const [openingPendingOrderId, setOpeningPendingOrderId] = useState(null);
 
+  const orderMessageText = useMemo(
+    () => readWhatsAppMessageText(checkoutConfirmation?.whatsappUrl),
+    [checkoutConfirmation]
+  );
+  const dispatchDay = useMemo(() => getNextDispatchDay(), []);
 
   // Load saved profile when checkout opens
   useEffect(() => {
@@ -220,8 +273,7 @@ export default function CartPage() {
     try {
       const profile = await getUserProfile(user.uid);
       if (profile || user.displayName) {
-        setCheckoutInfo(prev => ({
-          ...prev,
+        const nextInfo = {
           name: profile?.name || user.displayName || '',
           phone: profile?.phone || '',
           whatsapp: profile?.whatsapp || '',
@@ -229,7 +281,9 @@ export default function CartPage() {
           pincode: profile?.pincode || '',
           district: profile?.district || '',
           state: profile?.state || ''
-        }));
+        };
+        setCheckoutInfo(prev => ({ ...prev, ...nextInfo }));
+        setSavedProfile(nextInfo.address ? nextInfo : null);
         setProfileLoaded(true);
       }
     } catch (err) {
@@ -246,7 +300,7 @@ export default function CartPage() {
       setLookingUp(false);
       return;
     }
-    
+
     setLookingUp(true);
     try {
       const result = await lookupPincode(cleanValue);
@@ -301,6 +355,34 @@ export default function CartPage() {
     }
   };
 
+  const handleCopyOrderText = async () => {
+    if (!orderMessageText) {
+      error('There is no order text to copy yet.');
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(orderMessageText);
+      } else {
+        const holder = document.createElement('textarea');
+        holder.value = orderMessageText;
+        holder.setAttribute('readonly', '');
+        holder.style.position = 'fixed';
+        holder.style.opacity = '0';
+        document.body.appendChild(holder);
+        holder.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(holder);
+        if (!copied) throw new Error('Copy command was rejected');
+      }
+      success('Order text copied. Paste it into any chat or email.');
+    } catch (copyError) {
+      console.error('Could not copy the order text:', copyError);
+      error('Could not copy the order text. Please try again.');
+    }
+  };
+
   const formatPendingOrderDate = (timestamp) => {
     if (!timestamp) return 'Date unavailable';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -327,68 +409,194 @@ export default function CartPage() {
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Screen C — Send the message                                        */
+  /* ------------------------------------------------------------------ */
+  // The RPH order code is what we look an order up by, so that is the code the
+  // customer is given. The tracker's code only stands in when nothing was saved.
+  const confirmationSupportCode = checkoutConfirmation
+    ? checkoutConfirmation.orderId || checkoutConfirmation.supportCode
+    : '';
+
   const checkoutConfirmationPanel = checkoutConfirmation ? (
-    <div className="mb-4 rounded-lg border border-[var(--color-forest)]/25 bg-[var(--color-forest)]/5 p-4 text-left shadow-sm">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-forest)] text-xs font-semibold text-white">
-          OK
+    <div className="animate-fade-in pb-40">
+      <PageBar title="Place your order" fallbackTo="/" />
+
+      <div className="flex flex-col items-center px-2 pb-2 pt-3 text-center">
+        <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[var(--color-sage-200)] text-[var(--color-sage-700)]">
+          <Icon name="send" className="h-8 w-8" strokeWidth={2} />
         </span>
-        <div className="min-w-0 flex-1 space-y-3">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">
-              {checkoutConfirmation.whatsappOpened
-                ? 'Order request opened in WhatsApp'
-                : 'Your order is safely saved'}
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
-              {checkoutConfirmation.whatsappOpened
-                ? 'Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.'
-                : 'WhatsApp could not open, but this order is already saved. Use the button below to open WhatsApp again without creating another order.'}
+        <h2 className="mb-2 mt-4 font-display text-[27px] leading-tight text-[var(--text-primary)]">
+          {checkoutConfirmation.whatsappOpened ? 'One last step' : 'Your order is safely saved'}
+        </h2>
+        <p className="max-w-[340px] text-[15px] leading-relaxed text-[var(--text-secondary)]">
+          Your order is placed only once your WhatsApp message reaches us. If the chat is open, just
+          press send — the list is already written for you. We reply between 9 AM and 9 PM.
+        </p>
+        <p className="mt-3 max-w-[340px] text-[13px] leading-relaxed text-[var(--text-muted)]">
+          {checkoutConfirmation.whatsappOpened
+            ? 'Your order request was opened in WhatsApp. Please tap Send there to confirm. No payment has been collected on this site.'
+            : 'WhatsApp could not open, but this order is already saved. Resend it below and we will pick it up — it will not create a second order.'}
+        </p>
+      </div>
+
+      <div className="mt-5 rounded-[28px] bg-[var(--bg-secondary)] p-5">
+        {confirmationSupportCode && (
+          <>
+            <div className="flex items-baseline justify-between gap-4 pb-2.5">
+              <span className="text-[13px] text-[var(--text-secondary)]">Support code</span>
+              <span className="font-mono text-sm font-bold tracking-[0.06em] text-[var(--text-primary)]">
+                {confirmationSupportCode}
+              </span>
+            </div>
+            <p className="border-b border-[var(--border-color)] pb-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              Screenshot this code and send it to us on WhatsApp if anything about the order looks
+              wrong, or if you are unsure about it.
             </p>
-            {checkoutConfirmation.supportCode && (
-              <p className="mt-2 font-mono text-xs font-semibold text-[var(--text-primary)]">
-                Support code: {checkoutConfirmation.supportCode}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <NavLink to="/" className="btn btn-secondary justify-center">
-              Continue shopping
-            </NavLink>
+          </>
+        )}
+        <div className="flex items-baseline justify-between gap-4 py-2.5">
+          <span className="text-[13px] text-[var(--text-secondary)]">Plants</span>
+          <span className="text-sm font-bold text-[var(--text-primary)]">
+            {checkoutConfirmation.itemCount} · {CURRENCY}
+            {(checkoutConfirmation.total || 0).toLocaleString('en-IN')}
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between gap-4 pt-2.5">
+          <span className="text-[13px] text-[var(--text-secondary)]">If we get it today</span>
+          <span className="text-sm font-bold text-[var(--text-primary)]">Dispatch {dispatchDay}</span>
+        </div>
+        {checkoutConfirmation.orderUrl && (
+          <a
+            href={checkoutConfirmation.orderUrl}
+            className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[var(--border-color)] py-2.5 font-display text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+          >
+            View order
+          </a>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-[28px] bg-[var(--bg-secondary)] p-1">
+        <div className="rounded-[24px] bg-[var(--color-accent-700)] px-5 py-[18px]">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.11em] text-[var(--color-accent-200)]">
+            Resend
+          </p>
+          <p className="mb-3.5 font-display text-[19px] leading-tight text-[#fff2eb]">
+            Send this order again
+          </p>
+          <button
+            type="button"
+            onClick={handleOpenWhatsAppAgain}
+            disabled={!checkoutConfirmation.whatsappUrl}
+            className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full bg-[#fff2eb] font-display text-[15px] text-[var(--color-accent-700)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <Icon name="whatsapp" filled className="h-[17px] w-[17px]" />
+            Resend on WhatsApp
+          </button>
+          <p className="mt-2.5 text-xs leading-relaxed text-[var(--color-accent-200)]">
+            Reopens the chat with the same list and code. It will not create a second order.
+          </p>
+        </div>
+
+        <div className="px-5 pb-4 pt-[18px]">
+          <p className="mb-1 font-display text-[17px] text-[var(--text-primary)]">Still stuck?</p>
+          <p className="mb-3.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            Support code: {confirmationSupportCode} — screenshot it and send it on WhatsApp, and we
+            will place the order for you.
+          </p>
+          <div className="flex flex-col gap-2">
+            <a
+              href={`tel:${NURSERY_PHONE_TEL}`}
+              className="flex items-center gap-3 rounded-[20px] bg-[var(--bg-primary)] px-3.5 py-3 transition-colors hover:bg-[var(--bg-tertiary)]"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-sage-200)] text-[var(--color-sage-700)]">
+                <Icon name="phone" className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-[var(--text-primary)]">
+                  Call {NURSERY_PHONE_DISPLAY}
+                </span>
+                <span className="mt-0.5 block text-xs text-[var(--text-secondary)]">
+                  {NURSERY_HOURS}
+                </span>
+              </span>
+              <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
+            </a>
             <button
               type="button"
-              onClick={handleOpenWhatsAppAgain}
-              disabled={!checkoutConfirmation.whatsappUrl}
-              className="btn btn-primary justify-center disabled:opacity-50"
+              onClick={handleCopyOrderText}
+              className="flex w-full items-center gap-3 rounded-[20px] bg-[var(--bg-primary)] px-3.5 py-3 text-left transition-colors hover:bg-[var(--bg-tertiary)]"
             >
-              Open WhatsApp again
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-200)] text-[var(--color-accent-700)]">
+                <Icon name="copy" className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-[var(--text-primary)]">
+                  Copy the order text
+                </span>
+                <span className="mt-0.5 block text-xs text-[var(--text-secondary)]">
+                  Paste it into any chat or email
+                </span>
+              </span>
+              <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
             </button>
-            {checkoutConfirmation.orderUrl && (
-              <a href={checkoutConfirmation.orderUrl} className="btn btn-secondary justify-center">
-                View order
-              </a>
-            )}
           </div>
         </div>
       </div>
+
+      <h3 className="mb-3 mt-7 font-display text-xl text-[var(--text-primary)]">
+        Get ready meanwhile
+      </h3>
+      <div className="flex flex-col gap-2">
+        <ListRow
+          to="/guides/succulents-in-india"
+          title="Get the potting mix ready"
+          subtitle="Gritty, fast-draining, no garden soil"
+        />
+        <ListRow
+          to="/guides/root-rot-succulent-care"
+          title="Keep the roots from staying wet"
+          subtitle="Spot root rot in the first few weeks"
+        />
+      </div>
+
+      <p className="mt-5 text-xs leading-relaxed text-[var(--text-secondary)]">
+        Damaged in transit? Send a video on the delivery day or the next and we replace it.
+      </p>
+
+      <StickyBar>
+        <Link to="/" className="btn btn-primary flex-1">
+          Keep shopping
+        </Link>
+        <Link to="/orders" className="btn btn-secondary shrink-0">
+          My orders
+        </Link>
+      </StickyBar>
     </div>
   ) : null;
 
   const pendingOrdersPanel = user && (pendingOrdersLoading || pendingOrders.length > 0) ? (
-    <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50/80 p-4 text-left shadow-sm dark:border-yellow-900/50 dark:bg-yellow-900/20">
-      <div className="mb-3">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">Pending WhatsApp orders</h2>
-        <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
-          These order requests are saved, but not placed yet. Send them on WhatsApp to confirm.
-        </p>
+    <div className="mb-4 rounded-[28px] bg-[var(--color-accent-200)] p-5 text-left">
+      <div className="mb-3.5 flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--color-accent-700)]">
+          <Icon name="clock" className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-display text-lg text-[var(--color-accent-900)]">
+            Pending WhatsApp orders
+          </h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-accent-800)]">
+            These order requests are saved, but not placed yet. Send them on WhatsApp to confirm.
+          </p>
+        </div>
       </div>
 
       {pendingOrdersLoading && pendingOrders.length === 0 ? (
-        <div className="rounded-lg border border-yellow-200/80 bg-white/60 p-3 text-sm text-[var(--text-secondary)] dark:border-yellow-900/50 dark:bg-black/10">
+        <div className="rounded-[20px] bg-[var(--bg-secondary)] p-3.5 text-[13px] text-[var(--text-secondary)]">
           Checking pending orders...
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-2.5">
           {pendingOrders.map(order => {
             const orderKey = order.id || order.orderId;
             const orderUrl = order.orderUrl || getOrderUrl(order.id);
@@ -397,31 +605,30 @@ export default function CartPage() {
               - (Number(order.manualDiscount) || 0);
 
             return (
-              <div
-                key={orderKey}
-                className="rounded-lg border border-yellow-200/80 bg-white/70 p-3 dark:border-yellow-900/50 dark:bg-black/10"
-              >
+              <div key={orderKey} className="rounded-[24px] bg-[var(--bg-secondary)] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
+                    <p className="font-mono text-sm font-bold text-[var(--text-primary)]">
                       {order.orderId || order.id}
                     </p>
                     <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      {formatPendingOrderDate(order.createdAt)} - {order.totalItems || order.items?.length || 0} items - {CURRENCY}{orderTotal.toLocaleString('en-IN')}
+                      {formatPendingOrderDate(order.createdAt)} · {order.totalItems || order.items?.length || 0} items · {CURRENCY}{orderTotal.toLocaleString('en-IN')}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <NavLink to={`/order/${order.id}`} className="btn btn-secondary justify-center text-sm">
+                  <div className="flex shrink-0 gap-2">
+                    <Link to={`/order/${order.id}`} className="btn btn-secondary text-sm">
                       View order
-                    </NavLink>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => handleSendPendingOrderOnWhatsApp(order)}
                       disabled={openingPendingOrderId === orderKey}
-                      className="btn btn-primary justify-center gap-2 text-sm disabled:opacity-50"
+                      className="btn btn-sage gap-2 text-sm"
                     >
-                      {openingPendingOrderId === orderKey && (
-                        <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      {openingPendingOrderId === orderKey ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      ) : (
+                        <Icon name="whatsapp" filled className="h-4 w-4" />
                       )}
                       <span>Send on WhatsApp</span>
                     </button>
@@ -440,26 +647,33 @@ export default function CartPage() {
     </div>
   ) : null;
 
-  if (cart.length === 0) {
+  if (checkoutConfirmation) {
     return (
       <div className="animate-fade-in">
+        <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
         {checkoutConfirmationPanel}
-        {pendingOrdersPanel}
-        {!checkoutConfirmation && (
-          <div className="text-center py-12">
-            <span className="text-5xl">🛒</span>
-            <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-4">Your cart is empty</h2>
-            <p className="text-[var(--text-secondary)] mt-2">Add some beautiful plants!</p>
-            <NavLink to="/" className="btn btn-primary mt-4">
-              Browse Plants
-            </NavLink>
-          </div>
-        )}
       </div>
     );
   }
 
-  // ... (existing helper functions)
+  if (cart.length === 0) {
+    return (
+      <div className="animate-fade-in">
+        <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
+        <PageBar title="Your cart" fallbackTo="/shop" />
+        {pendingOrdersPanel}
+        <EmptyState
+          icon="bag"
+          title="Your cart is empty"
+          description="Nothing on the bench yet. Pick a few plants and they will wait here for you."
+        >
+          <Link to="/shop" className="btn btn-primary">
+            Browse the bench
+          </Link>
+        </EmptyState>
+      </div>
+    );
+  }
 
   const finalizeCheckoutResult = async (checkoutResult) => {
     setCheckoutConfirmation({
@@ -469,6 +683,9 @@ export default function CartPage() {
       whatsappOpened: checkoutResult?.whatsappOpened !== false,
       whatsappError: checkoutResult?.whatsappError || '',
       supportCode: checkoutResult?.supportCode || '',
+      orderId: checkoutResult?.order?.orderId || '',
+      itemCount: plantCount,
+      total: plantsTotal,
       recordWhatsAppRetry: checkoutResult?.recordWhatsAppRetry
     });
 
@@ -549,62 +766,370 @@ export default function CartPage() {
     }
   };
 
-  return (
-    <div className="animate-fade-in">
-      <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
-      {checkoutConfirmationPanel}
-      {pendingOrdersPanel}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-          Your Cart ({inStockItems.length})
-        </h1>
-        <button
-          onClick={clearCart}
-          className="text-sm text-red-500 hover:text-red-600"
-        >
-          Clear All
-        </button>
+  const showSavedAddressCard = Boolean(user && savedProfile && !editingAddress);
+
+  const fieldLabel = 'mb-1.5 block text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]';
+  const pillField = 'w-full rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-[18px] text-sm text-[var(--text-primary)] outline-none transition-colors min-h-11 placeholder:text-[var(--text-muted)] focus:border-[var(--color-terracotta)]';
+  const readOnlyField = 'w-full rounded-full bg-[var(--bg-sunken)] px-3.5 text-[13px] text-[var(--text-primary)] outline-none min-h-11';
+
+  /* ------------------------------------------------------------------ */
+  /* Screen B — Delivery details                                         */
+  /* ------------------------------------------------------------------ */
+  const deliveryScreen = (
+    <div ref={checkoutRef} className="animate-fade-in pb-40">
+      <PageBar
+        title="Delivery details"
+        trailing={
+          <button
+            type="button"
+            onClick={() => setShowCheckout(false)}
+            className="shrink-0 text-sm font-semibold text-[var(--color-accent-700)] hover:underline"
+          >
+            Cart
+          </button>
+        }
+        fallbackTo="/cart"
+      />
+
+      <div className="mb-5 flex items-center gap-2">
+        <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#7a8a5e] text-[11px] font-bold text-[#f9f4ed]">
+          ✓
+        </span>
+        <span className="text-xs text-[var(--text-secondary)]">Cart</span>
+        <span className="h-0.5 flex-1 rounded-full bg-[var(--border-color)]" />
+        <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[var(--color-terracotta)] text-[11px] font-bold text-[#f5ead8]">
+          2
+        </span>
+        <span className="text-xs font-bold text-[var(--text-primary)]">Details</span>
+        <span className="h-0.5 flex-1 rounded-full bg-[var(--border-color)]" />
+        <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-[var(--border-color)] text-[11px] font-bold text-[var(--text-secondary)]">
+          3
+        </span>
       </div>
 
-      {/* Out of Stock Warning Banner */}
-      {hasOutOfStockItems && (
-        <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-red-500 text-base">⚠️</span>
+      {showSavedAddressCard ? (
+        <div className="flex flex-col gap-3.5">
+          <div className="rounded-[28px] bg-[var(--color-sage-200)] p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-sage-700)]">
+                  Saved from your last order
+                </p>
+                <p className="font-display text-lg leading-tight text-[var(--text-primary)]">
+                  {savedProfile.name || 'Your saved address'}
+                </p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-sage-900)]">
+                  {savedProfile.address}
+                  <br />
+                  {[savedProfile.district, savedProfile.state, savedProfile.pincode]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+                <p className="mt-2 text-[13px] text-[var(--color-sage-900)]">
+                  {savedProfile.phone}
+                  {savedProfile.whatsapp && savedProfile.whatsapp === savedProfile.phone
+                    ? ' · WhatsApp same'
+                    : savedProfile.whatsapp
+                      ? ` · WhatsApp ${savedProfile.whatsapp}`
+                      : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAddress(true)}
+                className="shrink-0 rounded-full bg-[var(--bg-secondary)] px-3.5 py-[7px] text-xs font-bold text-[var(--color-sage-900)]"
+              >
+                Change
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 rounded-full bg-[var(--bg-secondary)] px-4 py-3">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--color-terracotta)] text-[#f5ead8]">
+              <Icon name="check" className="h-3 w-3" />
+            </span>
+            <span className="text-[13px] text-[var(--text-primary)]">Deliver to this address</span>
+          </div>
+
+          <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            {savedProfile.district || 'Your district'} is 1–2 days from dispatch. The delivery charge
+            for this pincode comes on WhatsApp with your stock confirmation.
+          </p>
+
+          <div className="rounded-[28px] bg-[var(--bg-secondary)] p-5">
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-sm text-[var(--text-secondary)]">{plantCount} plants</span>
+              <span className="text-sm font-bold text-[var(--text-primary)]">
+                {CURRENCY}{inStockTotal.toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="mt-3 flex items-baseline justify-between gap-4">
+              <span className="font-display text-[17px] text-[var(--text-primary)]">Plants total</span>
+              <span className="font-display text-[22px] text-[var(--text-primary)]">
+                {CURRENCY}{plantsTotal.toLocaleString('en-IN')}
+              </span>
+            </div>
+          </div>
+
+          <ListRow
+            icon="list"
+            to="/orders"
+            title="Your last 3 orders"
+            subtitle="Reorder anything with one tap"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3.5">
+          {!user && (
+            <p className="rounded-[24px] bg-[var(--bg-tertiary)] px-4 py-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              Sign in to save your details for next time.
+            </p>
+          )}
+
+          <div>
+            <label className={fieldLabel} htmlFor="checkout-name">Name</label>
+            <input
+              id="checkout-name"
+              type="text"
+              value={checkoutInfo.name}
+              onChange={(e) => setCheckoutInfo(prev => ({ ...prev, name: e.target.value }))}
+              className={pillField}
+              placeholder="Your full name"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+              <label className={fieldLabel} htmlFor="checkout-phone">Phone</label>
+              <input
+                id="checkout-phone"
+                type="tel"
+                value={checkoutInfo.phone}
+                onChange={(e) => setCheckoutInfo(prev => ({ ...prev, phone: e.target.value }))}
+                className={pillField}
+                placeholder="10 digits"
+              />
+            </div>
+            <div>
+              <label className={fieldLabel} htmlFor="checkout-whatsapp">WhatsApp</label>
+              <input
+                id="checkout-whatsapp"
+                type="tel"
+                value={checkoutInfo.whatsapp}
+                onChange={(e) => setCheckoutInfo(prev => ({ ...prev, whatsapp: e.target.value }))}
+                className={pillField}
+                placeholder="Same as phone"
+                disabled={sameAsPhone}
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2.5" htmlFor="sameAsPhone">
+            <input
+              type="checkbox"
+              id="sameAsPhone"
+              checked={sameAsPhone}
+              onChange={(e) => setSameAsPhone(e.target.checked)}
+              className="h-5 w-5 rounded-md accent-[var(--color-terracotta)]"
+            />
+            <span className="text-[13px] text-[var(--text-primary)]">
+              WhatsApp is the same as my phone
+            </span>
+          </label>
+
+          <div>
+            <label className={fieldLabel} htmlFor="checkout-address">Address</label>
+            <textarea
+              id="checkout-address"
+              value={checkoutInfo.address}
+              onChange={(e) => setCheckoutInfo(prev => ({ ...prev, address: e.target.value }))}
+              rows={3}
+              className="w-full resize-y rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-[18px] py-3.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--color-terracotta)]"
+              placeholder="House, street, area"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <label className={fieldLabel} htmlFor="checkout-pincode">
+                Pincode {lookingUp && '…'}
+              </label>
+              <input
+                id="checkout-pincode"
+                type="text"
+                value={checkoutInfo.pincode}
+                onChange={(e) => handlePincodeChange(e.target.value)}
+                className={pillField}
+                maxLength={6}
+                placeholder="643102"
+              />
+            </div>
+            <div>
+              <label className={fieldLabel} htmlFor="checkout-district">District</label>
+              <input
+                id="checkout-district"
+                type="text"
+                value={checkoutInfo.district}
+                readOnly
+                className={readOnlyField}
+              />
+            </div>
+            <div>
+              <label className={fieldLabel} htmlFor="checkout-state">State</label>
+              <input
+                id="checkout-state"
+                type="text"
+                value={checkoutInfo.state}
+                readOnly
+                className={readOnlyField}
+              />
+            </div>
+          </div>
+
+          <p className="-mt-1 text-xs text-[var(--text-secondary)]">
+            District and state fill in from your pincode.
+          </p>
+
+          {user && (
+            <label className="flex items-center gap-2.5 rounded-full bg-[var(--bg-secondary)] px-4 py-3">
+              <input
+                type="checkbox"
+                checked={saveDetailsForNextOrder}
+                onChange={(e) => setSaveDetailsForNextOrder(e.target.checked)}
+                className="h-5 w-5 rounded-md accent-[var(--color-terracotta)]"
+              />
+              <span className="text-[13px] text-[var(--text-primary)]">
+                Save these details for next order
+              </span>
+            </label>
+          )}
+        </div>
+      )}
+
+      {checkoutIssue && (
+        <div className="mt-4 rounded-[24px] bg-[var(--color-accent-200)] p-4 text-[13px] text-[var(--color-accent-900)]">
+          <p>{checkoutIssue.message}</p>
+          {checkoutIssue.supportCode && (
+            <p className="mt-1 font-mono text-xs font-bold">
+              Support code: {checkoutIssue.supportCode}
+            </p>
+          )}
+        </div>
+      )}
+
+      <DeepPanel
+        className="mt-5"
+        eyebrow="What happens next"
+        title="Four steps, all on WhatsApp"
+      >
+        <div className="flex flex-col gap-4">
+          <NumberedStep index="1" title="Your cart reaches us">
+            Opens WhatsApp with the list filled in. Nothing is charged.
+          </NumberedStep>
+          <NumberedStep index="2" title="We tell you the delivery charge">
+            It depends on your location, so we confirm it with stock — usually within the hour, 9 AM
+            to 9 PM.
+          </NumberedStep>
+          <NumberedStep index="3" title="You pay the total">
+            Plants plus delivery, by GPay, PayTM, PhonePe or net banking. No cash on delivery.
+          </NumberedStep>
+          <NumberedStep index="4" title="Packed and dispatched">
+            Nearest Monday or Wednesday, bare-root.
+          </NumberedStep>
+        </div>
+      </DeepPanel>
+
+      <p className="mt-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+        We keep your name, phone and address to pack the order. Nothing else.
+      </p>
+
+      <StickyBar>
+        <button
+          type="button"
+          onClick={handleCheckoutClick}
+          disabled={isSaving}
+          className="btn btn-sage w-full"
+        >
+          {isSaving ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          ) : (
+            <Icon name="whatsapp" filled className="h-[19px] w-[19px]" />
+          )}
+          {isSaving ? 'Opening WhatsApp…' : 'Send this order on WhatsApp'}
+        </button>
+      </StickyBar>
+    </div>
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Screen A — Cart                                                     */
+  /* ------------------------------------------------------------------ */
+  const cartScreen = (
+    <div className="animate-fade-in pb-40">
+      <PageBar
+        title="Your cart"
+        fallbackTo="/shop"
+        trailing={
+          <span className="flex shrink-0 items-center gap-3">
+            <span className="text-[13px] font-semibold text-[var(--color-accent-700)]">
+              {plantCount} items
+            </span>
+            <button
+              type="button"
+              onClick={clearCart}
+              className="text-[13px] font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+            >
+              Clear all
+            </button>
+          </span>
+        }
+      />
+
+      {pendingOrdersPanel}
+
+      {hasOutOfStockItems && (
+        <div className="mb-4 rounded-[28px] bg-[var(--color-accent-200)] p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--color-accent-700)]">
+              <Icon name="alert" className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-base text-[var(--color-accent-900)]">
                 Some plants in your cart are out of stock
               </p>
-              <p className="text-xs text-red-500 dark:text-red-400">
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-accent-800)]">
                 They are shown below and will not be included in your total or order.
               </p>
             </div>
           </div>
-          <div className="space-y-2 mt-1">
+          <div className="mt-3.5 flex flex-col gap-2">
             {outOfStockItems.map((item) => (
               <div
                 key={item.productId}
-                className="flex items-center gap-3 bg-red-100/60 dark:bg-red-900/40 rounded-lg p-2"
+                className="flex items-center gap-3 rounded-[20px] bg-[var(--bg-secondary)] p-2.5"
               >
-                <div className="w-12 h-12 rounded-md overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]">
                   <img
                     src={resolveImageUrl(item.imageUrl) || '/placeholder-plant.jpg'}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
+                    alt={getStorefrontProductTitle(item)}
+                    className="washed h-full w-full object-cover"
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-red-900 dark:text-red-50 truncate">
-                    {item.productId}. {item.name}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">
+                    {getStorefrontProductTitle(item)}
                   </p>
-                  <p className="text-[10px] text-red-700 dark:text-red-200">
+                  <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
                     Out of stock – cannot be ordered
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => removeFromCart(item.productId)}
-                  className="text-[10px] text-red-700 hover:text-red-900 dark:text-red-200 dark:hover:text-white"
+                  aria-label={`Remove ${getStorefrontProductTitle(item)} from cart`}
+                  className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--border-color)] px-3.5 text-[13px] font-bold text-[var(--color-accent-700)] transition-colors hover:bg-[var(--bg-tertiary)]"
                 >
+                  <Icon name="x" className="h-4 w-4" />
                   Remove
                 </button>
               </div>
@@ -613,354 +1138,203 @@ export default function CartPage() {
         </div>
       )}
 
-      {/* Cart Items */}
-      <div className="space-y-3 mb-6">
+      <div className="flex flex-col gap-3">
         {inStockItems.map((item) => (
           <div
             key={item.productId}
-            className="card p-3 flex gap-3 cursor-pointer"
+            role="button"
+            tabIndex={0}
             onClick={() => handleItemClick(item)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleItemClick(item); }}
+            className="flex cursor-pointer items-center gap-3 rounded-[28px] bg-[var(--bg-tertiary)] p-3 text-left"
           >
-            {/* Image */}
-            <div className="w-24 h-24 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[var(--bg-tertiary)] flex-shrink-0">
+            <div className="h-[78px] w-[78px] shrink-0 overflow-hidden rounded-[20px] bg-[var(--bg-sunken)]">
               <img
                 src={resolveImageUrl(item.imageUrl) || '/placeholder-plant.jpg'}
-                alt={item.name}
-                className="w-full h-full object-cover"
+                alt={getStorefrontProductTitle(item)}
+                className="washed h-full w-full object-cover"
+                loading="lazy"
               />
             </div>
 
-            {/* Details */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-[var(--text-primary)] truncate">
-                {item.productId}. {item.name}
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)]">
-                {CURRENCY}{item.price?.toLocaleString('en-IN')}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-base leading-tight text-[var(--text-primary)]">
+                {getStorefrontProductTitle(item)}
               </p>
-              
-              {/* Quantity Controls */}
-              <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); updateQuantity(item.productId, item.quantity - 1); }}
-                  className="w-9 h-9 md:w-7 md:h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
-                >
-                  −
-                </button>
-                <span className="w-8 text-center text-[var(--text-primary)] font-medium">
-                  {item.quantity}
+              <p className="mt-1 truncate text-xs text-[var(--text-secondary)]">
+                {[item.category, `#${item.productId}`, `${CURRENCY}${(item.price || 0).toLocaleString('en-IN')} each`]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+              <div
+                className="mt-2 flex items-center gap-2.5"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                role="presentation"
+              >
+                <QuantityStepper
+                  size="sm"
+                  value={item.quantity}
+                  onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
+                  onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
+                  className="border-transparent bg-[var(--bg-secondary)]"
+                />
+                <span className="font-display text-[17px] text-[var(--text-primary)]">
+                  {CURRENCY}{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); updateQuantity(item.productId, item.quantity + 1); }}
-                  className="w-9 h-9 md:w-7 md:h-7 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--color-cream)] transition-colors"
+                  type="button"
+                  onClick={() => removeFromCart(item.productId)}
+                  aria-label={`Remove ${getStorefrontProductTitle(item)} from cart`}
+                  className="ml-auto flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--border-color)] px-3.5 text-[13px] font-bold text-[var(--text-secondary)] transition-colors hover:border-[var(--color-accent-700)] hover:text-[var(--color-accent-700)]"
                 >
-                  +
+                  <Icon name="x" className="h-4 w-4" />
+                  Remove
                 </button>
               </div>
-            </div>
-
-            {/* Price & Remove */}
-            <div className="text-right">
-              <p className="font-semibold text-[var(--text-primary)]">
-                {CURRENCY}{(item.price * item.quantity).toLocaleString('en-IN')}
-              </p>
-              <button
-                onClick={(e) => { e.stopPropagation(); removeFromCart(item.productId); }}
-                className="text-red-500 hover:text-red-600 text-xs mt-2"
-              >
-                Remove
-              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Cart Summary */}
-      <div className="card p-4 space-y-3">
-        <div className="flex justify-between text-[var(--text-primary)]">
-          <span>Subtotal</span>
-          <span className="font-semibold">{CURRENCY}{inStockTotal.toLocaleString('en-IN')}</span>
-        </div>
-
-        {/* Promo Code Section */}
-        {promoEnabled && !promoInfo ? (
-          <div className="space-y-1.5">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={promoCode}
-                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
-                placeholder="Promo code"
-                className="input flex-1 text-sm uppercase placeholder:normal-case"
-              />
-              <button
-                onClick={handleApplyPromo}
-                disabled={promoLoading || !promoCode.trim()}
-                className="btn btn-secondary text-sm px-4 shrink-0 disabled:opacity-50"
-              >
-                {promoLoading ? (
-                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
-                ) : 'Apply'}
-              </button>
-            </div>
-            {promoError && (
-              <p className="text-xs text-red-500">{promoError}</p>
-            )}
-            {!promoError && (
-              <p className="text-[10px] text-[var(--text-secondary)]">
-                🌿 Follow us on <a href="https://instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="text-[var(--color-forest)] font-medium hover:underline">Instagram</a> for exclusive promo codes!
-              </p>
-            )}
-          </div>
-        ) : promoEnabled && promoInfo ? (
-          <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-green-600 dark:text-green-400 text-base">🏷️</span>
-              <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-300">{promoInfo.code}</p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  −{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')} saved
-                </p>
-              </div>
-            </div>
+      {promoEnabled && !promoInfo && (
+        <div className="mt-4">
+          <div className="flex gap-2.5">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+              placeholder="Promo code"
+              aria-label="Promo code"
+              className="min-h-11 flex-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-[18px] text-sm uppercase text-[var(--text-primary)] outline-none transition-colors placeholder:normal-case placeholder:text-[var(--text-secondary)] focus:border-[var(--color-terracotta)]"
+            />
             <button
-              onClick={handleRemovePromo}
-              className="text-xs text-green-700 dark:text-green-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              type="button"
+              onClick={handleApplyPromo}
+              disabled={promoLoading || !promoCode.trim()}
+              className="btn btn-secondary shrink-0 px-5"
             >
-              Remove
+              {promoLoading ? (
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : 'Apply'}
             </button>
           </div>
-        ) : null}
+          {promoError ? (
+            <p className="mt-2 text-xs text-[var(--color-accent-700)]">{promoError}</p>
+          ) : (
+            <p className="mt-2 text-xs text-[var(--text-secondary)]">
+              Codes go out on{' '}
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--color-accent-700)] hover:underline"
+              >
+                Instagram
+              </a>
+              {' '}first.
+            </p>
+          )}
+        </div>
+      )}
+
+      {promoEnabled && promoInfo && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-full bg-[var(--color-sage-200)] px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[var(--color-sage-900)]">{promoInfo.code}</p>
+            <p className="mt-0.5 text-xs text-[var(--color-sage-800)]">
+              −{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')} saved
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRemovePromo}
+            className="shrink-0 rounded-full bg-[var(--bg-secondary)] px-3.5 py-1.5 text-xs font-bold text-[var(--color-sage-900)]"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+
+      <div className="mt-4 rounded-[28px] bg-[var(--bg-secondary)] p-5">
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-sm text-[var(--text-secondary)]">{plantCount} plants</span>
+          <span className="text-sm font-bold text-[var(--text-primary)]">
+            {CURRENCY}{inStockTotal.toLocaleString('en-IN')}
+          </span>
+        </div>
 
         {promoInfo && (
-          <div className="flex justify-between text-green-600 dark:text-green-400 text-sm font-medium">
+          <div className="flex items-baseline justify-between gap-4 pt-2.5 text-sm text-[var(--color-sage-800)]">
             <span>Discount</span>
-            <span>−{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')}</span>
+            <span className="font-bold">
+              −{CURRENCY}{promoInfo.discount.toLocaleString('en-IN')}
+            </span>
           </div>
         )}
 
-        <div className="flex justify-between gap-3 text-[var(--text-secondary)] text-sm">
-          <span>Delivery charge</span>
-          <span className="text-right">Delivery charge will be confirmed on WhatsApp before payment</span>
-        </div>
-        <hr className="border-[var(--border-color)]" />
-        <div className="flex justify-between text-[var(--text-primary)] text-lg">
-          <span className="font-semibold">Total</span>
-          <div className="text-right">
-            {promoInfo && (
-              <p className="text-xs text-[var(--text-secondary)] line-through">
-                {CURRENCY}{inStockTotal.toLocaleString('en-IN')}
-              </p>
-            )}
-            <span className="font-bold">{CURRENCY}{discountedTotal.toLocaleString('en-IN')}</span>
-          </div>
+        <div className="flex justify-between gap-4 py-2.5">
+          <span className="text-sm text-[var(--text-secondary)]">Delivery charge</span>
+          <span className="text-right text-[13px] text-[var(--text-secondary)]">
+            We tell you on WhatsApp<br />before you pay
+          </span>
         </div>
 
-        {!showCheckout ? (
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="font-display text-lg text-[var(--text-primary)]">Plants total</span>
+          <span className="font-display text-2xl text-[var(--text-primary)]">
+            {CURRENCY}{plantsTotal.toLocaleString('en-IN')}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-start gap-3 rounded-[28px] bg-[var(--color-sage-200)] px-5 py-[18px]">
+        <Icon name="gift" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-sage-700)]" />
+        <p className="text-[13px] leading-relaxed text-[var(--color-sage-900)]">
+          {hasFreePlant ? (
+            'Your free plant is included.'
+          ) : (
+            <>
+              Add <span className="font-bold">{CURRENCY}{freePlantRemaining.toLocaleString('en-IN')}</span>
+              {' '}more and we drop in a free plant.
+            </>
+          )}
+        </p>
+      </div>
+
+      <p className="mt-4 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        Plants ship bare-root, no pot unless the listing says so. Delivery is charged at cost and we
+        tell you the amount on WhatsApp before you pay.
+      </p>
+
+      <StickyBar>
+        <div className="w-full">
           <button
+            type="button"
             onClick={() => {
               setShowCheckout(true);
               setTimeout(() => {
                 checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }, 100);
             }}
-            className="btn btn-primary w-full mt-4"
+            className="btn btn-primary w-full"
           >
-            Enter delivery details
+            Continue · {CURRENCY}{plantsTotal.toLocaleString('en-IN')}
           </button>
-        ) : (
-          <div ref={checkoutRef} className="space-y-4 mt-4 animate-fade-in border-t-2 border-[var(--color-forest)]/20 pt-4">
-            {/* Step indicator */}
-            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mb-2">
-              <span className="flex items-center gap-1 text-[var(--text-secondary)]">
-                <span className="w-5 h-5 rounded-full bg-[var(--color-forest)] text-white text-[10px] font-bold flex items-center justify-center">✓</span>
-                Cart
-              </span>
-              <span className="flex-1 h-px bg-[var(--color-forest)]/30" />
-              <span className="flex items-center gap-1 text-[var(--color-forest)] font-semibold">
-                <span className="w-5 h-5 rounded-full bg-[var(--color-forest)] text-white text-[10px] font-bold flex items-center justify-center">2</span>
-                Delivery Details
-              </span>
-            </div>
+          <p className="mt-2 text-center text-[11px] text-[var(--text-secondary)]">
+            Nothing is charged yet
+          </p>
+        </div>
+      </StickyBar>
+    </div>
+  );
 
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-[var(--text-primary)]">Delivery Details</h3>
-              <button 
-                onClick={() => setShowCheckout(false)}
-                className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              >
-                Close
-              </button>
-            </div>
-            
-            {!user && (
-              <p className="text-sm text-[var(--text-secondary)] bg-[var(--bg-tertiary)] p-2 rounded-lg">
-                💡 Sign in to save your details for next time!
-              </p>
-            )}
-            
-            {/* Name */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">Name</label>
-              <input
-                type="text"
-                value={checkoutInfo.name}
-                onChange={(e) => setCheckoutInfo(prev => ({ ...prev, name: e.target.value }))}
-                className="input"
-                placeholder="Full Name"
-              />
-            </div>
+  return (
+    <div className="animate-fade-in">
+      <SEO title="Your Cart" description="Review items in your cart and proceed to checkout. Shop plants from Rosary Plant House." noindex />
+      {showCheckout ? deliveryScreen : cartScreen}
 
-            {/* Contact */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={checkoutInfo.phone}
-                  onChange={(e) => setCheckoutInfo(prev => ({ ...prev, phone: e.target.value }))}
-                  className="input"
-                  placeholder="Mobile"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">WhatsApp</label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    value={checkoutInfo.whatsapp}
-                    onChange={(e) => setCheckoutInfo(prev => ({ ...prev, whatsapp: e.target.value }))}
-                    className="input"
-                    placeholder="WhatsApp"
-                    disabled={sameAsPhone}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Same as phone checkbox */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="sameAsPhone"
-                checked={sameAsPhone}
-                onChange={(e) => setSameAsPhone(e.target.checked)}
-                className="rounded text-[var(--text-primary)] focus:ring-[var(--color-forest)]"
-              />
-              <label htmlFor="sameAsPhone" className="text-xs text-[var(--text-primary)]/70">
-                WhatsApp number is same as Phone
-              </label>
-            </div>
-            
-            {/* Address */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">Address</label>
-              <textarea
-                value={checkoutInfo.address}
-                onChange={(e) => setCheckoutInfo(prev => ({ ...prev, address: e.target.value }))}
-                className="input min-h-[60px]"
-                rows={2}
-                placeholder="House, Street, Area"
-              />
-            </div>
-
-            {/* Pincode & Location */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-1">
-                <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">
-                  Pincode {lookingUp && '⏳'}
-                </label>
-                <input
-                  type="text"
-                  value={checkoutInfo.pincode}
-                  onChange={(e) => handlePincodeChange(e.target.value)}
-                  className="input"
-                  maxLength={6}
-                  placeholder="Pincode"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">District</label>
-                <input
-                  type="text"
-                  value={checkoutInfo.district}
-                  readOnly
-                  className="input bg-[var(--bg-tertiary)]"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs font-medium text-[var(--text-primary)]/70 mb-1">State</label>
-                <input
-                  type="text"
-                  value={checkoutInfo.state}
-                  readOnly
-                  className="input bg-[var(--bg-tertiary)]"
-                />
-              </div>
-            </div>
-            
-            {user && (
-              <label className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/40 px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={saveDetailsForNextOrder}
-                  onChange={(e) => setSaveDetailsForNextOrder(e.target.checked)}
-                  className="rounded text-[var(--text-primary)] focus:ring-[var(--color-forest)]"
-                />
-                <span className="text-xs text-[var(--text-primary)]/80">
-                  Save these details for next order
-                </span>
-              </label>
-            )}
-
-            {checkoutIssue && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300">
-                <p>{checkoutIssue.message}</p>
-                {checkoutIssue.supportCode && (
-                  <p className="mt-1 font-mono text-xs font-semibold">
-                    Support code: {checkoutIssue.supportCode}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/50 p-3">
-              <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-2">What happens next</h4>
-              <ol className="space-y-1 text-xs text-[var(--text-secondary)] list-decimal list-inside">
-                <li>Send your cart on WhatsApp</li>
-                <li>We confirm availability and delivery charge</li>
-                <li>You pay after confirmation</li>
-                <li>Will be dispatched on nearest dispatch date.</li>
-              </ol>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowCheckout(false)}
-                disabled={isSaving}
-                className="btn btn-secondary flex-1 disabled:opacity-50"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleCheckoutClick}
-                disabled={isSaving}
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span>💬</span>
-                )}
-                {isSaving ? 'Opening WhatsApp...' : 'Send order request on WhatsApp'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Product Modal */}
       <ProductModal
         product={selectedProduct}
         isOpen={!!selectedProduct}

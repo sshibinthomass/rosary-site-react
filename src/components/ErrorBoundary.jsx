@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import Icon from './Icon';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -24,8 +25,10 @@ export default class ErrorBoundary extends Component {
       return (
         <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4">
           <div className="text-center max-w-md">
-            <span className="text-6xl block mb-4">🌱</span>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+            <span className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--color-sage-200)] text-[var(--color-sage-800)]">
+              <Icon name="sprout" className="h-11 w-11" strokeWidth={2} />
+            </span>
+            <h1 className="font-display text-[25px] text-[var(--text-primary)] mb-2">
               Oops! Something went wrong
             </h1>
             <p className="text-[var(--text-secondary)] mb-6">

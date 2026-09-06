@@ -1,136 +1,244 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import reviewsData from '../data/reviews.json';
 import SEO from '../components/SEO';
+import Icon, { GoogleMark } from '../components/Icon';
+import { ChipRail, DeepPanel, PageBar } from '../components/storefront';
+
+const GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/h5ziUGAuvC4FZZqn8';
+const FACEBOOK_REVIEWS_URL = 'https://www.facebook.com/rosaryplanthouse/reviews';
+const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/rosary_plant_house';
+
+/** The only qualifier the review data can honestly support. */
+const REPEAT_BUYER_PATTERN = /\b(second|third|fourth|2nd|3rd|4th|repeat|again|another order|every time|each time|regular customer|many times|multiple times|order more|ordered more)\b/i;
+
+const reviewEntries = reviewsData.map((review, index) => ({
+  id: `${index}-${review.author}`,
+  review,
+  repeatBuyer: REPEAT_BUYER_PATTERN.test(review.text || ''),
+  hasPhotos: Array.isArray(review.images) && review.images.length > 0,
+}));
+
+const averageRating = reviewsData.reduce((total, review) => total + review.rating, 0) / reviewsData.length;
+const allFiveStars = reviewsData.every((review) => review.rating === 5);
+const roundedCount = Math.floor(reviewsData.length / 10) * 10;
+
+const reviewSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Rosary Plant House Shopping Experience",
+  "image": "https://rosaryplanthouse.com/hero-bg.jpg",
+  "description": "Customer reviews and feedback for Rosary Plant House, Coonoor.",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": averageRating.toFixed(1),
+    "reviewCount": reviewsData.length
+  },
+  "review": reviewsData.map(rev => ({
+    "@type": "Review",
+    "author": {
+      "@type": "Person",
+      "name": rev.author
+    },
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": rev.rating,
+      "bestRating": "5"
+    },
+    "reviewBody": rev.text
+  }))
+};
+
+function StarRow({ className = '' }) {
+  return (
+    <div className={`flex gap-0.5 ${className}`}>
+      {[...Array(5)].map((_, index) => (
+        <Icon key={index} name="star" filled className="h-[13px] w-[13px]" />
+      ))}
+    </div>
+  );
+}
+
+function ReviewCard({ entry }) {
+  const { review, repeatBuyer } = entry;
+
+  return (
+    <article className="rounded-[24px] bg-[var(--bg-secondary)] p-[18px]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--color-sage-200)] font-display text-[15px] text-[var(--color-sage-800)]">
+            {review.author.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-[var(--text-primary)]">{review.author}</p>
+            {repeatBuyer && <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">Repeat customer</p>}
+          </div>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-sage-200)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-sage-800)]">
+          <Icon name="star" filled className="h-[11px] w-[11px]" />
+          {review.rating.toFixed(1)}
+        </span>
+      </div>
+
+      <p className="text-sm leading-relaxed text-[var(--text-secondary)]">&ldquo;{review.text}&rdquo;</p>
+
+      {entry.hasPhotos && (
+        <div className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto pb-1">
+          {review.images.map((image, index) => (
+            <img
+              key={image}
+              src={image}
+              alt={`Photo ${index + 1} from ${review.author}`}
+              loading="lazy"
+              className="washed h-24 w-24 shrink-0 rounded-[18px] object-cover"
+            />
+          ))}
+        </div>
+      )}
+
+      {review.link && (
+        <a
+          href={review.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex text-sm font-semibold text-[var(--color-accent-700)] hover:underline dark:text-[var(--color-accent-300)]"
+        >
+          View full review
+        </a>
+      )}
+    </article>
+  );
+}
 
 export default function ReviewsPage() {
   const location = useLocation();
-  // Calculate average rating for AggregateRating schema
-  const averageRating = reviewsData.reduce((acc, rev) => acc + rev.rating, 0) / reviewsData.length;
+  const [filter, setFilter] = useState('all');
 
-  const reviewSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Rosary Plant House Shopping Experience",
-    "image": "https://rosaryplanthouse.com/hero-bg.jpg",
-    "description": "Customer reviews and feedback for Rosary Plant House, Coonoor.",
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": averageRating.toFixed(1),
-      "reviewCount": reviewsData.length
-    },
-    "review": reviewsData.map(rev => ({
-      "@type": "Review",
-      "author": {
-        "@type": "Person",
-        "name": rev.author
-      },
-      "reviewRating": {
-        "@type": "Rating",
-        "ratingValue": rev.rating,
-        "bestRating": "5"
-      },
-      "reviewBody": rev.text
-    }))
-  };
+  const photoCount = reviewEntries.filter((entry) => entry.hasPhotos).length;
+  const repeatCount = reviewEntries.filter((entry) => entry.repeatBuyer).length;
+
+  const filterChips = [
+    { id: 'all', label: 'All', count: reviewEntries.length },
+    ...(repeatCount > 0 ? [{ id: 'repeat', label: 'Repeat buyers', count: repeatCount }] : []),
+    ...(photoCount > 0 ? [{ id: 'photos', label: 'With photos', count: photoCount }] : []),
+  ];
+
+  const visibleReviews = useMemo(() => reviewEntries.filter((entry) => {
+    if (filter === 'repeat') return entry.repeatBuyer;
+    if (filter === 'photos') return entry.hasPhotos;
+    return true;
+  }), [filter]);
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 animate-fade-in">
-      <SEO 
-        title="Customer Reviews" 
-        description="Read what our plant lovers say about Rosary Plant House. 5-star rated nursery from Coonoor, Nilgiris packing rare succulents for safety." 
+    <div className="animate-fade-in mx-auto max-w-3xl pb-16">
+      <SEO
+        title="Customer Reviews"
+        description="Read what our plant lovers say about Rosary Plant House. 5-star rated nursery from Coonoor, Nilgiris packing rare succulents for safety."
         canonicalUrl="https://rosaryplanthouse.com/reviews"
         schemaData={reviewSchema}
       />
-      <div className="flex flex-col items-center mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3">Customer Reviews</h1>
-        <div className="w-24 h-1 bg-[var(--color-terracotta)] rounded-full mb-4"></div>
-        <p className="text-[var(--text-secondary)] text-center max-w-2xl mb-6">
-          Hear what our lovely customers have to say about their experience with Rosary Plant House.
-        </p>
 
-        <Link 
-          to="/insta-reviews" 
-          state={{ from: location.pathname }}
-          className="group relative inline-flex items-center justify-center gap-2 px-8 py-3 font-semibold text-white transition-all duration-300 ease-in-out rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 shadow-lg hover:shadow-xl hover:-translate-y-1 overflow-hidden"
-        >
-          <div className="absolute inset-0 w-full h-full bg-white/20 blur-md transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-          <span className="tracking-wide">Watch Stories Reviews</span>
-        </Link>
+      <PageBar title="Reviews" />
 
-        {/* External Review Links */}
-        <div className="mt-6 flex flex-wrap justify-center gap-4">
-          <a href="https://www.facebook.com/rosaryplanthouse/reviews" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
-            <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-              <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-            </svg>
-            Facebook Reviews
-          </a>
-          <a href="https://www.instagram.com/rosary_plant_house" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
-            <svg className="w-4 h-4 text-[#E1306C]" fill="currentColor" viewBox="0 0 24 24">
-              <path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd" />
-            </svg>
-            Insta Reviews
-          </a>
-          <a href="https://maps.app.goo.gl/h5ziUGAuvC4FZZqn8" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-[var(--border-color)] rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-medium text-[var(--text-primary)]">
-            <svg className="w-4 h-4 text-[#EA4335]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-            </svg>
-            Google Reviews
-          </a>
-        </div>
-      </div>
-      
-      <div className="grid gap-6">
-        {reviewsData.map((review, index) => (
-          <div key={index} className="glass p-6 md:p-8 rounded-2xl border border-[var(--border-color)] hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[var(--color-terracotta)] text-white flex items-center justify-center font-bold text-xl shadow-sm">
-                  {review.author.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg text-[var(--text-primary)]">{review.author}</h3>
-                </div>
-              </div>
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-            </div>
-            <p className="text-[var(--text-primary)] leading-relaxed italic">
-              "{review.text}"
+      <DeepPanel>
+        <div className="flex items-center gap-4">
+          <div className="shrink-0">
+            <p className="font-display text-[42px] leading-none text-[var(--panel-deep-text)]">
+              {averageRating.toFixed(1)}
             </p>
-            {review.images && review.images.length > 0 && (
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                {review.images.map((img, i) => (
-                  <img key={i} src={img} alt={`Review photo ${i + 1}`} className="h-24 w-24 md:h-32 md:w-32 object-cover rounded-lg shadow-sm shrink-0" />
-                ))}
-              </div>
-            )}
-            {review.link && (
-              <div className="mt-4">
-                <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[var(--color-forest)] hover:underline inline-flex items-center gap-1">
-                  View full review
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              </div>
-            )}
+            <StarRow className="mt-1 text-[var(--color-accent-400)]" />
           </div>
+          <div className="min-w-0">
+            <p className="font-display text-[20px] leading-tight text-[var(--panel-deep-text)]">
+              {roundedCount > 0 ? `${roundedCount}+` : reviewEntries.length} reviews
+              {allFiveStars ? ', all five stars' : `, ${averageRating.toFixed(1)} average`}
+            </p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--panel-deep-muted)]">
+              From Google, Instagram and Facebook. Repeat buyers since 2020.
+            </p>
+          </div>
+        </div>
+      </DeepPanel>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Link
+          to="/insta-reviews"
+          state={{ from: location.pathname }}
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--color-terracotta)] px-5 font-display text-[15px] text-[#f5ead8] transition-opacity hover:opacity-90 dark:text-[#201e1d]"
+        >
+          <Icon name="instagram" className="h-[17px] w-[17px]" />
+          Watch story reviews
+        </Link>
+        <a
+          href={GOOGLE_REVIEWS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] px-4 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
+        >
+          <GoogleMark className="h-4 w-4" />
+          Google
+        </a>
+        <a
+          href={INSTAGRAM_PROFILE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] px-4 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
+        >
+          <Icon name="instagram" className="h-4 w-4" />
+          Instagram
+        </a>
+        <a
+          href={FACEBOOK_REVIEWS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] px-4 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
+        >
+          <Icon name="facebook" filled className="h-4 w-4 text-[#1877F2]" />
+          Facebook
+        </a>
+      </div>
+
+      {filterChips.length > 1 && (
+        <ChipRail
+          className="mt-3"
+          options={filterChips}
+          value={filter}
+          onChange={setFilter}
+          ariaLabel="Filter reviews"
+        />
+      )}
+
+      <div className="mt-4 flex flex-col gap-3">
+        {visibleReviews.map((entry) => (
+          <ReviewCard key={entry.id} entry={entry} />
         ))}
       </div>
+
+      <section className="mt-6 rounded-[24px] bg-[var(--bg-secondary)] px-5 py-[18px]">
+        <h2 className="mb-1.5 font-display text-[18px] text-[var(--text-primary)]">Bought from us before?</h2>
+        <p className="mb-4 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+          Post a story of your plants and tag us, and we will add a complimentary plant to your next order.
+        </p>
+        <div className="flex flex-wrap gap-2.5">
+          <a
+            href={GOOGLE_REVIEWS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center rounded-full bg-[var(--color-terracotta)] px-[17px] font-display text-sm text-[#f5ead8] transition-opacity hover:opacity-90 dark:text-[#201e1d]"
+          >
+            Leave a review
+          </a>
+          <a
+            href={GOOGLE_REVIEWS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] px-[17px] text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+          >
+            <GoogleMark className="h-4 w-4" />
+            See on Google
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

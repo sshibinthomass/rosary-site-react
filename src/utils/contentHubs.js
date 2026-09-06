@@ -1135,3 +1135,71 @@ export function buildContentHubSchemaItems(hub = {}, { baseUrl = PRODUCT_SEO_SIT
       : null,
   ].filter(Boolean);
 }
+
+/**
+ * Editorial topics for the guide library.
+ *
+ * The hub records carry no topic field, so the label a guide wears — and the
+ * filter chips above the list — are derived from the hub's own words. Both the
+ * index and the article read this, so a guide can never be filed under one
+ * topic in the list and another on its own page.
+ */
+export const GUIDE_TOPICS = Object.freeze([
+  { id: 'watering', label: 'Watering', terms: ['water', 'soak'] },
+  { id: 'monsoon', label: 'Monsoon', terms: ['monsoon', 'rain', 'humid'] },
+  { id: 'pests', label: 'Pests', terms: ['pest', 'mealybug', 'fungus', 'fungal', 'insect'] },
+  { id: 'beginners', label: 'Beginners', terms: ['beginner', 'low maintenance', 'easy', 'simple'] },
+  { id: 'buying', label: 'Buying', terms: ['buy', 'ordering', 'price', 'choos'] },
+  { id: 'delivery', label: 'Delivery', terms: ['deliver', 'dispatch', 'packing', 'transit', 'shipping'] },
+]);
+
+function contentHubTopicText(hub = {}) {
+  return [
+    String(hub.slug || '').replace(/-/g, ' '),
+    hub.title,
+    hub.h1,
+    hub.metaDescription,
+    hub.answer,
+    ...(hub.sections || []).map((section) => section.heading),
+    ...(hub.productFilters?.keywords || []),
+  ].join(' ').toLowerCase();
+}
+
+function countTermHits(text, term) {
+  return (text.match(new RegExp(`\\b${term}`, 'g')) || []).length;
+}
+
+/** The hub's topics, strongest signal first. Empty when nothing matches. */
+export function getContentHubTopics(hub = {}) {
+  const text = contentHubTopicText(hub);
+
+  return GUIDE_TOPICS
+    .map((topic) => ({
+      topic,
+      score: topic.terms.reduce((total, term) => total + countTermHits(text, term), 0),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .map((entry) => entry.topic);
+}
+
+/** The single label a guide wears in the list and on its own page. */
+export function getContentHubTopicLabel(hub = {}) {
+  return getContentHubTopics(hub)[0]?.label || 'Care guide';
+}
+
+/** Reading time from the guide's own word count. */
+export function estimateContentHubReadMinutes(hub = {}) {
+  const words = [
+    hub.intro,
+    hub.answer,
+    ...(hub.sections || []).flatMap((section) => [
+      section.heading,
+      ...(section.body || []),
+      ...(section.bullets || []),
+    ]),
+    ...(hub.faqs || []).flatMap((faq) => [faq.question, faq.answer]),
+  ].join(' ').split(/\s+/).filter(Boolean).length;
+
+  return Math.max(3, Math.round(words / 200));
+}

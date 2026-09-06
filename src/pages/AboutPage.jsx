@@ -1,75 +1,139 @@
+import Icon from '../components/Icon';
 import SEO from '../components/SEO';
+import { DeepPanel, NumberedStep, PageBar, PhotoBanner } from '../components/storefront';
+import { NURSERY_ADDRESS_LINES, NURSERY_MAP_URL } from '../config/constants';
+import reviewsData from '../data/reviews.json';
+import { buildWhatsAppLink } from '../utils/nurseryMessages';
+
+const ABOUT_HERO_IMAGE = '/home/hero-natural-nursery-1200.webp';
+
+/** The review quoted in the panel, by author, so the words stay a real one. */
+const QUOTED_REVIEW_AUTHOR = 'Vinda Sridhar';
+
+const reviewCount = reviewsData.length;
+const averageRating = (
+  reviewsData.reduce((total, review) => total + (review.rating || 0), 0) / reviewCount
+).toFixed(1);
+
+const quotedReview = reviewsData.find((review) => review.author === QUOTED_REVIEW_AUTHOR)
+  || reviewsData.find((review) => review.featured)
+  || reviewsData[0];
+
+const visitWhatsAppLink = buildWhatsAppLink(
+  'Hello Rosary Plant House, I would like to visit the nursery. When is someone at the bench?'
+);
+
+const STATS = [
+  { value: 'Since 2020', label: 'Shipping across India' },
+  { value: '300+', label: 'Plants on the bench' },
+  { value: 'Grown here', label: 'No resales, ever' },
+  { value: averageRating, label: `Across ${reviewCount} reviews` },
+];
+
+const STEPS = [
+  {
+    title: 'Propagated on our benches',
+    body: 'From leaves and offsets of our own mother plants, in Nilgiris weather.',
+  },
+  {
+    title: 'Grown on until it is sturdy',
+    body: 'We only list a plant once it can take a three-day journey.',
+  },
+  {
+    title: 'Packed the morning it ships',
+    body: 'Bare-root, wrapped by hand, one plant at a time.',
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto space-y-12 pb-20 px-4 mt-8">
+    <div className="animate-fade-in mx-auto max-w-2xl pb-8">
       <SEO
         title="About Us"
         description="Learn about Rosary Plant House — a nursery in the Nilgiris, Coonoor, bringing beautiful succulents, cacti and indoor plants to your home."
         canonicalUrl="https://rosaryplanthouse.com/about"
       />
-      {/* Hero Section */}
-      <div className="text-center space-y-4">
-        <div className="inline-block p-4 rounded-full bg-[var(--bg-tertiary)] mb-2 hover:scale-110 transition-transform duration-300">
-          <span className="text-5xl">🌿</span>
-        </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--color-forest)] dark:text-green-400 tracking-tight">
-          Rosary Plant House
-        </h1>
-        <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">
-          Nurturing nature's beauty in the heart of the Nilgiris, bringing life and tranquility to your spaces.
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-        {/* Our Story Card */}
-        <div className="card p-8 hover:shadow-lg transition-all duration-300 border-t-4 border-t-green-500 rounded-2xl group relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all"></div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3 mb-4">
-            <span className="text-3xl group-hover:rotate-12 transition-transform">🌱</span> Our Roots
-          </h2>
-          <p className="text-[var(--text-secondary)] leading-relaxed relative z-10">
-            Born from a deep-seated passion for flora, Rosary Plant House began as a humble endeavor to share the joy of gardening. Over time, it has blossomed into a trusted sanctuary for rare, exotic, and beautiful indoor and outdoor plants.
-          </p>
-        </div>
+      <PageBar title="About us" asHeading={false} />
 
-        {/* Our Philosophy Card */}
-        <div className="card p-8 hover:shadow-lg transition-all duration-300 border-t-4 border-t-emerald-500 rounded-2xl group relative overflow-hidden">
-          <div className="absolute bottom-0 right-0 -mr-8 -mb-8 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3 mb-4">
-            <span className="text-3xl group-hover:scale-110 transition-transform">✨</span> Our Philosophy
-          </h2>
-          <p className="text-[var(--text-secondary)] leading-relaxed relative z-10">
-            We believe that every plant has a story and a soul. Our mission is to connect you with the perfect green companion, offering expert guidance and fostering a community of earth-lovers who appreciate sustainable living.
-          </p>
-        </div>
-      </div>
+      <PhotoBanner
+        src={ABOUT_HERO_IMAGE}
+        alt="The Rosary Plant House nursery in Coonoor"
+        eyebrow="Women-led · Coonoor"
+        title="A small nursery in the Nilgiris"
+          titleAs="h1"
+        height="h-[300px]"
+      />
 
-      {/* Location Highlight */}
-      <div className="mt-12 bg-gradient-to-br from-[var(--color-forest)] to-green-800 dark:from-green-900 dark:to-emerald-950 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden group">
-        <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8cGF0aCBkPSJNMCAwTDggOFpNOCAwTDAgOFoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')]"></div>
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold flex items-center gap-3">
-              <span className="group-hover:-translate-y-1 transition-transform">⛰️</span> The Queen of Hills
-            </h2>
-            <p className="text-green-50 text-lg leading-relaxed">
-              Nestled uniquely in <strong>Coonoor, The Nilgiris</strong>, our nursery thrives in a climate perfect for cultivation. Located at Brooklands, on the scenic route from the famous Simspark to Lambsrock.
+      <p className="mt-6 text-base leading-[1.7] text-[var(--text-secondary)]">
+        Rosary Plant House is a women-led family nursery in Coonoor. Every plant we sell comes
+        directly from our own benches — we grow it, we propagate it, we pack it. Nothing is bought
+        in from a wholesaler and resold.
+      </p>
+      <p className="mt-4 text-base leading-[1.7] text-[var(--text-secondary)]">
+        That is the whole reason we can tell you how a plant behaves in an Indian home. We have
+        watched it grow through our own monsoons.
+      </p>
+
+      <div className="mt-6 grid grid-cols-2 gap-2.5">
+        {STATS.map((stat) => (
+          <div key={stat.label} className="rounded-[24px] bg-[var(--color-sage-200)] p-[18px]">
+            <p className="font-display text-[26px] leading-none text-[var(--color-sage-900)]">
+              {stat.value}
             </p>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/20 hover:bg-white/20 transition-colors">
-              <h3 className="font-semibold mb-2 text-green-100/90">Visit Our Oasis:</h3>
-              <p className="text-sm text-white font-medium tracking-wide">Rosary Plant House<br/>Samayapuram, Alwarpet, Coonoor<br/>The Nilgiris</p>
-            </div>
+            <p className="mt-1.5 text-xs leading-snug text-[var(--color-sage-800)]">{stat.label}</p>
           </div>
-          <div className="hidden md:flex justify-center items-center">
-             <div className="w-64 h-64 bg-white/5 rounded-full flex items-center justify-center border-4 border-white/10 relative">
-               <span className="text-8xl absolute group-hover:scale-125 transition-transform duration-700 cursor-default">🏡</span>
-               <div className="absolute w-full h-full border-2 border-white/20 rounded-full animate-ping opacity-20 duration-1000"></div>
-             </div>
-          </div>
-        </div>
+        ))}
       </div>
 
+      <h2 className="mb-3.5 mt-8 font-display text-[23px] text-[var(--text-primary)]">
+        How a plant gets to you
+      </h2>
+      <div className="space-y-3">
+        {STEPS.map((step, index) => (
+          <NumberedStep key={step.title} index={index + 1} title={step.title} tone="light">
+            {step.body}
+          </NumberedStep>
+        ))}
+      </div>
+
+      <DeepPanel eyebrow="Why people come back" className="mt-8">
+        <blockquote className="font-display text-xl leading-[1.3] text-[var(--panel-deep-text)]">
+          “{quotedReview.text}”
+        </blockquote>
+        <p className="mt-3.5 text-[13px] font-bold text-[var(--panel-deep-muted)]">
+          {quotedReview.author}
+        </p>
+      </DeepPanel>
+
+      <h2 className="mb-3 mt-8 font-display text-[23px] text-[var(--text-primary)]">Come and see</h2>
+      <div className="rounded-[28px] bg-[var(--bg-secondary)] p-5">
+        <p className="mb-1.5 text-[15px] font-bold text-[var(--text-primary)]">
+          {NURSERY_ADDRESS_LINES[0]}
+        </p>
+        <p className="mb-4 text-sm leading-relaxed text-[var(--text-secondary)]">
+          {NURSERY_ADDRESS_LINES[1]}. Message before you visit so someone is at the bench.
+        </p>
+        <div className="flex flex-wrap gap-2.5">
+          <a
+            href={NURSERY_MAP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+          >
+            Get directions
+          </a>
+          <a
+            href={visitWhatsAppLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary"
+          >
+            <Icon name="whatsapp" filled className="h-[17px] w-[17px]" />
+            Message first
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

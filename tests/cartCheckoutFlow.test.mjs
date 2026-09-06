@@ -8,9 +8,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cartPageSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'pages', 'CartPage.jsx'), 'utf8');
 
 test('cart checkout flow uses order-request wording instead of payment-style checkout wording', () => {
-  assert.match(cartPageSource, />\s*Enter delivery details\s*</);
-  assert.match(cartPageSource, /Send order request on WhatsApp/);
-  assert.match(cartPageSource, /Delivery charge will be confirmed on WhatsApp before payment/);
+  // The redesign renamed the visible controls; the rule is unchanged — nothing
+  // on this page may imply that money changes hands on the site.
+  assert.match(cartPageSource, /Continue · \{CURRENCY\}\{plantsTotal/);
+  assert.match(cartPageSource, /Nothing is charged yet/);
+  assert.match(cartPageSource, /Send this order on WhatsApp/);
+  assert.match(cartPageSource, /We tell you on WhatsApp<br \/>before you pay/);
 
   assert.doesNotMatch(cartPageSource, />\s*Proceed to Checkout\s*</);
   assert.doesNotMatch(cartPageSource, /Order via WhatsApp/);
@@ -18,15 +21,16 @@ test('cart checkout flow uses order-request wording instead of payment-style che
 });
 
 test('cart checkout explains the next WhatsApp order steps', () => {
-  assert.match(cartPageSource, />What happens next</);
+  assert.match(cartPageSource, /eyebrow="What happens next"/);
+  assert.match(cartPageSource, /Four steps, all on WhatsApp/);
 
   for (const step of [
-    'Send your cart on WhatsApp',
-    'We confirm availability and delivery charge',
-    'You pay after confirmation',
-    'Will be dispatched on nearest dispatch date.',
+    'Your cart reaches us',
+    'We tell you the delivery charge',
+    'You pay the total',
+    'Packed and dispatched',
   ]) {
-    assert.match(cartPageSource, new RegExp(`<li>${step}</li>`));
+    assert.match(cartPageSource, new RegExp(`title="${step}"`));
   }
 });
 
@@ -51,8 +55,8 @@ test('cart shows a persistent confirmation panel after opening WhatsApp', () => 
     cartPageSource,
     /Your order request was opened in WhatsApp\. Please tap Send there to confirm\. No payment has been collected on this site\./
   );
-  assert.match(cartPageSource, />\s*Continue shopping\s*</);
-  assert.match(cartPageSource, />\s*Open WhatsApp again\s*</);
+  assert.match(cartPageSource, />\s*Keep shopping\s*</);
+  assert.match(cartPageSource, />\s*Resend on WhatsApp\s*</);
   assert.match(cartPageSource, />\s*View order\s*</);
   assert.match(cartPageSource, /openExternalUrl\(checkoutConfirmation\.whatsappUrl\)/);
 
@@ -134,24 +138,38 @@ test('cart treats WhatsApp launch failure as a saved order with retry', () => {
   assert.match(cartPageSource, /whatsappOpened/);
   assert.match(cartPageSource, /Your order is safely saved/);
   assert.match(cartPageSource, /WhatsApp could not open/);
-  assert.match(cartPageSource, /Open WhatsApp again/);
+  assert.match(cartPageSource, /Resend on WhatsApp/);
   assert.match(cartPageSource, /if \(checkoutResult\?\.savedToFirestore\)/);
   assert.match(
     cartPageSource,
     /whatsappOpened:\s*checkoutResult\?\.whatsappOpened !== false/
   );
   assert.match(cartPageSource, /supportCode:\s*checkoutResult\?\.supportCode\s*\|\|\s*''/);
-  assert.match(cartPageSource, /Support code:\s*\{checkoutConfirmation\.supportCode\}/);
+  assert.match(cartPageSource, /Support code:\s*\{confirmationSupportCode\}/);
   assert.match(cartPageSource, /Please tap Send there to confirm/);
   assert.doesNotMatch(cartPageSource, /WhatsApp message was sent/);
 });
 
 test('cart always shows the confirmation support code, including successful WhatsApp handoffs', () => {
-  assert.match(cartPageSource, /\{checkoutConfirmation\.supportCode\s*&&\s*\(/);
+  assert.match(cartPageSource, /\{confirmationSupportCode\s*&&\s*\(/);
   assert.doesNotMatch(
     cartPageSource,
-    /!checkoutConfirmation\.whatsappOpened\s*&&\s*checkoutConfirmation\.supportCode/
+    /!checkoutConfirmation\.whatsappOpened\s*&&\s*(checkoutConfirmation\.supportCode|confirmationSupportCode)/
   );
+});
+
+test('the support code the customer is given is the RPH order code', () => {
+  assert.match(cartPageSource, /orderId:\s*checkoutResult\?\.order\?\.orderId\s*\|\|\s*''/);
+  assert.match(
+    cartPageSource,
+    /const confirmationSupportCode = checkoutConfirmation[\s\S]*?checkoutConfirmation\.orderId \|\| checkoutConfirmation\.supportCode/
+  );
+  assert.match(cartPageSource, /Screenshot this code and send it to us on WhatsApp/);
+
+  const orderPageSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'pages', 'OrderPage.jsx'), 'utf8');
+  assert.match(orderPageSource, /const supportCode = order\.orderId \|\| order\.supportCode \|\| ''/);
+  assert.match(orderPageSource, /Screenshot\{' '\}/);
+  assert.match(orderPageSource, /send it to us on WhatsApp/);
 });
 
 test('built-in WhatsApp retry reports success or failure through the opaque same-attempt callback', () => {

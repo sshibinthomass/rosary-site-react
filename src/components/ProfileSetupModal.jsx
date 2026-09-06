@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import Icon from './Icon';
 
 let userServicePromise = null;
 
@@ -15,11 +16,11 @@ function loadUserService() {
 export default function ProfileSetupModal() {
   const { user } = useAuth();
   const { success, error } = useToast();
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
-  
+
   const [profile, setProfile] = useState({
     name: '',
     address: '',
@@ -43,6 +44,7 @@ export default function ProfileSetupModal() {
     if (user) {
       checkProfileStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const checkProfileStatus = async () => {
@@ -56,13 +58,13 @@ export default function ProfileSetupModal() {
     try {
       const { getUserProfile } = await loadUserService();
       const data = await getUserProfile(user.uid);
-      
+
       // If profile is empty/incomplete, show modal
       if (!data || !data.address) {
         setProfile(prev => ({
           ...prev,
           name: user.displayName || '',
-          ...data 
+          ...data
         }));
         setIsOpen(true);
       }
@@ -75,7 +77,7 @@ export default function ProfileSetupModal() {
     // Allow only digits
     const cleanValue = value.replace(/\D/g, '').slice(0, 6);
     setProfile(prev => ({ ...prev, pincode: cleanValue }));
-    
+
     // Auto-lookup when 6 digits entered
     if (cleanValue.length === 6) {
       setLookingUp(true);
@@ -123,162 +125,160 @@ export default function ProfileSetupModal() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
-      
-      {/* Modal */}
-      <div className="relative w-full max-w-lg bg-[var(--bg-secondary)] rounded-2xl max-h-[90vh] overflow-y-auto animate-slide-up shadow-xl">
+
+      {/* Sheet */}
+      <div className="animate-slide-up relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] bg-[var(--bg-secondary)] shadow-[var(--shadow-lifted)] sm:rounded-[28px]">
         {/* Header */}
-        <div className="p-6 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/30">
-          <div className="w-12 h-12 bg-[var(--color-forest)] rounded-full flex items-center justify-center mb-4 text-white text-2xl mx-auto shadow-lg shadow-[var(--color-forest)]/20">
-            📝
+        <div className="flex-none px-6 pb-4 pt-5 text-center">
+          <div className="mb-4 flex justify-center sm:hidden">
+            <span className="h-1 w-11 rounded-full bg-[var(--bg-tertiary)]" />
           </div>
-          <h2 className="text-xl font-bold text-[var(--color-forest)] text-center">
-            Complete Your Profile
+          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-sage-200)] text-[var(--color-sage-800)]">
+            <Icon name="map-pin" className="h-6 w-6" />
+          </span>
+          <h2 className="font-display text-[23px] text-[var(--text-primary)]">
+            Where should we send your plants?
           </h2>
-          <p className="text-[var(--color-forest)]/60 text-center mt-2 text-sm">
-            Please provide these details for smooth delivery. You can skip this and fill it during checkout.
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[var(--text-secondary)]">
+            Fill this in once and your next order takes a minute. You can skip it and enter the details at checkout instead.
           </p>
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-2">
           {/* Name */}
           <div>
-            <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
-              Full Name
-            </label>
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
+              Name
+            </p>
             <input
               type="text"
               value={profile.name}
               onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-              className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
-              placeholder="Your name"
+              className="input"
+              placeholder="Your full name"
             />
           </div>
 
           {/* Contact Details */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
                 Phone
-              </label>
+              </p>
               <input
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
-                placeholder="Mobile number"
+                className="input"
+                placeholder="10 digits"
               />
             </div>
             <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-bold text-[var(--color-forest)]/70 uppercase tracking-wide">
-                  WhatsApp
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    id="modalSameAsPhone"
-                    checked={sameAsPhone}
-                    onChange={(e) => setSameAsPhone(e.target.checked)}
-                    className="w-3 h-3 rounded text-[var(--color-forest)] focus:ring-[var(--color-forest)] border-gray-300"
-                  />
-                  <label htmlFor="modalSameAsPhone" className="text-[10px] text-[var(--color-forest)]/60 cursor-pointer select-none font-medium">
-                    Same as Phone
-                  </label>
-                </div>
-              </div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
+                WhatsApp
+              </p>
               <input
                 type="tel"
                 value={profile.whatsapp}
                 onChange={(e) => setProfile(prev => ({ ...prev, whatsapp: e.target.value }))}
-                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors disabled:bg-[var(--bg-tertiary)] disabled:text-[var(--text-secondary)]"
-                placeholder="WhatsApp number"
+                className="input disabled:opacity-60"
+                placeholder="Same as phone"
                 disabled={sameAsPhone}
               />
             </div>
           </div>
-          
+
+          <label className="flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              id="modalSameAsPhone"
+              checked={sameAsPhone}
+              onChange={(e) => setSameAsPhone(e.target.checked)}
+              className="h-4 w-4 rounded accent-[var(--color-terracotta)]"
+            />
+            <span className="text-[13px] text-[var(--text-secondary)]">
+              WhatsApp is the same as my phone
+            </span>
+          </label>
+
           {/* Address */}
           <div>
-            <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
               Address
-            </label>
+            </p>
             <textarea
               value={profile.address}
               onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
-              className="input min-h-[80px] resize-none bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
-              placeholder="House/Flat No., Street, Landmark"
+              className="input"
+              rows={2}
+              placeholder="House, street, area"
             />
           </div>
-          
+
           {/* Location */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-1">
-              <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
-                Pincode {lookingUp && <span className="animate-spin inline-block">⏳</span>}
-              </label>
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
+                Pincode
+                {lookingUp && <Icon name="refresh" className="h-3 w-3 animate-spin" />}
+              </p>
               <input
                 type="text"
                 value={profile.pincode}
                 onChange={(e) => handlePincodeChange(e.target.value)}
-                className="input bg-[var(--bg-tertiary)]/50 focus:bg-[var(--bg-secondary)] transition-colors"
-                placeholder="6 digits"
+                className="input"
+                placeholder="643102"
                 maxLength={6}
               />
             </div>
-            
-            <div className="col-span-2 grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
-                  District
-                </label>
-                <input
-                  type="text"
-                  value={profile.district}
-                  onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
-                  className="input bg-gray-50/50 focus:bg-white transition-colors"
-                  placeholder="District"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--color-forest)]/70 mb-1.5 uppercase tracking-wide">
-                  State
-                </label>
-                <input
-                  type="text"
-                  value={profile.state}
-                  onChange={(e) => setProfile(prev => ({ ...prev, state: e.target.value }))}
-                  className="input bg-gray-50/50 focus:bg-white transition-colors"
-                  placeholder="State"
-                />
-              </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
+                District
+              </p>
+              <input
+                type="text"
+                value={profile.district}
+                onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
+                className="input bg-[var(--bg-sunken)] px-3.5 text-[13px]"
+                placeholder="District"
+              />
+            </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[var(--text-secondary)]">
+                State
+              </p>
+              <input
+                type="text"
+                value={profile.state}
+                onChange={(e) => setProfile(prev => ({ ...prev, state: e.target.value }))}
+                className="input bg-[var(--bg-sunken)] px-3.5 text-[13px]"
+                placeholder="State"
+              />
             </div>
           </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            District and state fill in from your pincode.
+          </p>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-tertiary)]/50 flex gap-3">
-          <button
-            onClick={handleSkip}
-            className="flex-1 py-3 text-[var(--color-forest)]/60 font-medium hover:text-[var(--color-forest)] hover:bg-[var(--color-cream-dark)] rounded-xl transition-colors"
-          >
+        <div className="flex flex-none items-center gap-3 px-6 pb-6 pt-4 safe-bottom">
+          <button onClick={handleSkip} className="btn btn-secondary flex-1">
             Skip for now
           </button>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex-[2] btn btn-primary flex items-center justify-center gap-2"
+            className="btn btn-primary flex-[2]"
           >
             {loading ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
             ) : (
-              <>
-                <span>Save Details</span>
-                <span>→</span>
-              </>
+              'Save details'
             )}
           </button>
         </div>

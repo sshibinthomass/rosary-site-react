@@ -9,19 +9,18 @@ export default function LoginPopup() {
   const { user, loading, signInWithGoogle } = useAuth();
   const { success, error } = useToast();
   const { pathname } = useLocation();
-  const [show, setShow] = useState(false);
+  const [waited, setWaited] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    // Don't show if auth state is still loading, or if user is already logged in
-    if (loading || user) return undefined;
-
-    // Every visit gets the offer once: dismissing hides it for the rest of this
-    // page load, and opening the site again asks afresh.
-    // Let shoppers browse before interrupting the public page with account sync.
-    const timer = setTimeout(() => setShow(true), 15000);
+    // Count from the moment the page opens, not from the moment Firebase auth
+    // finishes: on public pages auth is deferred until the visitor interacts or
+    // ten idle seconds pass, and waiting for it as well put the sheet almost
+    // half a minute out — long enough that most visitors never saw it.
+    const timer = setTimeout(() => setWaited(true), 4000);
     return () => clearTimeout(timer);
-  }, [loading, user]);
+  }, []);
 
   const handleSignIn = async () => {
     setSigningIn(true);
@@ -41,10 +40,12 @@ export default function LoginPopup() {
   };
 
   const handleClose = () => {
-    setShow(false);
+    setDismissed(true);
   };
 
-  if (!show || user || pathname.startsWith('/order/')) return null;
+  // Every visit gets the offer once: closing it hides the sheet for the rest of
+  // this page load, and opening the site again asks afresh.
+  if (!waited || dismissed || loading || user || pathname.startsWith('/order/')) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(32,30,29,0.42)] animate-fade-in">

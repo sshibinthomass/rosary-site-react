@@ -15,11 +15,20 @@ test('a signed-out visitor is offered sign-in every time they open the site', ()
   // who closed it once was never asked again until they opened a new tab.
   assert.doesNotMatch(loginPopupSource, /loginPopupDismissed/);
   assert.doesNotMatch(loginPopupSource, /sessionStorage/);
-  assert.match(loginPopupSource, /if \(loading \|\| user\) return undefined;/);
-  assert.match(loginPopupSource, /setTimeout\(\(\) => setShow\(true\), 15000\)/);
+});
+
+test('the wait is counted from the page opening, not from auth resolving', () => {
+  // Auth is deferred on public pages until the visitor interacts or ten idle
+  // seconds pass, so gating the timer on it pushed the sheet ~27s out.
+  assert.match(loginPopupSource, /setTimeout\(\(\) => setWaited\(true\), 4000\)/);
+  assert.match(loginPopupSource, /\}, \[\]\);/);
+  assert.doesNotMatch(loginPopupSource, /if \(loading \|\| user\) return undefined;/);
 });
 
 test('the sheet still stays out of the way once it is closed or signed in', () => {
-  assert.match(loginPopupSource, /const handleClose = \(\) => \{\s*setShow\(false\);\s*\};/);
-  assert.match(loginPopupSource, /if \(!show \|\| user \|\| pathname\.startsWith\('\/order\/'\)\) return null;/);
+  assert.match(loginPopupSource, /const handleClose = \(\) => \{\s*setDismissed\(true\);\s*\};/);
+  assert.match(
+    loginPopupSource,
+    /if \(!waited \|\| dismissed \|\| loading \|\| user \|\| pathname\.startsWith\('\/order\/'\)\) return null;/
+  );
 });
